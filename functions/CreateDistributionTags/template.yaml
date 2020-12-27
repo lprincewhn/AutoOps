@@ -1,4 +1,4 @@
-  DeleteEc2DiskAlarmsFunction:
+  CreateDistributionTagsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
@@ -6,5 +6,6 @@
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: functions/DeleteEc2DiskAlarms
-      Policies: [CloudWatchFullAccess]  
+      CodeUri: functions/CreateDistributionTags
+      Policies: [CloudFrontFullAccess]
+

@@ -19,8 +19,17 @@ Resources:
       EndpointConfiguration: PRIVATE
       Auth:
         ResourcePolicy:
-          IpRangeWhitelist:
-            - 172.31.0.0/16
+          CustomStatements: [{
+                              "Effect": "Allow",
+                              "Principal": "*",
+                              "Action": "execute-api:Invoke",
+                              "Resource": "execute-api:/Prod/*",
+                              "Condition": {
+                                "IpAddress": {
+                                  "aws:VpcSourceIp": "172.31.0.0/16"
+                                }
+                              }
+                            }]        
   AutoOpsSnsTopic:
     Type: AWS::SNS::Topic
   CertComplianceChk:
@@ -60,15 +69,6 @@ Resources:
         - LambdaInvokePolicy:
             FunctionName: !Ref NotifyCertExpiredFunction 
 
-  LoadCertComplianceChkInputFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.8
-      Description: ''
-      MemorySize: 128
-      Timeout: 15
-      CodeUri: functions/LoadCertComplianceChkInput
   NotifyCertExpiredFunction:
     Type: 'AWS::Serverless::Function'
     Properties: 
@@ -78,10 +78,19 @@ Resources:
       MemorySize: 128
       Timeout: 15
       CodeUri: functions/NotifyCertExpired
-      Policies: [AmazonSNSFullAccess,AWSCertificateManagerReadOnly]
+      Policies: [AmazonSNSFullAccess,AWSCertificateManagerReadOnly,CloudFrontReadOnlyAccess]
       Environment:
         Variables:
           SNS_TOPIC: !Ref AutoOpsSnsTopic
+  LoadCertComplianceChkInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 15
+      CodeUri: functions/LoadCertComplianceChkInput
 
 Outputs:
   APIEndpoint:

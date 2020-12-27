@@ -23,8 +23,17 @@ Resources:
       EndpointConfiguration: PRIVATE
       Auth:
         ResourcePolicy:
-          IpRangeWhitelist:
-            - 192.168.0.0/24
+          CustomStatements: [{
+                              "Effect": "Allow",
+                              "Principal": "*",
+                              "Action": "execute-api:Invoke",
+                              "Resource": "execute-api:/Prod/*",
+                              "Condition": {
+                                "IpAddress": {
+                                  "aws:VpcSourceIp": "172.31.0.0/16"
+                                }
+                              }
+                            }]        
   AutoOpsSnsTopic:
     Type: AWS::SNS::Topic
 '''
