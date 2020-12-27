@@ -10,7 +10,12 @@ This project contains useful operational processes represented as state machines
 
 ## How to deploy
 
-0. Pick up state machines and generate the CloudFormation template
+1. Start CloudShell
+
+    ![https://console.aws.amazon.com/cloudshell/home]
+
+2. Pick up state machines and generate the CloudFormation template
+   
     ```
     # git clone https://github.com/lprincewhn/AutoOps.git
     # cd AutoOps/
@@ -22,34 +27,11 @@ This project contains useful operational processes represented as state machines
         statemachine/CertComplianceChk/ \
     ```
 
-1. With SAM CLI installed
+3. Build and deply With SAM CLI
     ```
     # sam build
     # sam deploy --guided
     ```
-
-2. Without SAM CLI, use CloudFormation template directly
-    - Create a S3 bucket and prefix "AutoOps"
-    ```
-    # export your_bucket_name=<your-bucket-name>
-    # aws s3 mb s3://${your_bucket_name}
-    ```    
-    - Upload the files in artifacts/ to s3://your-bucket-name/AutoOps. You need to replace "your-bucket-name" with your own S3 bucket name in following commands.
-    ```
-    # aws s3 sync ./artifacts s3://${your_bucket_name}/AutoOps
-    ```
-    - Modify the CloudFormation template packaged.yaml
-        - Linux:
-        ```
-        # sed "s/<your S3 bucket>/${your_bucket_name}/g" packaged.yaml > packaged-out.yaml
-        # aws s3 cp ./packaged-out.yaml s3://${your_bucket_name}/AutoOps/
-        ```
-        - MacOS:
-        ```
-        # sed "s/<your S3 bucket>/${your_bucket_name}/g" packaged.yaml > packaged-out.yaml
-        # aws s3 cp ./packaged-out.yaml s3://${your_bucket_name}/AutoOps/
-        ```
-    - Run CloudFormation with packaged.yaml
 
 ## How to try
 
