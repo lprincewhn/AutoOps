@@ -36,6 +36,8 @@ Resources:
                             }]        
   AutoOpsSnsTopic:
     Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AutoOps
 '''
 tailer='''
 Outputs:
