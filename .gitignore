@@ -1,6 +1,5 @@
 samconfig.toml
-packaged.yaml
-packaged-out.yaml
+template.xml
 .aws-sam/
 samples/*
 # Created by https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
