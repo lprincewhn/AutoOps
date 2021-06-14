@@ -1,1 +1,16 @@
-{"version":"0","id":"4994436a-9670-8dac-6725-09b73f889b65","detail-type":"EC2 Instance State-change Notification","source":"aws.ec2","account":"597377428377","time":"2021-06-12T04:31:38Z","region":"us-east-1","resources":["arn:aws:ec2:us-east-1:597377428377:instance/i-03c54acb9f2e01870"],"detail":{"instance-id":"i-03c54acb9f2e01870","state":"running"}}
+{
+  "version": "0",
+  "id": "4994436a-9670-8dac-6725-09b73f889b65",
+  "detail-type": "EC2 Instance State-change Notification",
+  "source": "aws.ec2",
+  "account": "597377428377",
+  "time": "2021-06-12T04:31:38Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:ec2:us-east-1:597377428377:instance/i-03c54acb9f2e01870"
+  ],
+  "detail": {
+    "instance-id": "i-03c54acb9f2e01870",
+    "state": "running"
+  }
+}

@@ -1,4 +1,4 @@
-  NotifySnsFunction:
+  CreateEbsTagsFromEc2Function:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
@@ -6,9 +6,8 @@
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: functions/NotifySns
-      Policies: [AmazonSNSFullAccess]
+      CodeUri: functions/CreateEbsTagsFromEc2
+      Policies: [AmazonEC2FullAccess]
       Environment:
         Variables:
-          SNSTopicArn: !If [BuildSnsTopicCondition, !Ref AutoOpsSnsTopic, !Ref SnsTopicArn]      
-
+          TAGS_TO_SYNC: 'Name,Project'

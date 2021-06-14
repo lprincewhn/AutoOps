@@ -120,6 +120,13 @@
               "Resource": "${CreateHealthCheckAlarmsFunctionArn}",
               "InputPath": "$",
               "ResultPath": "$",
+              "Next": "CreateEbsTagsFromEc2" 
+            },
+            "CreateEbsTagsFromEc2": {
+              "Type": "Task",
+              "Resource": "${CreateEbsTagsFromEc2FunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
               "End": true
             }
           }

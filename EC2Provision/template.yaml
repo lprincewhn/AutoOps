@@ -1,11 +1,11 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Create/Delete alarms for EC2 instance when they are started/terminated.
+  Create/Delete alarms and EBS tags for EC2 instance when they are started/terminated.
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: AutoOpsEC2Provision 
-    Description: Create/Delete alarms for EC2 instance when they are started/terminated.
+    Description: Create/Delete alarms and EBS tags for EC2 instance when they are started/terminated.
     Author: whuaning
     SpdxLicenseId: Apache-2.0
     ReadmeUrl: README.md
@@ -27,6 +27,7 @@ Resources:
         CreateHealthCheckAlarmsFunctionArn: !GetAtt CreateHealthCheckAlarmsFunction.Arn
         DeleteEC2AlarmsFunctionArn: !GetAtt DeleteEC2AlarmsFunction.Arn
         GetSSMInformationFunctionArn: !GetAtt GetSSMInformationFunction.Arn
+        CreateEbsTagsFromEc2FunctionArn: !GetAtt CreateEbsTagsFromEc2Function.Arn
       Events:
         CloudWatchEvent:
           Type: CloudWatchEvent 
@@ -63,6 +64,21 @@ Resources:
             FunctionName: !Ref DeleteEC2AlarmsFunction 
         - LambdaInvokePolicy:
             FunctionName: !Ref GetSSMInformationFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateEbsTagsFromEc2Function
+  CreateEbsTagsFromEc2Function:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateEbsTagsFromEc2
+      Policies: [AmazonEC2FullAccess]
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Name,Project'
   CreateCPUAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
