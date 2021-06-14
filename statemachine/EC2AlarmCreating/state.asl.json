@@ -1,0 +1,100 @@
+{
+  "Comment": "Create/Delete disk space alarms when an EC2 instance starts/terminates.",
+  "StartAt": "LoadEc2AlarmAutoCreatingInput",
+  "States": {
+    "LoadEc2AlarmAutoCreatingInput": {
+      "Type": "Task",
+      "Resource": "${LoadEc2AlarmAutoCreatingInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "RunningOrTerminated?"
+    },
+    "RunningOrTerminated?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.State",
+          "StringEquals": "running",
+          "Next": "GetInstanceDetail"
+        }      
+      ],
+      "Default": "DeleteEc2DiskAlarms"      
+    },
+    "DeleteEc2DiskAlarms": {
+      "Type": "Task",
+      "Resource": "${DeleteEc2DiskAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "GetInstanceDetail": {
+      "Type": "Task",
+      "Resource": "${GetInstanceDetailFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "GetSSMInformation"
+    },
+    "GetSSMInformation": {
+      "Type": "Task",
+      "Resource": "${GetSSMInformationFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "IntanceOnline?"
+    },
+    "IntanceOnline?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.PingStatus",
+          "StringEquals": "Online",
+          "Next": "WindowsOrLinux?"
+        }      
+      ],
+      "Default": "Wait20Sec"      
+    },
+    "Wait20Sec": {
+      "Type": "Wait",
+      "Seconds": 20,
+      "Next": "GetSSMInformation"
+    },
+    "WindowsOrLinux?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.PlatformType",
+          "StringEquals": "Windows",
+          "Next": "GetWindowsVolumes"
+        }      
+      ],
+      "Default": "GetLinuxVolumes"
+    },
+    "GetWindowsVolumes": {
+      "Type": "Task",
+      "Resource": "${GetWindowsVolumesFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateWindowsDiskAlarms"
+    },
+    "GetLinuxVolumes": {
+      "Type": "Task",
+      "Resource": "${GetLinuxVolumesFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateLinuxDiskAlarms"
+    },
+    "CreateLinuxDiskAlarms": {
+      "Type": "Task",
+      "Resource": "${CreateLinuxDiskAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "CreateWindowsDiskAlarms": {
+      "Type": "Task",
+      "Resource": "${CreateWindowsDiskAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    }
+  }
+}

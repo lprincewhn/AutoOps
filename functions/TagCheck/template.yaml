@@ -1,0 +1,13 @@
+  TagCheckFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: functions/TagCheck
+      Policies: [AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          TAGS_TO_CHECK: 'Project'

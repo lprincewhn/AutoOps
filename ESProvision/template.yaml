@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Create/Delete alarms for ElasticSearch domains when they are created/deleted.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsESProvision 
+    Description: Create/Delete alarms for ElasticSearch domains when they are created/deleted.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Resources:
+  ESProvisionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadESProvisionInputFunctionArn: !GetAtt LoadESProvisionInputFunction.Arn
+        CreateESAlarmsFunctionArn: !GetAtt CreateESAlarmsFunction.Arn
+        DeleteESAlarmsFunctionArn: !GetAtt DeleteESAlarmsFunction.Arn
+      Events:
+        CloudWatchEvent:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.es 
+              detail-type:
+                - "AWS API Call via CloudTrail"
+              detail:
+                eventName: 
+                  - CreateElasticsearchDomain 
+                  - DeleteElasticsearchDomain
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadESProvisionInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateESAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeleteESAlarmsFunction
+
+  CreateESAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateESAlarms
+      Policies: [CloudWatchFullAccess]
+      Environment:
+        Variables:
+          FreeStorageSpace_Threshold: 20480 
+          Nodes_Threshold: 1
+
+  DeleteESAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: DeleteESAlarms
+      Policies: [CloudWatchFullAccess]  
+
+  LoadESProvisionInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadESProvisionInput
+
+Outputs:
+  ESProvisionStateMachine:
+    Description: "ARN of ESProvisionStateMachine"
+    Value: !Ref ESProvisionStateMachine 

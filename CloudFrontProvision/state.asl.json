@@ -1,0 +1,38 @@
+{
+  "Comment": "Create/Delete CloudFront alarms when an CloudFront distribution was created/deleted.",
+  "StartAt": "LoadCloudFrontProvisionInput",
+  "States": {
+    "LoadCloudFrontProvisionInput": {
+      "Type": "Task",
+      "Resource": "${LoadCloudFrontProvisionInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreatedOrDeleted?"
+    },
+    "CreatedOrDeleted?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.operation",
+          "StringEquals": "created",
+          "Next": "CreateDistributionAlarms"
+        }      
+      ],
+      "Default": "DeleteDistributionAlarms"      
+    },
+    "CreateDistributionAlarms": {
+      "Type": "Task",
+      "Resource": "${CreateDistributionAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "DeleteDistributionAlarms": {
+      "Type": "Task",
+      "Resource": "${DeleteDistributionAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true 
+    }
+  }
+}

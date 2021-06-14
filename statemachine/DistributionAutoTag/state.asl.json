@@ -1,0 +1,75 @@
+{
+  "Comment": "Update distribution Tag when creating/updating.",
+  "StartAt": "LoadDistributionTagAutoUpdatingInput",
+  "States": {
+    "LoadDistributionTagAutoUpdatingInput": {
+      "Type": "Task",
+      "Resource": "${LoadDistributionTagAutoUpdatingInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "GetDistributionTag"
+    },
+    "GetDistributionTag": {
+      "Type": "Task",
+      "Resource": "${GetDistributionTagFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedUpdateTag?"
+    },
+    "NeedUpdateTag?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.DistributionOwner",
+          "StringEquals": "",
+          "Next": "IdentityTypeUserOrRole?"
+        }
+      ],
+      "Default": "NoNeedUpdateTag"
+    },
+    "IdentityTypeUserOrRole?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.IdentityType",
+          "StringEquals": "IAMUser",
+          "Next": "GetUserAttribute"
+        },
+        {
+          "Variable": "$.IdentityType",
+          "StringEquals": "IAMRole",
+          "Next": "GetRoleAttribute"
+        }  
+      ],
+      "Default": "IdentityTypeNotSupport"
+    },
+    "GetUserAttribute": {
+      "Type": "Task",
+      "Resource": "${GetUserAttributeFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "UpdateDistributionTag"
+    },
+    "GetRoleAttribute": {
+      "Type": "Task",
+      "Resource": "${GetRoleAttributeFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "UpdateDistributionTag"
+    },
+    "UpdateDistributionTag": {
+      "Type": "Task",
+      "Resource": "${UpdateDistributionTagFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "NoNeedUpdateTag": {
+      "Type": "Succeed",
+    },    
+    "IdentityTypeNotSupport": {
+      "Type": "Fail",
+      "Cause": "Identity type not supported!"
+    }
+  }
+}

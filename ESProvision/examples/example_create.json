@@ -1,0 +1,22 @@
+{
+  "detail-type": "AWS API Call via CloudTrail",
+  "source": "aws.es",
+  "time": "2021-06-06T14:24:56Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "eventTime": "2021-06-06T14:24:56Z",
+    "eventSource": "es.amazonaws.com",
+    "eventName": "CreateElasticsearchDomain",
+    "awsRegion": "us-east-1",
+    "responseElements": {
+      "domainStatus": {
+        "created": true,
+        "aRN": "arn:aws:es:us-east-1:597377428377:domain/svhw-tech",
+        "domainId": "597377428377/svhw-tech",
+        "deleted": false,
+        "domainName": "svhw-tech"
+      }
+    }
+  }
+}

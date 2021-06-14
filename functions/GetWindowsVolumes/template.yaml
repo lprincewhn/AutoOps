@@ -1,0 +1,13 @@
+  GetWindowsVolumesFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/GetWindowsVolumes
+      Policies: [AmazonSSMFullAccess]
+      Environment:
+        Variables:
+          SSM_DOCNAME: !Ref GetWindowsVolumesDoc

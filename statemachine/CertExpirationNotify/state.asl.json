@@ -1,0 +1,46 @@
+{
+  "Comment": "Notify users when certificate will expire.",
+  "StartAt": "LoadCertExpirationNotifyInput",
+  "States": {
+    "LoadCertExpirationNotifyInput": {
+      "Type": "Task",
+      "Resource": "${LoadCertExpirationNotifyInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "FormatCertMgrEvent"
+    },
+    "FormatCertMgrEvent": {
+      "Type": "Task",
+      "Resource": "${FormatCertMgrEventFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?" 
+    },
+    "NeedNotify?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.message",
+          "IsPresent": true,
+          "Next": "SnsNotify"
+        }
+      ],
+      "Default": "Successful"
+    },
+    "SnsNotify": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "InputPath": "$",
+      "ResultPath": "$.snsResponse",
+      "Parameters": {
+        "Subject": "【AWS通知】证书即将过期",
+        "Message.$": "$.message",
+        "TopicArn": "${SNSTopicArn}"
+      },
+      "Next": "Successful"
+    },
+    "Successful": {
+      "Type": "Succeed"
+    }
+  }
+}

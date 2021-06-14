@@ -1,0 +1,40 @@
+  DistributionTagUpdatingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/DistributionAutoTag/state.asl.json
+      DefinitionSubstitutions:
+        LoadDistributionTagAutoUpdatingInputFunctionArn: !GetAtt LoadDistributionTagAutoUpdatingInputFunction.Arn
+        GetDistributionTagFunctionArn: !GetAtt GetDistributionTagFunction.Arn
+        GetUserAttributeFunctionArn: !GetAtt GetUserAttributeFunction.Arn
+        GetRoleAttributeFunctionArn: !GetAtt GetRoleAttributeFunction.Arn  
+        UpdateDistributionTagFunctionArn: !GetAtt UpdateDistributionTagFunction.Arn  
+      Events:
+        EC2Running:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.cloudfront
+              detail-type:
+                - "AWS API Call via CloudTrail"
+              detail:
+                eventName: 
+                  - UpdateDistribution
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /distribution_tag_update
+            Method: POST
+            RestApiId:
+              Ref: AutoOpsApiGateway
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadDistributionTagAutoUpdatingInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetDistributionTagFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetUserAttributeFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetRoleAttributeFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref UpdateDistributionTagFunction

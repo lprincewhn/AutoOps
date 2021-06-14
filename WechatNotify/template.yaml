@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Send SNS message to wechat.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: WechatNotify
+    Description: Send SNS message to wechat.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SNSTopicArn:
+    Type: String
+    Description: ARN of SNS topic which message comes from.
+Resources:
+  WechatNotifyFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref WechatSecret 
+      Events:
+        SNSTopic:
+          Type: 'SNS'
+          Properties: 
+            Topic: !Ref SNSTopicArn 
+  WechatSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Wechat secret to send notification
+      Name: wechat_secret
+      SecretString:
+        "{\"corpid\":\"\",\"corpsecret\":\"\",\"agentid\":\"\"}"

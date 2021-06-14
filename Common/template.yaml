@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AutoOps contains useful operational processes represented as a state machines with AWS StepFunctions.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCommon
+    Description: A toolkit for auto ops in AWS.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
+Resources:
+  AutoOpsSnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AutoOps
+Outputs:
+  SNSTopic:
+    Description: "SNS Topic notification will send to"
+    Value: !Ref AutoOpsSnsTopic 

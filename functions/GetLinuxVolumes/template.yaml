@@ -1,0 +1,13 @@
+  GetLinuxVolumesFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/GetLinuxVolumes
+      Policies: [AmazonSSMFullAccess]
+      Environment:
+        Variables:
+          SSM_DOCNAME: !Ref GetLinuxVolumesDoc

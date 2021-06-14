@@ -1,0 +1,80 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Create/Delete alarms for CloudFront distributions when they are created/deleted.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCloudFrontProvision 
+    Description: Create/Delete alarms for CloudFront distributions when they are created/deleted.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Resources:
+  CloudFrontProvisionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadCloudFrontProvisionInputFunctionArn: !GetAtt LoadCloudFrontProvisionInputFunction.Arn
+        CreateDistributionAlarmsFunctionArn: !GetAtt CreateDistributionAlarmsFunction.Arn
+        DeleteDistributionAlarmsFunctionArn: !GetAtt DeleteDistributionAlarmsFunction.Arn
+      Events:
+        CWEvent:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.cloudfront 
+              detail-type:
+                - "AWS API Call via CloudTrail"
+              detail:
+                eventName: 
+                  - CreateDistribution 
+                  - CreateDistributionWithTags
+                  - DeleteDistribution 
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadCloudFrontProvisionInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateDistributionAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeleteDistributionAlarmsFunction
+
+  CreateDistributionAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateDistributionAlarms
+      Policies: [CloudWatchFullAccess]
+
+  DeleteDistributionAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: DeleteDistributionAlarms
+      Policies: [CloudWatchFullAccess]  
+
+  LoadCloudFrontProvisionInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadCloudFrontProvisionInput
+
+Outputs:
+  CloudFrontProvisionStateMachine:
+    Description: "ARN of CloudFrontProvisionStateMachine"
+    Value: !Ref CloudFrontProvisionStateMachine 

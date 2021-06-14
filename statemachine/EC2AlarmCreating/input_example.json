@@ -1,0 +1,4 @@
+{
+    "input": "{\"version\": \"0\", \"id\": \"51c581bf-6d0f-a51d-b828-8c7e9f4c8848\", \"detail-type\": \"EC2 Instance State-change Notification\", \"source\": \"aws.ec2\", \"account\": \"597377428377\", \"time\": \"2020-06-24T14:25:30Z\", \"region\": \"us-east-1\", \"resources\": [\"arn:aws:ec2:us-east-1:597377428377:instance/i-05ef367ddd9680a0a\"], \"detail\": {\"instance-id\": \"i-05ef367ddd9680a0a\", \"state\": \"running\"}}",
+    "stateMachineArn": "arn:aws:states:us-east-1:597377428377:stateMachine:EC2AlarmCreatingStateMachine-VhGf5VINsDM8"
+}

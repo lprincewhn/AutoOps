@@ -1,0 +1,50 @@
+  EC2AlarmCreatingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/EC2AlarmCreating/state.asl.json
+      DefinitionSubstitutions:
+        LoadEc2AlarmAutoCreatingInputFunctionArn: !GetAtt LoadEc2AlarmAutoCreatingInputFunction.Arn
+        GetInstanceDetailFunctionArn: !GetAtt GetInstanceDetailFunction.Arn
+        GetWindowsVolumesFunctionArn: !GetAtt GetWindowsVolumesFunction.Arn
+        GetLinuxVolumesFunctionArn: !GetAtt GetLinuxVolumesFunction.Arn
+        CreateLinuxDiskAlarmsFunctionArn: !GetAtt CreateLinuxDiskAlarmsFunction.Arn
+        CreateWindowsDiskAlarmsFunctionArn: !GetAtt CreateWindowsDiskAlarmsFunction.Arn
+        DeleteEc2DiskAlarmsFunctionArn: !GetAtt DeleteEc2DiskAlarmsFunction.Arn
+        GetSSMInformationFunctionArn: !GetAtt GetSSMInformationFunction.Arn
+      Events:
+        EC2StartTerminate:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.ec2
+              detail-type:
+                - "EC2 Instance State-change Notification"
+              detail:
+                state: 
+                  - running
+                  - terminated
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /ec2_alarm_create
+            Method: POST
+            RestApiId:
+              Ref: AutoOpsApiGateway
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadEc2AlarmAutoCreatingInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetInstanceDetailFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetWindowsVolumesFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetLinuxVolumesFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateLinuxDiskAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateWindowsDiskAlarmsFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeleteEc2DiskAlarmsFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetSSMInformationFunction

@@ -1,0 +1,17 @@
+  TagComplianceNotifyStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/TagComplianceNotify/state.asl.json
+      DefinitionSubstitutions:
+        TagCheckFunctionArn: !GetAtt TagCheckFunction.Arn      
+        NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "rate(1 day)" 
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref TagCheckFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifySnsFunction

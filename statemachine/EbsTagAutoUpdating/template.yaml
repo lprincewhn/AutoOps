@@ -1,0 +1,24 @@
+  EbsTagUpdatingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/EbsTagAutoUpdating/state.asl.json
+      DefinitionSubstitutions:
+        LoadEbsTagAutoUpdatingInputFunctionArn: !GetAtt LoadEbsTagAutoUpdatingInputFunction.Arn
+        CreateEbsTagsFromEc2FunctionArn: !GetAtt CreateEbsTagsFromEc2Function.Arn      
+      Events:
+        EC2Running:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.ec2
+              detail-type:
+                - "EC2 Instance State-change Notification"
+              detail:
+                state: 
+                  - running
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadEbsTagAutoUpdatingInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateEbsTagsFromEc2Function

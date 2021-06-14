@@ -1,0 +1,20 @@
+{
+  "Comment": "Update EBS tag when staring an EC2 instance.",
+  "StartAt": "LoadEbsTagAutoUpdatingInput",
+  "States": {
+    "LoadEbsTagAutoUpdatingInput": {
+      "Type": "Task",
+      "Resource": "${LoadEbsTagAutoUpdatingInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateEbsTagsFromEc2"
+    },
+    "CreateEbsTagsFromEc2": {
+      "Type": "Task",
+      "Resource": "${CreateEbsTagsFromEc2FunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,14 @@
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: functions/NotifySns
+      Policies: [AmazonSNSFullAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !If [BuildSnsTopicCondition, !Ref AutoOpsSnsTopic, !Ref SnsTopicArn]      
+

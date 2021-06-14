@@ -1,0 +1,45 @@
+{
+  "Comment": "Create/Delete AWS ElasticSearch alarms when an ElasticSearch domain  was created/deleted.",
+  "StartAt": "LoadRDSProvisionInput",
+  "States": {
+    "LoadRDSProvisionInput": {
+      "Type": "Task",
+      "Resource": "${LoadRDSProvisionInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreatedOrDeleted?"
+    },
+    "CreatedOrDeleted?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.operation",
+          "StringEquals": "created",
+          "Next": "CreateRDSAlarms"
+        }, {
+          "Variable": "$.operation",
+          "StringEquals": "deleted",
+          "Next": "DeleteRDSAlarms"
+        }      
+      ],
+      "Default": "NoActionNeeded"      
+    },
+    "CreateRDSAlarms": {
+      "Type": "Task",
+      "Resource": "${CreateRDSAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "DeleteRDSAlarms": {
+      "Type": "Task",
+      "Resource": "${DeleteRDSAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true 
+    },
+    "NoActionNeeded": {
+      "Type": "Succeed"
+    }
+  }
+}
