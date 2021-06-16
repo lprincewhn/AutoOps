@@ -22,12 +22,14 @@ done
 cd ..
 cd RDSProvision
 for REGION in ${REGIONS}
+do
   sam build
   sam deploy --stack-name AutoOpsRDSProvision --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 done
 cd ..
 cd ESProvision
 for REGION in ${REGIONS}
+do
   sam build
   sam deploy --stack-name AutoOpsESProvision --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 done
