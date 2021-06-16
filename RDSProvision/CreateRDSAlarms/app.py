@@ -6,9 +6,9 @@ def lambda_handler(event, context):
     client = ec2 = boto3.client('cloudwatch')
     dbInstanceIdentifier = event["dbInstanceIdentifier"]
     response = client.put_metric_alarm(
-        AlarmName=f'RDS-{dbInstanceIdentifier}-Low-StorageSpace-Alarm',
+        AlarmName=f'RDS-{dbInstanceIdentifier}-Low-EBSIOBalance-Alarm',
         ActionsEnabled=False,
-        MetricName='FreeStorageSpace',
+        MetricName='EBSIOBalance%',
         Namespace='AWS/RDS',
         Statistic='Average',
         Dimensions=[{
@@ -18,7 +18,7 @@ def lambda_handler(event, context):
         Period=60,
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=20000000000,
+        Threshold=20,
         ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='missing',
         Tags=[]

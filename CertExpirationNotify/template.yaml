@@ -1,0 +1,81 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AutoOps contains useful operational processes represented as a state machines with AWS StepFunctions.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCertificatesNotify
+    Description: A toolkit for auto ops in AWS.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
+Resources:
+  CertExpirationNotifyStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadCertExpirationNotifyInputFunctionArn: !GetAtt LoadCertExpirationNotifyInputFunction.Arn
+        FormatCertMgrEventFunctionArn: !GetAtt FormatCertMgrEventFunction.Arn
+        NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
+      Events:
+        CWEvent:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.acm 
+              detail-type:
+                - "ACM Certificate Approaching Expiration"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadCertExpirationNotifyInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatCertMgrEventFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifySnsFunction
+
+  LoadCertExpirationNotifyInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 15
+      CodeUri: LoadCertExpirationNotifyInput
+
+  FormatCertMgrEventFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties: 
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 15
+      CodeUri: FormatCertMgrEvent
+      Policies: [AWSCertificateManagerReadOnly,CloudFrontReadOnlyAccess]
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: NotifySns
+      Policies: [AmazonSNSFullAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
+Outputs:
+  CertExpirationNotifyStateMachine:
+    Description: "ARN of CertExpirationNotifyStateMachine"
+    Value: !Ref CertExpirationNotifyStateMachine

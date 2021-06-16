@@ -7,7 +7,7 @@ def lambda_handler(event, context):
     client = ec2 = boto3.client('cloudwatch')
     for volume in event['Volumes']:   
         response = client.put_metric_alarm(
-            AlarmName=f'EC2-{event["InstanceId"]}-{volume["instance"]}-High-SpaceUsage-Alarm',
+            AlarmName=f'EC2-{event["InstanceId"]}-{volume["instance"]}-Low-FreeSpace-Alarm',
             ActionsEnabled=False,
             MetricName='LogicalDisk % Free Space',
             Namespace='CWAgent',

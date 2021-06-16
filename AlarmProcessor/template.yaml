@@ -23,7 +23,10 @@ Resources:
       DefinitionSubstitutions:
         LoadAlarmProcessorInputFunctionArn: !GetAtt LoadAlarmProcessorInputFunction.Arn
         FormatCloudFrontAlarmFunctionArn: !GetAtt FormatCloudFrontAlarmFunction.Arn
+        FormatEC2AlarmFunctionArn: !GetAtt FormatEC2AlarmFunction.Arn
         FormatESAlarmFunctionArn: !GetAtt FormatESAlarmFunction.Arn
+        FormatRDSAlarmFunctionArn: !GetAtt FormatRDSAlarmFunction.Arn
+        FormatLinuxDiskAlarmFunctionArn: !GetAtt FormatLinuxDiskAlarmFunction.Arn
         NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
       Events:
         AlarmStateChanged:
@@ -44,7 +47,13 @@ Resources:
         - LambdaInvokePolicy:
             FunctionName: !Ref FormatCloudFrontAlarmFunction
         - LambdaInvokePolicy:
+            FunctionName: !Ref FormatEC2AlarmFunction
+        - LambdaInvokePolicy:
             FunctionName: !Ref FormatESAlarmFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatRDSAlarmFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatLinuxDiskAlarmFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref NotifySnsFunction
 
@@ -52,7 +61,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 30
@@ -62,7 +71,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 30
@@ -72,12 +81,11 @@ Resources:
         Variables:
           SNSTopicArn: !Ref SnsTopicArn    
 
-
   FormatCloudFrontAlarmFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 30
@@ -87,13 +95,42 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 30
       CodeUri: FormatESAlarm
       Policies: []
-
+  FormatEC2AlarmFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatEC2Alarm
+      Policies: []
+  FormatRDSAlarmFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatRDSAlarm
+      Policies: []
+  FormatLinuxDiskAlarmFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatLinuxDiskAlarm
+      Policies: []
 Outputs:
   AlarmProcessorStateMachine:
     Description: "ARN of AlarmProcessorStateMachine"
