@@ -43,7 +43,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.7
       Description: ''
       MemorySize: 128
       Timeout: 30
@@ -57,7 +57,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.7
       Description: ''
       MemorySize: 128
       Timeout: 30
@@ -67,7 +67,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.7
       Description: ''
       MemorySize: 128
       Timeout: 30
