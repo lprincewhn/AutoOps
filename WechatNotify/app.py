@@ -32,7 +32,7 @@ def send_msg(msg):
 
 def lambda_handler(event, context):
     print(f'Event In: {event}')
-    message = event["message"]
+    message = event["Records"][0]["Sns"]["Message"]
     res = send_msg(message)
     print(f'Response: {res}')
     return json.loads(res.text)

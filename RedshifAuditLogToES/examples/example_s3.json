@@ -1,0 +1,38 @@
+{
+    "Records": [
+        {
+            "eventVersion": "2.1",
+            "eventSource": "aws:s3",
+            "awsRegion": "us-east-1",
+            "eventTime": "2021-06-24T12:45:52.593Z",
+            "eventName": "ObjectCreated:Put",
+            "userIdentity": {
+                "principalId": "<principal-id>"
+            },
+            "requestParameters": {
+                "sourceIPAddress": "1.1.1.1"
+            },
+            "responseElements": {
+                "x-amz-request-id": "XXXXXXXXXXX",
+                "x-amz-id-2": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            },
+            "s3": {
+                "s3SchemaVersion": "1.0",
+                "configurationId": "1f4132d0-2e4e-42c3-87ec-b7e4fc936674",
+                "bucket": {
+                    "name": "<bucket-name>",
+                    "ownerIdentity": {
+                        "principalId": "<principal-id>"
+                    },
+                    "arn": "arn:aws:s3:::<bucket-name>"
+                },
+                "object": {
+                    "key": "svhw/AWSLogs/<aws-account-id>/redshift/us-east-1/2021/06/24/<aws-account-id>_redshift_us-east-1_<cludter-id>_useractivitylog_2021-06-24T01%3A46.gz",
+                    "size": 45996,
+                    "eTag": "6f60c15889a73c395aefa244afda69e2",
+                    "sequencer": "0060D47E87C01C5153"
+                }
+            }
+        }
+    ]
+}

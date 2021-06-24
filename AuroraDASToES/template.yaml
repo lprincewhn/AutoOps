@@ -1,22 +1,22 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service. 
+  Transform and deliver Aurora database activity stream to Amazon ElasticSearch service. 
 Metadata:
   AWS::ServerlessRepo::Application:
-    Name: AutoOpsCloudFrontLogsToES 
-    Description: Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service.
+    Name: AutoOpsAuroraDASToES 
+    Description: Transform and deliver Aurora database activity stream to Amazon ElasticSearch service.
     Author: whuaning
     SpdxLicenseId: Apache-2.0
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
 Parameters:
-  BucketName:
+  KinesisDataStreamArn:
     Type: String
-    Description: Name of S3 bucket storing CloudFront access standard logs. 
-  BatchSize:
+    Description: Arn of Kinesis data stream sending aurora database activities.
+  KMSKeyId:
     Type: String
-    Description: Number of record in a ElasticSearh bulk api call.
+    Description: KMS Key id to encrypt/decrypt data.
   ESRegion:
     Type: String
     Description: 'Enter SNS topic arn which notifications will send to. (Example: us-east-1)'
@@ -24,48 +24,40 @@ Parameters:
     Type: String
     Description: 'Enter SNS topic arn which notifications will send to. (EXample: https://es.example.com)'
 Resources:
-  CloudFrontLogTransformFunction:
+  AuroraDASTransformFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
       Runtime: python3.7
       Description: ''
-      MemorySize: 512
-      Timeout: 300
+      MemorySize: 128
+      Timeout: 60
       Policies: 
-        - S3ReadPolicy:
-            BucketName: !Ref BucketName 
+        - KMSDecryptPolicy:
+            KeyId: !Ref KMSKeyId 
+        - KinesisStreamReadPolicy:
+            StreamName: !Select [ 1, !Split [ '/', !Ref KinesisDataStreamArn ] ]
         - !Ref ESPostPolicy
       Events:
-        S3BucketEvent:
-          Type: S3
+        KinesisDataEvent:
+          Type: Kinesis
           Properties:
-            Bucket: !Ref CloudFrontLogBucket
-            Events:
-              - 's3:ObjectCreated:*'
+            StartingPosition: TRIM_HORIZON
+            Stream: !Ref KinesisDataStreamArn
       Environment:
         Variables:
           ESRegion: !Ref ESRegion
           ESEndpoint: !Ref ESEndpoint
-          BatchSize: !Ref BatchSize
   ESPostPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties: 
       PolicyDocument: '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["es:ESHttpGet"],"Resource": ["arn:aws:es:*:*:domain/*/","arn:aws:es:*:*:domain/*/_cluster/settings","arn:aws:es:*:*:domain/*/_cat/indices"]},{"Effect": "Allow","Action": "es:ListDomainNames","Resource": "*"},{"Effect": "Allow","Action": ["es:DescribeElasticsearchDomain"],"Resource": ["arn:aws:es:*:*:domain/*"]},{"Effect": "Allow","Action": ["es:ESHttpPost","es:ESHttpGet"],"Resource": ["arn:aws:es:*:*:domain/*/_opendistro/_sql"]}]}' 
-
-  CloudFrontLogBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-    Properties:
-      BucketName: !Ref BucketName 
-
 Outputs:
-  CloudFrontLogBucket:
-    Description: "Name of Bucket storing CloudFront access log"
-    Value: !Ref CloudFrontLogBucket 
   LambdaExecuteRole:
-    Description: "Arn of role used by lambda CloudFrontLogTransformFunction."
+    Description: "Arn of role used by lambda AuroraDASTransformFunctionRole."
     Value: 
       !Sub
         - arn:aws:iam::${AWS::AccountId}:role/${RoleName}
-        - RoleName: !Ref CloudFrontLogTransformFunctionRole
+        - RoleName: !Ref AuroraDASTransformFunctionRole
+
+
