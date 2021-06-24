@@ -30,8 +30,8 @@ Resources:
       Handler: app.lambda_handler
       Runtime: python3.7
       Description: ''
-      MemorySize: 128
-      Timeout: 60
+      MemorySize: 512 
+      Timeout: 300 
       Policies: 
         - KMSDecryptPolicy:
             KeyId: !Ref KMSKeyId 

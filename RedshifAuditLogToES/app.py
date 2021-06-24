@@ -35,7 +35,7 @@ def parseUserLog(key, data):
     items = re.split("\n", data)
     records = []
     for i in items:
-        logger.info(f"Item: {i}")
+        logger.debug(f"Item: {i}")
         fields = i.split('|')
         if len(fields)>=10:
             record = {
@@ -63,7 +63,7 @@ def parseConnectionLog(key, data):
     items = re.split("\n", data)
     records = []
     for i in items:
-        logger.info(f"Item: {i}")
+        logger.debug(f"Item: {i}")
         fields = i.split('|')
         if len(fields)>=19:
             record = {

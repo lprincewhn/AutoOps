@@ -15,6 +15,7 @@ from requests_aws4auth import AWS4Auth
 
 logging.basicConfig()
 logger = logging.getLogger("AuroraDASTransform")
+print(os.getenv("DEBUG", None))
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 class AuroraDasMasterKeyProvider(RawMasterKeyProvider):
@@ -63,6 +64,7 @@ def lambda_handler(event, context):
         streamName = eventSourceARN.split('/')[1]
         clusterId = streamName.split('-')[4]
         aurora_resource_id = f'cluster-{clusterId}'
+        region = r['awsRegion']
         record_data=json.loads(base64.b64decode(r['kinesis']['data']).decode())
         payload_decoded = base64.b64decode(record_data['databaseActivityEvents'])
         data_key_decoded = base64.b64decode(record_data['key'])
@@ -72,6 +74,8 @@ def lambda_handler(event, context):
         for i in json.loads(items)["databaseActivityEventList"]:
             # 此处可加入数据过滤逻辑
             index = None
+            i["region"] = region
+            i["clusterId"] = clusterId
             if i.get("startTime"):
                 i["timestamp"] = datetime.datetime.strptime(f'{i["startTime"][:23]}', '%Y-%m-%d %H:%M:%S.%f').timestamp()*1000
                 index = f'aurora-das-{i["startTime"][:10]}'
