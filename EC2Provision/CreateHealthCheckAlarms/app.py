@@ -4,10 +4,11 @@ import boto3
 
 def lambda_handler(event, context):
     print(f'Input: {event}')
+    region = os.getenv('AWS_REGION')
     client = boto3.client('cloudwatch')
     response = client.put_metric_alarm(
         AlarmName=f'EC2-{event["InstanceId"]}-Failed-SystemStatusCheck-Alarm',
-        AlarmActions=['arn:aws:automate:us-east-1:ec2:recover'],
+        AlarmActions=[f'arn:aws:automate:{region}:ec2:recover'],
         MetricName='StatusCheckFailed_System',
         Namespace='AWS/EC2',
         Statistic='Average',

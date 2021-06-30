@@ -1,8 +1,4 @@
 {
-  "version": "0",
-  "detail-type": "EC2 Instance State-change Notification",
-  "source": "aws.ec2",
-  "region": "ap-southeast-1"
   "detail": {
     "instance-id": "i-09517573f93ed3b75",
     "state": "running"

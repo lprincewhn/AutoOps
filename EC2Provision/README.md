@@ -24,6 +24,6 @@ This state machine was triggered by CloudTrail events so you need to create a tr
 ## Start
 
 ```
-# STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsEC2Provision --region us-east-1 --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`EC2ProvisionStateMachine`].OutputValue' --output text)
-# aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://./examples/example_ec2_start.json  --region $REGION --no-cli-pager
+# STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsEC2Provision --region $REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`EC2ProvisionStateMachine`].OutputValue' --output text)
+# aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://./examples/example_ec2_start.json --region $REGION --no-cli-pager
 ```

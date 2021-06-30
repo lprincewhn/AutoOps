@@ -12,7 +12,7 @@ def lambda_handler(event, context):
         ]
     )
     print(f'Response: {response}')
-    tags_on_ec2 = response['Reservations'][0]['Instances'][0]['Tags']
+    tags_on_ec2 = response['Reservations'][0]['Instances'][0].get('Tags', [])
     print(f'EC2 tags: {tags_on_ec2}')
     tags_to_sync = list(map(lambda x:x.strip(), os.getenv('TAGS_TO_SYNC').split(',')))
     print(f'Tags to syc: {tags_to_sync}')

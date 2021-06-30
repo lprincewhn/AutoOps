@@ -48,7 +48,12 @@
                   "Variable": "$.PingStatus",
                   "StringEquals": "Online",
                   "Next": "WindowsOrLinux?"
-                }      
+                },
+                {
+                  "Variable": "$.Checks",
+                  "NumericGreaterThan": 15,
+                  "Next": "Fail"
+                }
               ],
               "Default": "Wait20Sec"      
             },
@@ -95,6 +100,10 @@
               "InputPath": "$",
               "ResultPath": "$",
               "End": true
+            },
+            "Fail": {
+              "Type": "Fail",
+              "Error": "Cannot get instance status from SSM."
             }
           }
         },
