@@ -35,6 +35,8 @@ You can pickup one region to deploy SNS topic
 - [AlarmNotify](AlarmNotify): Process CloudWatch alarms and send notifications
 - [MergeMetricData](MergeMetricData): Merge CloudWatch metric data to to centralized S3 bucket
 - [SecurityHarden](SecurityHarden): Harden security by AWS Guardduty
+- [RedshiftAuditLogToES](RedshiftAuditLogToES): Transform and deliver Redshift audit logs in S3 bucket to Amazon ElasticSearch service
+- [CloudFrontLogToES](CloudFrontLogToES): Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service
 
 ## How to try
 
