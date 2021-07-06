@@ -2,7 +2,7 @@
 
 This state machine check tags of AWS resources periodly and notify users when tags are not compliant with users' requirement.
 
-![](doc/AutoOps.png)
+![](doc/TagCompliance.png)
 
 ## Trigger
 
