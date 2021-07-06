@@ -26,7 +26,7 @@ Scheduled event from Cloudwatch. Defaultly it will do checking every day.
 
 ```
 # STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsTagCompliance --region us-east-1 --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`TagComplianceStateMachine`].OutputValue' --output text)
-# aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://./examples/Phd_event_example.json --region $REGION --no-cli-pager
+# aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input '{}' --region $REGION --no-cli-pager
 ```
 
 ## Uninstall
