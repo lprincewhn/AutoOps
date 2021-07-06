@@ -64,6 +64,7 @@ def lambda_handler(event, context):
     dbid = os.getenv('DBID')
     response = rds.describe_db_log_files(
         DBInstanceIdentifier=dbid,
+        FilenameContains='audit',
         FileLastWritten=int((datetime.datetime.now() - datetime.timedelta(hours=1)).timestamp()*1000)
     )
     filenames = event.get('filenames', list(map(lambda x: x.get('LogFileName'), response['DescribeDBLogFiles']))) 

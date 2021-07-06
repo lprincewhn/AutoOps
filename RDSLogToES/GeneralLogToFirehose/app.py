@@ -15,7 +15,7 @@ logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 rds = boto3.client('rds')
 firehose = boto3.client('firehose')
 
-def deliverMysqlGeneralLogToES(dbid, filename):
+def deliverMysqlGeneralLogToFirehose(dbid, filename):
     marker = '0'
     # Kinesis Firehose每次最多接受500条记录, 因此分批下载日志，每批500行，当返回行数>=500时，继续下载，小于500时表示下载完毕。
     cnt_response = 500
@@ -40,8 +40,6 @@ def deliverMysqlGeneralLogToES(dbid, filename):
                 record['command'] = ary[2]
                 if len(ary) >= 4:
                     record['argument'] = ' '.join(ary[3:])
-                # data = base64.b64encode(json.dumps(record).encode('utf-8'))
-                base64.b64encode()
                 records.append({'Data': json.dumps(record).encode('utf-8')})
             else:
                 logger.info(f'Skip linek: {i}')
@@ -69,7 +67,7 @@ def lambda_handler(event, context):
         if not re.match(r'.+[0-9]$', filename):
             continue
         logger.info(f'Processing {filename}...')
-        deliverMysqlGeneralLogToES(dbid, filename)
+        deliverMysqlGeneralLogToFirehose(dbid, filename)
 
 if __name__ == '__main__':
     lambda_handler({}, None)

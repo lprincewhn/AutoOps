@@ -110,7 +110,7 @@ Resources:
       MemorySize: 128
       Timeout: 30
       CodeUri: FormatEC2Alarm
-      Policies: []
+      Policies: [AmazonEC2ReadOnlyAccess]
   FormatRDSAlarmFunction:
     Type: 'AWS::Serverless::Function'
     Properties:

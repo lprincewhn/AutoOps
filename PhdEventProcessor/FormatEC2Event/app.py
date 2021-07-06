@@ -29,7 +29,7 @@ def lambda_handler(event, context):
         message = f'{timestamp},  AWS区域 {region} EC2 实例"{instanceName}"({instanceId}) 实例健康检查失败。'
     if message: 
         event['message'] = message
-        event['subject'] = '【AWS通知】EC2告警'
+        event['subject'] = '【AWS通知】EC2健康事件通知'
         event['receiver'] = os.getenv('RECEIVER', 'all')
     logger.info(f'Event Out: {event}')
     return event
