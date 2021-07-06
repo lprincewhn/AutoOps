@@ -7,10 +7,11 @@ def lambda_handler(event, context):
     region = os.getenv('AWS_REGION')
     client = boto3.client('cloudwatch')
     response = None
+    snsAction = os.getenv('SNS_TOPIC_ARN')
     try:
         response = client.put_metric_alarm(
             AlarmName=f'EC2-{event["InstanceId"]}-Failed-SystemStatusCheck-Alarm',
-            AlarmActions=[f'arn:aws:automate:{region}:ec2:recover'],
+            AlarmActions=[f'arn:aws:automate:{region}:ec2:recover', snsAction],
             MetricName='StatusCheckFailed_System',
             Namespace='AWS/EC2',
             Statistic='Average',
@@ -30,6 +31,7 @@ def lambda_handler(event, context):
     except:
         response = client.put_metric_alarm(
             AlarmName=f'EC2-{event["InstanceId"]}-Failed-SystemStatusCheck-Alarm',
+            AlarmActions=[snsAction],
             MetricName='StatusCheckFailed_System',
             Namespace='AWS/EC2',
             Statistic='Average',
@@ -49,7 +51,7 @@ def lambda_handler(event, context):
     try:
         response = client.put_metric_alarm(
             AlarmName=f'EC2-{event["InstanceId"]}-Failed-InstanceStatusCheck-Alarm',
-            AlarmActions=[f'arn:aws:automate:{region}:ec2:reboot'],
+            AlarmActions=[f'arn:aws:automate:{region}:ec2:reboot', snsAction],
             MetricName='StatusCheckFailed_Instance',
             Namespace='AWS/EC2',
             Statistic='Average',
@@ -69,6 +71,7 @@ def lambda_handler(event, context):
     except:
         response = client.put_metric_alarm(
             AlarmName=f'EC2-{event["InstanceId"]}-Failed-InstanceStatusCheck-Alarm',
+            AlarmActions=[snsAction],
             MetricName='StatusCheckFailed_Instance',
             Namespace='AWS/EC2',
             Statistic='Average',

@@ -18,7 +18,7 @@ This state machine was triggered by CloudTrail events so you need to create a tr
 # cd ~/AutoOps/EC2Provision
 # REGION=<region>
 # sam build
-# sam deploy --stack-name AutoOpsEC2Provision --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+# sam deploy --stack-name AutoOpsEC2Provision --region $REGION --parameter-overrides SnsTopicArn=$SNS_TOPIC_ARN --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 
 ## Start

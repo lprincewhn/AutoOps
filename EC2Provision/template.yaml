@@ -10,6 +10,10 @@ Metadata:
     SpdxLicenseId: Apache-2.0
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
 Resources:
   EC2ProvisionStateMachine:
     Type: AWS::Serverless::StateMachine
@@ -52,6 +56,10 @@ Resources:
       Timeout: 30
       CodeUri: CreateHealthCheckAlarms
       Policies: [CloudWatchFullAccess]
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref SnsTopicArn
+
   GetInstanceDetailFunction:
     Type: 'AWS::Serverless::Function'
     Properties:

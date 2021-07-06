@@ -1,4 +1,5 @@
 samconfig.toml
+branches
 #./template.yaml
 .aws-sam/
 samples/*
