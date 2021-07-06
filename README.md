@@ -32,7 +32,7 @@ You can pickup one region to deploy SNS topic
 - [RDSProvision](RDSProvision): Create/Delete alarms for RDS database nodes when they are started/terminated.
 - [ESProvision](ESProvision): Deploy CloudWatch alarms for AWS Elasticsearch domain
 - [CloudFrontProvision](CloudFrontProvision): Deploy CloudWatch alarms for AWS CloudFront distribution
-- [AlarmNotify](AlarmNotify): Process CloudWatch alarms and send notifications
+- [TagCompliance](TagCompliance): Check tags of EC2 periodly and notify users when tags are not compliant
 - [MergeMetricData](MergeMetricData): Merge CloudWatch metric data to to centralized S3 bucket
 - [SecurityHarden](SecurityHarden): Harden security by AWS Guardduty
 - [RedshiftAuditLogToES](RedshiftAuditLogToES): Transform and deliver Redshift audit logs in S3 bucket to Amazon ElasticSearch service

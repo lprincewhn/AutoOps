@@ -1,0 +1,69 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AutoOps contains useful operational processes represented as a state machines with AWS StepFunctions.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsTagCompliance
+    Description: A toolkit for auto ops in AWS.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
+Resources:
+  TagComplianceStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        TagCheckFunctionArn: !GetAtt TagCheckFunction.Arn      
+        NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "rate(1 day)" 
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref TagCheckFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifySnsFunction
+
+  TagCheckFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: TagCheck
+      Policies: [AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          TAGS_TO_CHECK: 'Project'
+
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: NotifySns
+      Policies: [AmazonSNSFullAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn     
+
+Outputs:
+  TagComplianceStateMachine:
+    Description: "ARN of TagComplianceStateMachine"
+    Value: !Ref TagComplianceStateMachine 
