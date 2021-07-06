@@ -2,7 +2,7 @@
 
 This project contains useful operational processes represented as state machines with AWS StepFunctions. 
 
-![](doc/AutoOps.png)
+![](doc/TagCompliance.png)
 
 ## How to deploy
 
