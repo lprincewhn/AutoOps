@@ -13,6 +13,13 @@ do
   sam deploy --stack-name AutoOpsAlarmProcessor --region $REGION --parameter-overrides SnsTopicArn=$SNS_TOPIC_ARN --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 done
 cd ..
+cd PhdEventProcessor
+for REGION in ${REGIONS}
+do
+  sam build
+  sam deploy --stack-name AutoOpsPhdEventProcessor --region $REGION --parameter-overrides SnsTopicArn=$SNS_TOPIC_ARN --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+done
+cd ..
 cd EC2Provision
 for REGION in ${REGIONS}
 do
