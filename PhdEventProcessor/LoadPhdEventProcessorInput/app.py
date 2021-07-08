@@ -6,7 +6,7 @@ def lambda_handler(event, context):
     service = event["detail"]["service"]
     eventTypeCode = event["detail"]["eventTypeCode"]
     eventTypeCategory = event["detail"]["eventTypeCategory"]
-    beijing_time = datetime.datetime.strptime(event["detail"]["startTime"][:25], '%a, %d %b %Y %H:%M:%S').astimezone(tz =datetime.timezone(datetime.timedelta(hours=8)))
+    beijing_time = datetime.datetime.strptime(event["detail"]["startTime"][:25].strip(), '%a, %d %b %Y %H:%M:%S').astimezone(tz =datetime.timezone(datetime.timedelta(hours=8)))
     eventDescription = event["detail"].get("eventDescription")
     affectedEntities = event["detail"].get("affectedEntities")
     return {
