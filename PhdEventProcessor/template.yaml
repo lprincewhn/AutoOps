@@ -63,6 +63,7 @@ Resources:
       MemorySize: 128
       Timeout: 30
       CodeUri: FormatEC2MaintenanceEvent
+      Policies: [AmazonEC2ReadOnlyAccess]
 
   FormatGeneralEventFunction:
     Type: 'AWS::Serverless::Function'
