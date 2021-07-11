@@ -32,7 +32,7 @@ AWS区域：{region}
 资源类型：EC2实例
 资源名称：{resourceNameStr[:-1]}
 事件：EC2维护重启
-详情：EC2实例在维护期间将会不可用并自动重启。如果该实例不带实例存储，你可以在{timestamp}之前手动进行Stop/Start操作，该操作将会使得实例被迁移到健康主机上。{eventDescription}
+详情：EC2实例在维护期间将会不可用并自动重启。如果该实例不带实例存储，你可以在{timestamp}之前手动进行Stop/Start操作，该操作将会使得实例被迁移到健康主机上。如果该实例带实例存储，Stop/Start操作将使得实例存储中的数据丢失，请谨慎操作。原始事件信息：{eventDescription}
 '''
     if message:
         event['message'] = message

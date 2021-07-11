@@ -64,6 +64,9 @@ Resources:
       Timeout: 30
       CodeUri: FormatEC2MaintenanceEvent
       Policies: [AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          RECEIVER: 'all'
 
   FormatGeneralEventFunction:
     Type: 'AWS::Serverless::Function'
