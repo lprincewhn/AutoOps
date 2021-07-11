@@ -22,7 +22,7 @@ Resources:
       DefinitionUri: state.asl.json
       DefinitionSubstitutions:
         LoadPhdEventProcessorInputFunctionArn: !GetAtt LoadPhdEventProcessorInputFunction.Arn
-        FormatEC2EventFunctionArn: !GetAtt FormatEC2EventFunction.Arn
+        FormatEC2MaintenanceEventFunctionArn: !GetAtt FormatEC2MaintenanceEventFunction.Arn
         FormatGeneralEventFunctionArn: !GetAtt  FormatGeneralEventFunction.Arn
         NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
       Events:
@@ -38,7 +38,7 @@ Resources:
         - LambdaInvokePolicy:
             FunctionName: !Ref LoadPhdEventProcessorInputFunction
         - LambdaInvokePolicy:
-            FunctionName: !Ref FormatEC2EventFunction 
+            FunctionName: !Ref FormatEC2MaintenanceEventFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref FormatGeneralEventFunction 
         - LambdaInvokePolicy:
@@ -54,7 +54,7 @@ Resources:
       Timeout: 30
       CodeUri: LoadPhdEventProcessorInput
 
-  FormatEC2EventFunction:
+  FormatEC2MaintenanceEventFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
@@ -62,7 +62,7 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: FormatEC2Event
+      CodeUri: FormatEC2MaintenanceEvent
 
   FormatGeneralEventFunction:
     Type: 'AWS::Serverless::Function'

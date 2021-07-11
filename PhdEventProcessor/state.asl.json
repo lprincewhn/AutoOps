@@ -13,16 +13,16 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.service",
-          "StringMatches": "sfdsafdadasdf",
-          "Next": "FormatEC2Event"
+          "Variable": "$.eventTypeCode",
+          "StringEquals": "AWS_EC2_INSTANCE_REBOOT_FLEXIBLE_MAINTENANCE_SCHEDULED",
+          "Next": "FormatEC2MaintenanceEvent"
         }
       ],
       "Default": "FormatGeneralEvent"
     },
-    "FormatEC2Event": {
+    "FormatEC2MaintenanceEvent": {
       "Type": "Task",
-      "Resource":"${FormatEC2EventFunctionArn}",
+      "Resource":"${FormatEC2MaintenanceEventFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
       "Next": "NeedNotify?"

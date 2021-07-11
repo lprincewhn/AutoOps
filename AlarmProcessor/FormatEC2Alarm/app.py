@@ -19,7 +19,7 @@ def lambda_handler(event, context):
     logger.info(f'Response: {response}')
     tags_on_ec2 = response['Reservations'][0]['Instances'][0].get('Tags', [])
     nametag = list(filter(lambda x:x.get('Key')=='Name', tags_on_ec2))
-    instanceName = nametag[0].get('Value') if nametag else ''
+    instanceName = nametag[0].get('Value') if nametag else '-'
     private_ip = response['Reservations'][0]['Instances'][0].get('PrivateIpAddress')
     message = None
     if 'High-CPUUtilization-Alarm' in alarmName:
