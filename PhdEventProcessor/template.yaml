@@ -77,6 +77,9 @@ Resources:
       MemorySize: 128
       Timeout: 30
       CodeUri: FormatGeneralEvent
+      Environment:
+        Variables:
+          RECEIVER: 'all'
 
   NotifySnsFunction:
     Type: 'AWS::Serverless::Function'

@@ -91,6 +91,9 @@ Resources:
       Timeout: 30
       CodeUri: FormatCloudFrontAlarm
       Policies: [CloudFrontReadOnlyAccess,CloudWatchReadOnlyAccess]
+      Environment:
+        Variables:
+          RECEIVER: 'all'
   FormatESAlarmFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -101,6 +104,9 @@ Resources:
       Timeout: 30
       CodeUri: FormatESAlarm
       Policies: []
+      Environment:
+        Variables:
+          RECEIVER: 'all'
   FormatEC2AlarmFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -111,6 +117,9 @@ Resources:
       Timeout: 30
       CodeUri: FormatEC2Alarm
       Policies: [AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          RECEIVER: 'all'
   FormatRDSAlarmFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -121,6 +130,9 @@ Resources:
       Timeout: 30
       CodeUri: FormatRDSAlarm
       Policies: []
+      Environment:
+        Variables:
+          RECEIVER: 'all'
   FormatLinuxDiskAlarmFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -131,6 +143,9 @@ Resources:
       Timeout: 30
       CodeUri: FormatLinuxDiskAlarm
       Policies: []
+      Environment:
+        Variables:
+          RECEIVER: 'all'
 Outputs:
   AlarmProcessorStateMachine:
     Description: "ARN of AlarmProcessorStateMachine"
