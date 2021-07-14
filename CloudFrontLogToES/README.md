@@ -1,5 +1,7 @@
 #  Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service.
 
+![](doc/CloudFrontLogToES.png)
+
 * Following command are for AWSCLIv2, if you are using v1, please remove the --no-cli-pager option.
 
 ## Deploy 
