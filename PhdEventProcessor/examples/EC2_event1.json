@@ -3,7 +3,7 @@
   "id": "65f33021-0778-fdf5-66ac-92ed1940ca72",
   "detail-type": "AWS Health Event",
   "source": "aws.health",
-  "account": "442382909905",
+  "account": "123456789012",
   "time": "2021-07-11T10:49:29Z",
   "region": "us-east-1",
   "resources": [

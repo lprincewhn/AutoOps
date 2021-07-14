@@ -10,6 +10,11 @@ Metadata:
     SpdxLicenseId: Apache-2.0
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
 Resources:
   EC2ProvisionStateMachine:
     Type: AWS::Serverless::StateMachine
@@ -28,6 +33,7 @@ Resources:
         DeleteEC2AlarmsFunctionArn: !GetAtt DeleteEC2AlarmsFunction.Arn
         GetSSMInformationFunctionArn: !GetAtt GetSSMInformationFunction.Arn
         CreateEbsTagsFromEc2FunctionArn: !GetAtt CreateEbsTagsFromEc2Function.Arn
+        NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
       Events:
         CloudWatchEvent:
           Type: CloudWatchEvent 
@@ -40,7 +46,7 @@ Resources:
               detail:
                 state: 
                   - running
-                  - terminated
+                  - stopping
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref LoadEC2ProvisionInputFunction 
@@ -66,6 +72,8 @@ Resources:
             FunctionName: !Ref GetSSMInformationFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref CreateEbsTagsFromEc2Function
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifySnsFunction
   CreateEbsTagsFromEc2Function:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -199,6 +207,19 @@ Resources:
       Timeout: 30
       CodeUri: DeleteEC2Alarms
       Policies: [CloudWatchFullAccess]  
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: NotifySns
+      Policies: [AmazonEC2ReadOnlyAccess, AmazonSNSFullAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn    
   CreateWindowsDiskAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:

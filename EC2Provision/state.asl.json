@@ -71,6 +71,13 @@
       "Resource": "${DeleteEC2AlarmsFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
+      "Next": "NotifySNS"
+    },
+    "NotifySNS": {
+      "Type": "Task",
+      "Resource": "${NotifySnsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
       "End": true
     }
   }
