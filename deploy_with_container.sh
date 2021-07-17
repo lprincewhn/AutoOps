@@ -41,3 +41,10 @@ do
   sam deploy --stack-name AutoOpsESProvision --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 done
 cd ..
+cd ASGEventProcessor
+for REGION in ${REGIONS}
+do
+  sam build --use-container
+  sam deploy --stack-name AutoOpsASGEventProcessor --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+done
+cd ..
