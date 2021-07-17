@@ -1,0 +1,41 @@
+{
+  "Comment": "Format ASG events and send notification.",
+  "StartAt": "LoadASGEventProcessorInput",
+  "States": {
+    "LoadASGEventProcessorInput": {
+      "Type": "Task",
+      "Resource": "${LoadASGEventProcessorInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "FormatASGEvent"
+    },
+    "FormatASGEvent": {
+      "Type": "Task",
+      "Resource":"${FormatASGEventFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "NeedNotify?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.message",
+          "IsPresent": true,
+          "Next": "NotifySns"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "NotifySns": {
+      "Type": "Task",
+      "Resource": "${NotifySnsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "NoNeedNotify": {
+      "Type": "Succeed"
+    }
+  }
+}
