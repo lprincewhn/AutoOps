@@ -10,6 +10,7 @@ logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):
     logger.info(f'Event In: {event}')
+    account = event['account']
     region = event['region']
     eventTypeCode = event["eventTypeCode"]
     timestamp = event["timestamp"]
@@ -28,6 +29,7 @@ def lambda_handler(event, context):
     message = None
     if 'AWS_EC2_INSTANCE_REBOOT_FLEXIBLE_MAINTENANCE_SCHEDULED' in eventTypeCode:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：EC2实例
 资源名称：{resourceNameStr[:-1]}
@@ -36,6 +38,7 @@ AWS区域：{region}
 '''
     if 'AWS_EC2_PERSISTENT_INSTANCE_RETIREMENT_SCHEDULED' in eventTypeCode:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：EC2实例
 资源名称：{resourceNameStr[:-1]}

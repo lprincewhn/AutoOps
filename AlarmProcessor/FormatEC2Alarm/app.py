@@ -10,6 +10,7 @@ logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):
     logger.info(f'Event In: {event}')
+    account = event['account']
     region = event['region']
     ec2 = boto3.client('ec2', region_name=region)
     alarmName = event["alarmName"]
@@ -24,6 +25,7 @@ def lambda_handler(event, context):
     message = None
     if 'High-CPUUtilization-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：EC2实例
 资源名称：{instanceName} ({instanceId}, {private_ip})
@@ -32,6 +34,7 @@ AWS区域：{region}
 '''
     if 'Failed-SystemStatusCheck-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：EC2实例
 资源名称：{instanceName} ({instanceId}, {private_ip})
@@ -40,6 +43,7 @@ AWS区域：{region}
 '''
     if 'Failed-InstanceStatusCheck-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：EC2实例
 资源名称：{instanceName} ({instanceId}, {private_ip})

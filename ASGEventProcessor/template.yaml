@@ -25,7 +25,7 @@ Resources:
         FormatASGEventFunctionArn: !GetAtt FormatASGEventFunction.Arn
         NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
       Events:
-        HealthEvent:
+        ASGEvent:
           Type: CloudWatchEvent
           Properties:
             Pattern:

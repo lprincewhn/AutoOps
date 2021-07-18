@@ -6,6 +6,7 @@ import time
     
 def lambda_handler(event, context):
     print(f'Event In: {event}')
+    account = event['account']
     region = event['region']
     alarmName = event["alarmName"]
     timestamp = event["timestamp"]
@@ -14,6 +15,7 @@ def lambda_handler(event, context):
     message = None
     if 'ClusterStatus.red-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -22,6 +24,7 @@ AWS区域：{region}
 '''
     if 'ClusterStatus.yellow-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -30,6 +33,7 @@ AWS区域：{region}
 '''
     if 'Low-FreeStorageSpace-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -38,6 +42,7 @@ AWS区域：{region}
 '''
     if 'ClusterIndexWritesBlocked-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -45,6 +50,7 @@ AWS区域：{region}
 '''
     if 'Low-Nodes-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -53,6 +59,7 @@ AWS区域：{region}
 '''
     if 'AutomatedSnapshotFailure-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -60,6 +67,7 @@ AWS区域：{region}
 '''
     if 'CPUUtilization-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -68,6 +76,7 @@ AWS区域：{region}
 '''
     if 'JVMMemoryPressure-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -76,6 +85,7 @@ AWS区域：{region}
 '''
     if 'KMSKeyError-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}
@@ -84,6 +94,7 @@ AWS区域：{region}
 '''
     if 'KMSKeyInaccessible' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：ElasticSearch集群
 资源名称：{esdomain_name}

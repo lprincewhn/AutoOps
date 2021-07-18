@@ -10,6 +10,7 @@ logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):
     logger.info(f'Event In: {event}')
+    account = event['account']
     region = event['region']
     eventType = event["eventType"]
     timestamp = event["timestamp"]
@@ -27,6 +28,7 @@ def lambda_handler(event, context):
             instanceName = nametag[0].get('Value') if nametag else '-'
             instanceNameStr += f'{instanceName} ({i.get("InstanceId")}, {i.get("PrivateIpAddress")}),'
     message = f'''时间: {timestamp}
+AWS帐号: {account}
 AWS区域：{region}
 资源类型：EC2自动伸缩组(ASG)
 资源名称：{asgName}

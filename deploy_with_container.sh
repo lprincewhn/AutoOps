@@ -5,46 +5,8 @@ sam deploy --stack-name AutoOpsCommon --region $MAIN_REGION --confirm-changeset 
 SNS_TOPIC_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsCommon --region $MAIN_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`SNSTopic`].OutputValue' --output text)
 cd ..
 
-REGIONS=(us-east-1)
-cd AlarmProcessor
-for REGION in ${REGIONS}
-do 
-  sam build --use-container
-  sam deploy --stack-name AutoOpsAlarmProcessor --region $REGION --parameter-overrides SnsTopicArn=$SNS_TOPIC_ARN --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
-done
-cd ..
-cd PhdEventProcessor
+REGIONS=(us-east-1 us-east-2)
 for REGION in ${REGIONS}
 do
-  sam build --use-container
-  sam deploy --stack-name AutoOpsPhdEventProcessor --region $REGION --parameter-overrides SnsTopicArn=$SNS_TOPIC_ARN --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+  zsh deploy_region_with_container.sh $REGION $SNS_TOPIC_ARN
 done
-cd ..
-cd EC2Provision
-for REGION in ${REGIONS}
-do
-  sam build --use-container
-  sam deploy --stack-name AutoOpsEC2Provision --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
-done
-cd ..
-cd RDSProvision
-for REGION in ${REGIONS}
-do
-  sam build --use-container
-  sam deploy --stack-name AutoOpsRDSProvision --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
-done
-cd ..
-cd ESProvision
-for REGION in ${REGIONS}
-do
-  sam build --use-container
-  sam deploy --stack-name AutoOpsESProvision --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
-done
-cd ..
-cd ASGEventProcessor
-for REGION in ${REGIONS}
-do
-  sam build --use-container
-  sam deploy --stack-name AutoOpsASGEventProcessor --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
-done
-cd ..

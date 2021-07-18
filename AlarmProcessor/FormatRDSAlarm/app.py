@@ -6,6 +6,7 @@ import time
     
 def lambda_handler(event, context):
     print(f'Event In: {event}')
+    account = event['account']
     region = event['region']
     alarmName = event["alarmName"]
     timestamp = event["timestamp"]
@@ -14,6 +15,7 @@ def lambda_handler(event, context):
     message = None
     if 'Low-EBSIOBalance-Alarm' in alarmName:
         message = f'''时间: {timestamp}
+AWS帐号：{account}
 AWS区域：{region}
 资源类型：RDS实例
 资源名称：{dbInstance}

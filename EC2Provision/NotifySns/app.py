@@ -8,6 +8,7 @@ logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):
     print(f'Event In: {event}')
+    account = event['account']
     region = event['region']
     ec2 = boto3.client('ec2', region_name=region)
     instanceId = event["InstanceId"]
@@ -18,6 +19,7 @@ def lambda_handler(event, context):
     instanceName = nametag[0].get('Value') if nametag else '-'
     private_ip = response['Reservations'][0]['Instances'][0].get('PrivateIpAddress')
     message = f'''时间: {event['timestamp']}
+AWS帐号: {account}
 AWS区域：{region}
 资源类型：EC2实例
 资源名称：{instanceName} ({instanceId}, {private_ip})
