@@ -7,6 +7,13 @@
       "Resource": "${LoadComplianceNotifyInputFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
+      "Next": "FormatIamComplianceEvent"
+    },
+    "FormatIamComplianceEvent": {
+      "Type": "Task",
+      "Resource": "${FormatIamComplianceEventFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
       "Next": "NeedNotify?"
     },
     "NeedNotify?": {
