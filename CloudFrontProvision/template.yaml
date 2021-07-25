@@ -20,6 +20,10 @@ Resources:
         LoadCloudFrontProvisionInputFunctionArn: !GetAtt LoadCloudFrontProvisionInputFunction.Arn
         CreateDistributionAlarmsFunctionArn: !GetAtt CreateDistributionAlarmsFunction.Arn
         DeleteDistributionAlarmsFunctionArn: !GetAtt DeleteDistributionAlarmsFunction.Arn
+        GetDistributionTagFunctionArn: !GetAtt GetDistributionTagFunction.Arn
+        GetUserAttributeFunctionArn: !GetAtt GetUserAttributeFunction.Arn
+        GetRoleAttributeFunctionArn: !GetAtt GetRoleAttributeFunction.Arn  
+        UpdateDistributionTagFunctionArn: !GetAtt UpdateDistributionTagFunction.Arn  
       Events:
         CWEvent:
           Type: CloudWatchEvent 
@@ -41,6 +45,14 @@ Resources:
             FunctionName: !Ref CreateDistributionAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref DeleteDistributionAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetDistributionTagFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetUserAttributeFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetRoleAttributeFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref UpdateDistributionTagFunction
 
   CreateDistributionAlarmsFunction:
     Type: 'AWS::Serverless::Function'
@@ -73,6 +85,50 @@ Resources:
       MemorySize: 128
       Timeout: 30
       CodeUri: LoadCloudFrontProvisionInput
+
+  GetDistributionTagFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: GetDistributionTag
+      Policies: [CloudFrontReadOnlyAccess]
+
+  GetRoleAttributeFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30  
+      CodeUri: GetRoleAttribute
+      Policies: [IAMReadOnlyAccess]
+  
+  UpdateDistributionTagFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: UpdateDistributionTag
+      Policies: [CloudFrontFullAccess]
+  
+  GetUserAttributeFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: GetUserAttribute
+      Policies: [IAMReadOnlyAccess]
 
 Outputs:
   CloudFrontProvisionStateMachine:

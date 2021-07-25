@@ -6,7 +6,7 @@ def lambda_handler(event, context):
     print(f'Event In: {event}')
     client = ec2 = boto3.client('cloudwatch')
     response = client.describe_alarms(
-        AlarmNamePrefix=f'CloudFront-{event["distributionId"]}'
+        AlarmNamePrefix=f'CloudFront-{event["DistributionId"]}'
     )
     print(f'Response: {response}')
     response = client.delete_alarms(

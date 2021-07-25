@@ -21,3 +21,9 @@
 # STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsCloudFrontProvision --region us-east-1 --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontProvisionStateMachine`].OutputValue' --output text)
 # aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://./examples/example_create_distribution.json  --region $REGION --no-cli-pager
 ```
+
+## Uninstall
+
+```
+# aws cloudformation delete-stack --stack-name AutoOpsCloudFrontProvision --region $REGION --no-cli-pager
+```

@@ -1,12 +1,17 @@
 import os
 import json
 import boto3
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger("ComplianceProcessor")
+logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):
-    print(f'Event In: {event}')
+    logger.info(f'Event In: {event}')
     client = ec2 = boto3.client('cloudwatch')
     response = client.put_metric_alarm(
-        AlarmName=f'CloudFront-{event["distributionId"]}-High-5xxErrorRate-Alarm',
+        AlarmName=f'CloudFront-{event["DistributionId"]}-High-5xxErrorRate-Alarm',
         ActionsEnabled=False,
         MetricName='5xxErrorRate',
         Namespace='AWS/CloudFront',
@@ -16,7 +21,7 @@ def lambda_handler(event, context):
             'Value': 'Global'
         },{
             'Name': 'DistributionId',
-            'Value': event["distributionId"] 
+            'Value': event["DistributionId"] 
         }],
         Period=300,
         EvaluationPeriods=2,
@@ -26,9 +31,9 @@ def lambda_handler(event, context):
         TreatMissingData='missing',
         Tags=[]
     )
-    print(f'Response: {response}')
+    logger.info(f'Response: {response}')
     response = client.put_metric_alarm(
-        AlarmName=f'CloudFront-{event["distributionId"]}-High-OriginBandwidth-Alarm',
+        AlarmName=f'CloudFront-{event["DistributionId"]}-High-OriginBandwidth-Alarm',
         ActionsEnabled=False,
         Metrics=[{
             'Id': 'origin_bandwidth',
@@ -46,7 +51,7 @@ def lambda_handler(event, context):
                         'Value': 'Global'
                     },{
                         'Name': 'DistributionId',
-                        'Value': event["distributionId"]
+                        'Value': event["DistributionId"]
                     }]
                 },
                 'Period': 300,
@@ -65,7 +70,7 @@ def lambda_handler(event, context):
                         'Value': 'Global'
                     },{
                         'Name': 'DistributionId',
-                        'Value': event["distributionId"]
+                        'Value': event["DistributionId"]
                     }]
                 },
                 'Period': 300,
@@ -81,9 +86,9 @@ def lambda_handler(event, context):
         TreatMissingData='missing',
         Tags=[]
     )
-    print(f'Response: {response}')
+    logger.info(f'Response: {response}')
     response = client.put_metric_alarm(
-        AlarmName=f'CloudFront-{event["distributionId"]}-High-Requests-Alarm',
+        AlarmName=f'CloudFront-{event["DistributionId"]}-High-Requests-Alarm',
         ActionsEnabled=False,
         MetricName='Requests',
         Namespace='AWS/CloudFront',
@@ -93,7 +98,7 @@ def lambda_handler(event, context):
             'Value': 'Global'
         },{
             'Name': 'DistributionId',
-            'Value': event["distributionId"]
+            'Value': event["DistributionId"]
         }],
         Period=300,
         EvaluationPeriods=1,
@@ -103,9 +108,9 @@ def lambda_handler(event, context):
         TreatMissingData='missing',
         Tags=[]
     )
-    print(f'Response: {response}')
+    logger.info(f'Response: {response}')
     response = client.put_metric_alarm(
-        AlarmName=f'CloudFront-{event["distributionId"]}-Low-RequestsChangeRate-Alarm',
+        AlarmName=f'CloudFront-{event["DistributionId"]}-Low-RequestsChangeRate-Alarm',
         ActionsEnabled=False,
         Metrics=[{
             'Id': 'request_change_rate',
@@ -133,7 +138,7 @@ def lambda_handler(event, context):
                         'Value': 'Global'
                     },{
                         'Name': 'DistributionId',
-                        'Value': event["distributionId"]
+                        'Value': event["DistributionId"]
                     }]
                 },
                 'Period': 300,
@@ -149,5 +154,5 @@ def lambda_handler(event, context):
         TreatMissingData='missing',
         Tags=[]
     )
-    print(f'Response: {response}')
+    logger.info(f'Response: {response}')
     return event
