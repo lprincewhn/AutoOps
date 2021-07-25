@@ -11,14 +11,14 @@
       "resourceId": "AIDXXXXXXXXXXXX",
       "awsRegion": "us-east-1",
       "awsAccountId": "123456789012",
-      "configRuleName": "AutoOpsComplianceProcesso-IamUserComplianceConfigR-MAXHQZSV8NW7",
+      "configRuleName": "AutoOpsComplianceProcesso-IamUserConfigRule-MAXHQZSV8NW7",
       "recordVersion": "1.0",
       "configRuleARN": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-xhdoh5",
       "messageType": "ComplianceChangeNotification",
       "newEvaluationResult": {
         "evaluationResultIdentifier": {
           "evaluationResultQualifier": {
-            "configRuleName": "AutoOpsComplianceProcesso-IamUserComplianceConfigR-MAXHQZSV8NW7",
+            "configRuleName": "AutoOpsComplianceProcesso-IamUserConfigRule-MAXHQZSV8NW7",
             "resourceType": "AWS::IAM::User",
             "resourceId": "AIDXXXXXXXXXXXX"
           },

@@ -19,6 +19,8 @@ State machine to process non-compliant resource in AWS Config and send notificat
 
 ## Config
 
+Set value of following parameters according your requirement:
+
 1. Parameters of IamUserComplianceConfigRule
 - requiredGroupList: IAM group names separated by comma which IAM users should be in.
 - exemptedUserList: IAM users which are exempted in compliance check.
@@ -30,8 +32,8 @@ State machine to process non-compliant resource in AWS Config and send notificat
 ## Start
 
 ```
-# STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsComplianceProcessor --region us-east-1 --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`PhdEventProcessor`].OutputValue' --output text)
-# aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://./examples/xxxxx.json --region $REGION --no-cli-pager
+# STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsComplianceProcessor --region us-east-1 --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`ComplianceProcessor`].OutputValue' --output text)
+# aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://./examples/example.json --region $REGION --no-cli-pager
 ```
 
 ## Uninstall

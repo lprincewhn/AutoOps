@@ -26,17 +26,20 @@ You can pickup one region to deploy SNS topic
     # sam deploy --stack-name AutoOpsCommon --region $MAIN_REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
     ```
 
-3. Go into sub directory of each process to continue.
+3. Go into sub-directory of each process to continue.
 
+- [AlarmProcessor](AlarmProcessor): Process CloudWatch alarms and send notifications
+- [PhdEventProcessor](PhdEventProcessor): Process PHD events and send notifications
+- [ComplianceProcessor](ComplianceProcessor): Process non-compliant resource in AWS Config and send notifications
 - [EC2Provision](EC2Provision): Create/Delete alarms for EC2 instances when they are started/terminated.
 - [RDSProvision](RDSProvision): Create/Delete alarms for RDS database nodes when they are started/terminated.
 - [ESProvision](ESProvision): Deploy CloudWatch alarms for AWS Elasticsearch domain
 - [CloudFrontProvision](CloudFrontProvision): Deploy CloudWatch alarms for AWS CloudFront distribution
+- [RedshiftAuditLogToES](RedshiftAuditLogToES): Transform and deliver Redshift audit logs in S3 bucket to Amazon ElasticSearch service
+- [CloudFrontLogToES](CloudFrontLogToES): Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service
 - [TagCompliance](TagCompliance): Check tags of EC2 periodly and notify users when tags are not compliant
 - [MergeMetricData](MergeMetricData): Merge CloudWatch metric data to to centralized S3 bucket
 - [SecurityHarden](SecurityHarden): Harden security by AWS Guardduty
-- [RedshiftAuditLogToES](RedshiftAuditLogToES): Transform and deliver Redshift audit logs in S3 bucket to Amazon ElasticSearch service
-- [CloudFrontLogToES](CloudFrontLogToES): Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service
 
 ## How to try
 
