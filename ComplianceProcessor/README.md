@@ -6,6 +6,10 @@ State machine to process non-compliant resource in AWS Config and send notificat
 
 * Following aws commands are for AWSCLIv2, if you are using v1, please remove the --no-cli-pager option.
 
+## Prerequisites
+
+Set-up AWS Config in regions. For global resources, only need to be included in one region.
+
 ## Deploy 
 
 ```
