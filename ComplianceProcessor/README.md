@@ -10,6 +10,8 @@ State machine to process non-compliant resource in AWS Config and send notificat
 
 Set-up AWS Config in regions. For global resources, only need to be included in one region.
 
+https://docs.aws.amazon.com/zh_cn/config/latest/developerguide/gs-console.html
+
 ## Deploy 
 
 ```

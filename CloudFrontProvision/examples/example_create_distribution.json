@@ -10,8 +10,8 @@
     "eventVersion": "1.08",
     "userIdentity": {
       "type": "IAMUser",
-      "arn": "arn:aws:iam::123456789012:user/admin",
-      "accountId": "123456789012",
+      "arn": "arn:aws:iam::597377428377:user/admin",
+      "accountId": "597377428377",
       "userName": "admin",
       "sessionContext": {
         "sessionIssuer": {},
@@ -28,8 +28,8 @@
     "awsRegion": "us-east-1",
     "responseElements": {
       "distribution": {
-        "aRN": "arn:aws:cloudfront::597377428377:distribution/E1487HBHQ8272D",
-        "id": "E1487HBHQ8272D",
+        "aRN": "arn:aws:cloudfront::597377428377:distribution/E1COGCNEHK0EFH",
+        "id": "E1COGCNEHK0EFH",
         "inProgressInvalidationBatches": 0,
         "status": "InProgress",
         "distributionConfig": {
