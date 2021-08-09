@@ -37,6 +37,18 @@
           }
         },
         {
+          "StartAt": "UpdateDomainNameTag",
+          "States": {
+            "UpdateDomainNameTag": {
+              "Type": "Task",
+              "Resource": "${UpdateDomainNameTagFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            }
+          }
+        },
+        {
           "StartAt": "GetDistributionTag",
           "States": {
             "GetDistributionTag": {

@@ -4,7 +4,7 @@ import boto3
 import logging
 
 logging.basicConfig()
-logger = logging.getLogger("ComplianceProcessor")
+logger = logging.getLogger("CloudFrontProvision")
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):

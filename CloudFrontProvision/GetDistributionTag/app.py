@@ -14,9 +14,6 @@ def lambda_handler(event, context):
         Id=event.get("DistributionId")
     )
     logger.info(f'Response: {response}')
-    aliases = response["DistributionConfig"]["Aliases"].get("Items", [])
-    aliases.sort()
-    event["DomainName"] = '/'.join(aliases)
     response = client.list_tags_for_resource(
         Resource=event.get("DistributionArn")
     )

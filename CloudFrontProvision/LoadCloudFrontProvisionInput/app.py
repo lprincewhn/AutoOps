@@ -16,10 +16,13 @@ def lambda_handler(event, context):
         operation = 'created'
         distributionId = event["detail"]["responseElements"]["distribution"]["id"]
         distributionArn = event["detail"]["responseElements"]["distribution"]["aRN"]
+        aliases = event["detail"]["responseElements"]["distribution"]["distributionConfig"]["aliases"].get("items", [])
+        aliases.sort()
     if eventName.startswith('Delete'):
         operation = 'deleted'
         distributionId = event["detail"]["requestParameters"]["id"]
         distributionArn = None
+        aliases = []
     identityName = None
     userIdentity = event["detail"]["userIdentity"]
     if userIdentity['type'] == 'IAMUser':
@@ -30,6 +33,7 @@ def lambda_handler(event, context):
         'IdentityType': userIdentity['type'], 
         'IdentityName': identityName, 
         'DistributionArn': distributionArn, 
-        'DistributionId': distributionId, 
+        'DistributionId': distributionId,
+        'DomainName': '/'.join(aliases),
         'operation': operation
     }

@@ -24,6 +24,7 @@ Resources:
         GetUserAttributeFunctionArn: !GetAtt GetUserAttributeFunction.Arn
         GetRoleAttributeFunctionArn: !GetAtt GetRoleAttributeFunction.Arn  
         UpdateDistributionTagFunctionArn: !GetAtt UpdateDistributionTagFunction.Arn  
+        UpdateDomainNameTagFunctionArn: !GetAtt UpdateDomainNameTagFunction.Arn  
       Events:
         CWEvent:
           Type: CloudWatchEvent 
@@ -53,6 +54,8 @@ Resources:
             FunctionName: !Ref GetRoleAttributeFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref UpdateDistributionTagFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref UpdateDomainNameTagFunction  
 
   CreateDistributionAlarmsFunction:
     Type: 'AWS::Serverless::Function'
@@ -117,6 +120,17 @@ Resources:
       MemorySize: 128
       Timeout: 30
       CodeUri: UpdateDistributionTag
+      Policies: [CloudFrontFullAccess]
+
+  UpdateDomainNameTagFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: UpdateDomainNameTag
       Policies: [CloudFrontFullAccess]
   
   GetUserAttributeFunction:
