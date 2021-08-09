@@ -1,0 +1,13 @@
+{
+  "Comment": "Notify users when finding security issues.",
+  "StartAt": "CreateResourceGroup",
+  "States": {
+    "CreateResourceGroup": {
+      "Type": "Task",
+      "Resource": "${CreateResourceGroupFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true 
+    }
+  }
+}

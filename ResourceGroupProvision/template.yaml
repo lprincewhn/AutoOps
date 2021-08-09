@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Create resource group by tag automatically.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsResourceGroupProvision
+    Description: Create resource group by tag automatically.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Resources:
+  RGProvisionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        CreateResourceGroupFunctionArn: !GetAtt CreateResourceGroupFunction.Arn 
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "rate(1 day)"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateResourceGroupFunction
+
+  CreateResourceGroupFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateResourceGroup 
+      Environment:
+        Variables:
+          TAG_KEY: 'Project'
+
+Outputs:
+  RGProvisionStateMachineArn:
+    Description: ARN of RGProvisionStateMachine
+    Value: !Ref RGProvisionStateMachine 

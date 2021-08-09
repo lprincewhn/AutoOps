@@ -34,7 +34,7 @@ AWS区域：{region}
 资源类型：EC2实例
 资源名称：{resourceNameStr[:-1]}
 事件：EC2维护重启
-详情：EC2实例在维护期间将会不可用并自动重启。如果该实例不带实例存储，你可以在{timestamp}之前手动进行Stop/Start操作，该操作将会使得实例被迁移到健康主机上。如果该实例带实例存储，Stop/Start操作将使得实例存储中的数据丢失，请谨慎操作。原始事件信息：{eventDescription}
+详情：EC2实例在维护期间将会不可用并自动重启。如果该实例不带实例存储，你可以在{timestamp}之前手动进行Stop/Start操作，该操作将会使得实例被迁移到健康主机上。如果该实例带实例存储，Stop/Start操作将使得实例存储中的数据丢失，请谨慎操作。通过以下链接可查看事件列表和修改维护窗口 https://{region}.console.aws.amazon.com/ec2/v2/home?region={region}#Events: 
 '''
     if 'AWS_EC2_PERSISTENT_INSTANCE_RETIREMENT_SCHEDULED' in eventTypeCode:
         message = f'''时间: {timestamp}
@@ -43,7 +43,7 @@ AWS区域：{region}
 资源类型：EC2实例
 资源名称：{resourceNameStr[:-1]}
 事件：EC2主机退服
-详情：退服后EC2实例将进入Stop状态。如果该实例不带实例存储，你可以在{timestamp}之前手动进行Stop/Start操作，该操作将会使得实例被迁移到健康主机上。如果该实例带实例存储，退役后或Stop/Start操作均将使得实例存储中的数据丢失，请及时备份。原始事件信息：{eventDescription}
+详情：退服后EC2实例将进入Stop状态。如果该实例不带实例存储，你可以在{timestamp}之前手动进行Stop/Start操作，该操作将会使得实例被迁移到健康主机上。如果该实例带实例存储，退役后或Stop/Start操作均将使得实例存储中的数据丢失，请及时备份。通过以下链接可查看事件列表和修改维护窗口 https://{region}.console.aws.amazon.com/ec2/v2/home?region={region}#Events: 
 '''
     if message:
         event['message'] = message
