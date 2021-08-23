@@ -34,10 +34,11 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: CreateResourceGroup 
+      CodeUri: CreateResourceGroup
+      Policies: [ResourceGroupsandTagEditorFullAccess]
       Environment:
         Variables:
-          TAG_KEY: 'Project'
+          TAG_KEYS: 'Project'
 
 Outputs:
   RGProvisionStateMachineArn:

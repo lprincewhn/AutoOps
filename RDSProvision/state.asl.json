@@ -15,7 +15,7 @@
         {
           "Variable": "$.operation",
           "StringEquals": "created",
-          "Next": "CreateRDSAlarms"
+          "Next": "GetRDSDetailInput"
         }, {
           "Variable": "$.operation",
           "StringEquals": "deleted",
@@ -23,6 +23,13 @@
         }      
       ],
       "Default": "NoActionNeeded"      
+    },
+    "GetRDSDetailInput": {
+      "Type": "Task",
+      "Resource": "${GetRDSDetailFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateRDSAlarms"
     },
     "CreateRDSAlarms": {
       "Type": "Task",

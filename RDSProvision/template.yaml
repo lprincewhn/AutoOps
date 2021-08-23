@@ -17,6 +17,7 @@ Resources:
       DefinitionUri: state.asl.json
       DefinitionSubstitutions:
         LoadRDSProvisionInputFunctionArn: !GetAtt LoadRDSProvisionInputFunction.Arn
+        GetRDSDetailFunctionArn: !GetAtt GetRDSDetailFunction.Arn
         CreateRDSAlarmsFunctionArn: !GetAtt CreateRDSAlarmsFunction.Arn
         DeleteRDSAlarmsFunctionArn: !GetAtt DeleteRDSAlarmsFunction.Arn
       Events:
@@ -34,11 +35,23 @@ Resources:
                   - "deletion"
       Policies:
         - LambdaInvokePolicy:
-            FunctionName: !Ref LoadRDSProvisionInputFunction 
+            FunctionName: !Ref LoadRDSProvisionInputFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetRDSDetailFunction 
         - LambdaInvokePolicy:
             FunctionName: !Ref CreateRDSAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref DeleteRDSAlarmsFunction
+  GetRDSDetailFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: GetRDSDetail
+      Policies: [AmazonRDSReadOnlyAccess]
   CreateRDSAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -51,7 +64,9 @@ Resources:
       Policies: [CloudWatchFullAccess]
       Environment:
         Variables:
-          FreeStorageSpace_Threshold: 20480 
+          FreeStorageSpace_Threshold: 20480
+          IOPS_Percentage_THreshold: 80
+          Throughput_Percentage_THreshold: 80
           Nodes_Threshold: 1
   DeleteRDSAlarmsFunction:
     Type: 'AWS::Serverless::Function'
