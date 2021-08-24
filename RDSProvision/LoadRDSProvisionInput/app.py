@@ -4,12 +4,15 @@ import datetime
 def lambda_handler(event, context):
     print(f'Event In: {event}')
     distributionId = None
-    eventCategories = event.get('detail').get('EventCategories')
+    eventId = event.get('detail').get('EventID')
     operation = None
-    if 'creation' in eventCategories:
+    if eventId == 'RDS-EVENT-0005':
         operation = 'created'
-        dbInstanceIdentifier = event.get('detail').get('SourceIdentifier').split(':')[-1]
-    if 'deletion' in eventCategories:
+        dbInstanceIdentifier = event.get('detail').get('SourceIdentifier').split(':')[-1] 
+    if eventId == 'RDS-EVENT-0003':
         operation = 'deleted'
+        dbInstanceIdentifier = event.get('detail').get('SourceIdentifier').split(':')[-1]
+    if eventId == 'RDS-EVENT-0017':
+        operation = 'storage_changed'
         dbInstanceIdentifier = event.get('detail').get('SourceIdentifier').split(':')[-1]
     return {'dbInstanceIdentifier': dbInstanceIdentifier, 'operation': operation}

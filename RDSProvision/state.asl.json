@@ -7,15 +7,19 @@
       "Resource": "${LoadRDSProvisionInputFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
-      "Next": "CreatedOrDeleted?"
+      "Next": "WhatOperation?"
     },
-    "CreatedOrDeleted?": {
+    "WhatOperation?": {
       "Type": "Choice",
       "Choices": [
         {
           "Variable": "$.operation",
           "StringEquals": "created",
-          "Next": "GetRDSDetailInput"
+          "Next": "GetRDSDetail"
+        }, {
+          "Variable": "$.operation",
+          "StringEquals": "storage_changed",
+          "Next": "GetRDSDetail"
         }, {
           "Variable": "$.operation",
           "StringEquals": "deleted",
@@ -24,7 +28,7 @@
       ],
       "Default": "NoActionNeeded"      
     },
-    "GetRDSDetailInput": {
+    "GetRDSDetail": {
       "Type": "Task",
       "Resource": "${GetRDSDetailFunctionArn}",
       "InputPath": "$",
