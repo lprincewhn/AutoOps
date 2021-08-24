@@ -1,3 +1,4 @@
+import os
 import json
 import boto3
 import datetime
@@ -28,7 +29,7 @@ AWS帐号：{account}
 AWS区域：{region}
 资源类型：RDS实例
 资源名称：{dbInstance}
-事件：IOPS超出阈值，对于GP2存储，请考虑增加其容量，对于IO1存储，请考虑增大预置IOPS
+事件：IOPS超出阈值，对于gp2存储，请考虑增加其容量，对于io1存储，请考虑增大预置IOPS
 详情：{event["reason"]}
 '''
     if 'High-Throughput-Alarm' in alarmName:
@@ -43,7 +44,7 @@ AWS区域：{region}
     if message: 
         event['message'] = message
         event['subject'] = '【AWS通知】RDS 告警'
-        event['receiver'] = 'all'
+        event['receiver'] = os.getenv('RECEIVER', 'all')
     print(f'Event Out: {event}')
     return event
 

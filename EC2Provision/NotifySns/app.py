@@ -25,6 +25,7 @@ AWS区域：{region}
 资源名称：{instanceName} ({instanceId}, {private_ip})
 事件：EC2实例停止
 '''
+    receiver = os.getenv('RECEIVER', 'all')
     print(f'SNSTopicArn: {os.getenv("SNSTopicArn")}')
     topicArn = os.getenv("SNSTopicArn")
     topicRegion = topicArn.split(':')[3]
@@ -33,7 +34,7 @@ AWS区域：{region}
         TopicArn=os.getenv('SNSTopicArn'),
         Message=message,
         Subject='【AWS通知】EC2停机',
-        MessageAttributes= {"receiver":  {"DataType": "String", "StringValue": event.get("receiver", "all")}}
+        MessageAttributes= {"receiver":  {"DataType": "String", "StringValue": receiver}}
     )
     print(response)
     return event

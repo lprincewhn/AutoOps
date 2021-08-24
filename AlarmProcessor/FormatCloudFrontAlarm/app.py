@@ -1,3 +1,4 @@
+import os
 import json
 import boto3
 import datetime
@@ -112,6 +113,7 @@ def lambda_handler(event, context):
     if message: 
         event['message'] = message
         event['subject'] = '【AWS通知】CloudFront告警'
+        event['receiver'] = os.getenv('RECEIVER', 'all')
     print(f'Event Out: {event}')
     return event
 
