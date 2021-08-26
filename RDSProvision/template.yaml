@@ -68,7 +68,6 @@ Resources:
           FreeStorageSpace_Threshold: 20480
           IOPS_Percentage_THreshold: 80
           Throughput_Percentage_THreshold: 80
-          Nodes_Threshold: 1
   DeleteRDSAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:

@@ -22,7 +22,6 @@ Resources:
     Properties:
       DefinitionUri: state.asl.json
       DefinitionSubstitutions:
-        CheckIamUserComplianceFunctionArn: !GetAtt CheckIamUserComplianceFunction.Arn
         LoadComplianceNotifyInputFunctionArn: !GetAtt LoadComplianceNotifyInputFunction.Arn
         FormatIamComplianceEventFunctionArn: !GetAtt FormatIamComplianceEventFunction.Arn
         NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
@@ -41,8 +40,6 @@ Resources:
                 newEvaluationResult:
                   complianceType:
                     - "NON_COMPLIANT"
-                configRuleName:
-                  - !Ref IamUserConfigRule 
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref LoadComplianceNotifyInputFunction
@@ -50,7 +47,6 @@ Resources:
             FunctionName: !Ref FormatIamComplianceEventFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref NotifySnsFunction
-    DependsOn: IamUserConfigRule 
 
   LoadComplianceNotifyInputFunction:
     Type: 'AWS::Serverless::Function'
@@ -88,52 +84,6 @@ Resources:
       Environment:
         Variables:
           SNSTopicArn: !Ref SnsTopicArn   
-
-  CheckIamUserComplianceFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: CheckIamUserCompliance
-      Policies: [AWSConfigRulesExecutionRole]
-
-  ConfigPermissionToCallLambda: 
-    Type: AWS::Lambda::Permission
-    Properties: 
-      FunctionName: 
-        Fn::GetAtt: 
-          - CheckIamUserComplianceFunction 
-          - Arn
-      Action: "lambda:InvokeFunction"
-      Principal: "config.amazonaws.com"
-
-  IamUserConfigRule: 
-    Type: AWS::Config::ConfigRule
-    Properties: 
-      InputParameters: 
-        requiredGroupList: "Group1,Group2" 
-        exemptedUserList: "admin,Admin" 
-      Scope: 
-        ComplianceResourceTypes: 
-          - "AWS::IAM::User"
-      Source: 
-        Owner: "CUSTOM_LAMBDA"
-        SourceDetails: 
-          - 
-            EventSource: "aws.config"
-            MessageType: "ConfigurationItemChangeNotification"
-          -
-            EventSource: "aws.config"
-            MessageType: "ScheduledNotification"
-            MaximumExecutionFrequency: "TwentyFour_Hours"
-        SourceIdentifier: 
-          Fn::GetAtt: 
-            - CheckIamUserComplianceFunction
-            - Arn
-    DependsOn: ConfigPermissionToCallLambda
 
 Outputs:
   ComplianceProcessor:

@@ -7,7 +7,18 @@
       "Resource": "${LoadComplianceNotifyInputFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
-      "Next": "FormatIamComplianceEvent"
+      "Next": "WhatResourceType?"
+    },
+    "WhatResourceType?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.resourceType",
+          "StringEquals": "AWS::IAM::User",
+          "Next": "FormatIamComplianceEvent"
+        }
+      ],
+      "Default": "NoNeedNotify"
     },
     "FormatIamComplianceEvent": {
       "Type": "Task",

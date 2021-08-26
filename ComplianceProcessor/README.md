@@ -6,12 +6,6 @@ State machine to process non-compliant resource in AWS Config and send notificat
 
 * Following aws commands are for AWSCLIv2, if you are using v1, please remove the --no-cli-pager option.
 
-## Prerequisites
-
-Set-up AWS Config in regions. For global resources, only need to be included in one region.
-
-https://docs.aws.amazon.com/zh_cn/config/latest/developerguide/gs-console.html
-
 ## Deploy 
 
 ```
@@ -27,11 +21,7 @@ https://docs.aws.amazon.com/zh_cn/config/latest/developerguide/gs-console.html
 
 Set value of following parameters according your requirement:
 
-1. Parameters of IamUserComplianceConfigRule
-- requiredGroupList: IAM group names separated by comma which IAM users should be in.
-- exemptedUserList: IAM users which are exempted in compliance check.
-
-2. Environment variables of FormatIamComplianceEventFunction
+1. Environment variables of FormatIamComplianceEventFunction
 - RECEIVER: A Identifier which will be put in SNS message attribute, and user can subscribe SNS topic with this identifier to receive some notifications.
 
 
