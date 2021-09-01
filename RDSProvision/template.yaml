@@ -31,9 +31,10 @@ Resources:
                 - "RDS DB Instance Event"
               detail:
                 EventID:
-                  - "RDS-EVENT-0005"   # 数据库实例创建
-                  - "RDS-EVENT-0003"   # 数据库实例删除
-                  - "RDS-EVENT-0017"   # 数据库实例存储配置修改
+                  - "RDS-EVENT-0005"   # 数据库实例已创建
+                  - "RDS-EVENT-0043"   # 正在从数据库快照中恢复数据库实例
+                  - "RDS-EVENT-0003"   # 数据库实例已删除
+                  - "RDS-EVENT-0017"   # 已更改此数据库实例的存储设置
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref LoadRDSProvisionInputFunction

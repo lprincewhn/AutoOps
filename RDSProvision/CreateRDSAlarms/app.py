@@ -163,4 +163,42 @@ def lambda_handler(event, context):
         Tags=[]
     )
     print(f'Response: {response}')
+    response = client.put_metric_alarm(
+        AlarmName=f'RDS-{dbInstanceIdentifier}-High-CPUUtilization-Alarm',
+        ActionsEnabled=False,
+        MetricName='CPUUtilization',
+        Namespace='AWS/RDS',
+        Statistic='Average',
+        Dimensions=[{
+            'Name': 'DBInstanceIdentifier',
+            'Value': dbInstanceIdentifier
+        }],
+        Period=60,
+        EvaluationPeriods=1,
+        DatapointsToAlarm=1,
+        Threshold=75,
+        ComparisonOperator='GreaterThanOrEqualToThreshold',
+        TreatMissingData='missing',
+        Tags=[]
+    )
+    print(f'Response: {response}')
+    response = client.put_metric_alarm(
+        AlarmName=f'RDS-{dbInstanceIdentifier}-High-SwapUsage-Alarm',
+        ActionsEnabled=False,
+        MetricName='SwapUsage',
+        Namespace='AWS/RDS',
+        Statistic='Average',
+        Dimensions=[{
+            'Name': 'DBInstanceIdentifier',
+            'Value': dbInstanceIdentifier
+        }],
+        Period=60,
+        EvaluationPeriods=1,
+        DatapointsToAlarm=1,
+        Threshold=100*1024*1024,
+        ComparisonOperator='GreaterThanOrEqualToThreshold',
+        TreatMissingData='missing',
+        Tags=[]
+    )
+    print(f'Response: {response}')
     return event

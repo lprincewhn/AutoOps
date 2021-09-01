@@ -14,6 +14,24 @@ def lambda_handler(event, context):
     alarmValue = event["alarmValue"]
     dbInstance = event["metrics"][0]["metricStat"]["metric"]["dimensions"]["DBInstanceIdentifier"]
     message = None
+    if 'High-CPUUtilization-Alarm' in alarmName:
+        message = f'''时间: {timestamp}
+AWS帐号：{account}
+AWS区域：{region}
+资源类型：RDS实例
+资源名称：{dbInstance}
+事件：CPU利用率过高
+详情：{event["reason"]}
+'''
+    if 'High-SwapUsage-Alarm' in alarmName:
+        message = f'''时间: {timestamp}
+AWS帐号：{account}
+AWS区域：{region}
+资源类型：RDS实例
+资源名称：{dbInstance}
+事件：交换分区使用量上涨，表示内存可能不足
+详情：{event["reason"]}
+'''    
     if 'Low-EBSIOBalance-Alarm' in alarmName:
         message = f'''时间: {timestamp}
 AWS帐号：{account}

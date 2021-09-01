@@ -18,6 +18,10 @@
           "Next": "GetRDSDetail"
         }, {
           "Variable": "$.operation",
+          "StringEquals": "restored",
+          "Next": "GetRDSDetail"
+        }, {
+          "Variable": "$.operation",
           "StringEquals": "storage_changed",
           "Next": "GetRDSDetail"
         }, {
