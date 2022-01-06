@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Deploy rule of AWS Config to check EBS compliance. 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsEbsCompliance
+    Description: Deploy rule of AWS Config to check EBS compliance. 
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  RequiredTagList:
+    Type: String
+    Description: List of tag keys which volumess should have.
+    Default: "Name,Project"
+  ExemptedVolumeList: 
+    Type: String
+    Description: EBS volume who are exempted for compliance check.
+    Default: "vol-1234,vol-5678"
+Resources:
+  CheckEbsComplianceFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CheckEbsCompliance
+      Policies: [AWSConfigRulesExecutionRole]
+
+  ConfigPermissionToCallLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Fn::GetAtt: 
+          - CheckEbsComplianceFunction 
+          - Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "config.amazonaws.com"
+
+  EbsConfigRule: 
+    Type: AWS::Config::ConfigRule
+    Properties: 
+      InputParameters: 
+        requiredTagList: !Ref RequiredTagList 
+        exemptedVolumeList: !Ref ExemptedVolumeList
+      Scope: 
+        ComplianceResourceTypes: 
+          - "AWS::EC2::Volume"
+      Source: 
+        Owner: "CUSTOM_LAMBDA"
+        SourceDetails: 
+          - 
+            EventSource: "aws.config"
+            MessageType: "ConfigurationItemChangeNotification"
+          -
+            EventSource: "aws.config"
+            MessageType: "ScheduledNotification"
+            MaximumExecutionFrequency: "TwentyFour_Hours"
+        SourceIdentifier: 
+          Fn::GetAtt: 
+            - CheckEbsComplianceFunction
+            - Arn
+    DependsOn: ConfigPermissionToCallLambda
+
+Outputs:
+  EbsConfigRule:
+    Description: "ARN of EbsConfigRule"
+    Value: !Ref EbsConfigRule 

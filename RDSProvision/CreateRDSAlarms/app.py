@@ -21,7 +21,7 @@ def lambda_handler(event, context):
         else:
             event['max_throughput'] = 128*1024*1024
     elif event["storage_type"] == 'io1':
-        # 只有在 IOPS 超过 32,000 的情况下，才能保证在 基于 Nitro 系统构建的实例 上实现最大 IOPS 和吞吐量。其他实例保证最高为 32,000 IOPS 和 500 MiB/s。除非您修改卷，否则在 2017 年 12 月 6 日之前创建并且自创建以来未修改过的 io1 卷可能无法实现完全性能。
+        # 只有在 IOPS 超过 32,000 的情况下，才能保证在 基于 Nitro 系统构建的实例上实现最大 IOPS 和吞吐量。其他实例保证最高为 32,000 IOPS 和 500 MiB/s。除非您修改卷，否则在 2017 年 12 月 6 日之前创建并且自创建以来未修改过的 io1 卷可能无法实现完全性能。
         if event['iops'] > 32000:
             event['max_throughput'] = 1000*1024*1024
         else:
@@ -77,8 +77,8 @@ def lambda_handler(event, context):
                     'Period': 60
                 },
             ],
-            EvaluationPeriods=1,
-            DatapointsToAlarm=1,
+            EvaluationPeriods=5,
+            DatapointsToAlarm=5,
             Threshold=int(os.getenv('IOPS_Percentage_THreshold', '80'))*event['max_iops']/100,
             ComparisonOperator='GreaterThanOrEqualToThreshold',
             TreatMissingData='missing',
@@ -197,6 +197,25 @@ def lambda_handler(event, context):
         DatapointsToAlarm=1,
         Threshold=100*1024*1024,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
+        TreatMissingData='missing',
+        Tags=[]
+    )
+    print(f'Response: {response}')
+    response = client.put_metric_alarm(
+        AlarmName=f'RDS-{dbInstanceIdentifier}-Low-FreeStorageSpace-Alarm',
+        ActionsEnabled=False,
+        MetricName='FreeStorageSpace',
+        Namespace='AWS/RDS',
+        Statistic='Average',
+        Dimensions=[{
+            'Name': 'DBInstanceIdentifier',
+            'Value': dbInstanceIdentifier
+        }],
+        Period=60,
+        EvaluationPeriods=5,
+        DatapointsToAlarm=5,
+        Threshold=50*1024*1024*1024,
+        ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='missing',
         Tags=[]
     )

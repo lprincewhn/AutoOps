@@ -14,6 +14,21 @@
       "Choices": [
         {
           "Variable": "$.alarmName",
+          "StringEquals": "CloudFront-E34CSZY7SGJT2-Low-RequestsChangeRate-Alarm",
+          "Next": "WhatTime?"
+        },
+        {
+          "Variable": "$.alarmName",
+          "StringEquals": "CloudFront-E2IHAJ3CA6E7RH-Low-RequestsChangeRate-Alarm",
+          "Next": "WhatTime?"
+        },
+        {
+          "Variable": "$.service",
+          "StringEquals": "CloudFront",
+          "Next": "FormatCloudFrontAlarm"
+        },
+        {
+          "Variable": "$.alarmName",
           "StringMatches": "ElasticSearch-*",
           "Next": "FormatESAlarm"
         },
@@ -29,6 +44,32 @@
         }
       ],
       "Default": "NoNeedNotify"
+    },
+    "WhatTime?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And" : [
+            {
+              "Variable": "$.time",
+              "StringGreaterThanEquals": "08:00"
+            },
+            {
+              "Variable": "$.time",
+              "StringLessThan": "23:00"
+            }
+          ],
+          "Next": "FormatCloudFrontAlarm"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "FormatCloudFrontAlarm": {
+      "Type": "Task",
+      "Resource": "${FormatCloudFrontAlarmFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
     },
     "FormatESAlarm": {
       "Type": "Task",

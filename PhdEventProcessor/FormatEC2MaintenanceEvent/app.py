@@ -1,4 +1,5 @@
 import os
+import json
 import boto3
 import logging
 
@@ -25,7 +26,7 @@ def lambda_handler(event, context):
             nametag = list(filter(lambda x:x.get('Key')=='Name', tags_on_ec2))
             instanceName = nametag[0].get('Value') if nametag else '-'
             resourceNameStr += f'{instanceName} ({i.get("InstanceId")}, {i.get("PrivateIpAddress")}),'
-    message = None
+    message = json.dumps(event, indent=2)
     if 'AWS_EC2_INSTANCE_REBOOT_FLEXIBLE_MAINTENANCE_SCHEDULED' in eventTypeCode:
         message = f'''时间: {timestamp}
 AWS帐号：{account}
@@ -46,7 +47,7 @@ AWS区域：{region}
 '''
     if message:
         event['message'] = message
-        event['subject'] = '【AWS通知】EC2健康事件通知'
+        event['subject'] = '【AWS通知】健康事件通知'
         event['receiver'] = os.getenv('RECEIVER', 'all')
     logger.info(f'Event Out: {event}')
     return event

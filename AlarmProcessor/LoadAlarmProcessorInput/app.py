@@ -6,10 +6,13 @@ def lambda_handler(event, context):
     alarmName = event["detail"]["alarmName"]
     beijing_time = datetime.datetime.strptime(event["time"], '%Y-%m-%dT%H:%M:%SZ').astimezone(tz =datetime.timezone(datetime.timedelta(hours=8)))
     metrics = event["detail"]["configuration"]["metrics"]
+    currentState = event["detail"]["state"]["value"]
+    previousState = event["detail"]["previousState"]["value"]
     reason = event["detail"]["state"]["reason"]
     reasonData = event["detail"]["state"].get("reasonData")
+    recentDatapoints = json.loads(reasonData)["recentDatapoints"] if reasonData else ''
     print(f'ReasonData: {reasonData}')
-    return {
+    eventOut = {
         'account': event['account'],
         'region': event['region'],
         'resources': event['resources'],
@@ -18,6 +21,12 @@ def lambda_handler(event, context):
         'time': datetime.datetime.strftime(beijing_time, '%H:%M:%S'),
         'service': alarmName.split('-')[0], 
         'metrics': metrics, 
+        'currentState': currentState,
+        'previousState': previousState, 
         'reason': reason,
-        'alarmValue': json.loads(reasonData)["recentDatapoints"][0] if reasonData else ''
+        'eventData': json.dumps(event)
     }
+    recentDatapoints = json.loads(reasonData)["recentDatapoints"] if reasonData else [] 
+    if recentDatapoints:
+        eventOut['alarmValue'] = recentDatapoints[0]
+    return eventOut

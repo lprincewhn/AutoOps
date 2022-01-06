@@ -13,7 +13,7 @@ def lambda_handler(event, context):
     message = json.dumps(event, indent=2)
     if message: 
         event['message'] = message
-        event['subject'] = '【AWS通知】健康事件通知'
+        event['subjecg'] =【AWS通知】健康事件通知'
         event['receiver'] = os.getenv('RECEIVER', 'all')
     logger.info(f'Event Out: {event}')
     return event

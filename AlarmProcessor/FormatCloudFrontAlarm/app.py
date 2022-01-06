@@ -95,25 +95,43 @@ def lambda_handler(event, context):
     message = None
     distribution_id = alarmName.split('-')[1]
     distribution_name = get_distribution_name(distribution_id)
-    requests, last_requests, llast_requests, error_rate, cache_hit_rate, bytes_downloaded = get_metrics(distribution_id)
-    event['requests'] = requests
-    event['last_requests'] = last_requests
-    event['llast_requests'] = llast_requests
-    event['error_rate'] = error_rate
-    event['cache_hit_rate'] = cache_hit_rate
-    event['bytes_downloaded'] = bytes_downloaded
-    if llast_requests>20000 and 'Low-RequestsChangeRate-Alarm' in alarmName:
-        message = f'{timestamp},  AWS域名 {distribution_name} 请求次数突降, 当前{last_requests}次，为上一周期的{int(last_requests*100/llast_requests)}%。'
-    if last_requests>20000 and 'ErrorRate-Alarm' in alarmName:
-        message = f'{timestamp},  AWS域名 {distribution_name} 出现异常状态码5xx, 共{int(requests*error_rate/100)}次，占比{error_rate}%。'
-    if 'Requests-Alarm' in alarmName:
-        message = f'{timestamp},  AWS域名 {distribution_name} 请求数超出阈值, 共{int(requests)}次。'
-    if 'OriginBandwidth-Alarm' in alarmName:
-        message = f'{timestamp},  AWS域名 {distribution_name} 回源带宽超出阈值, 为{int(bytes_downloaded*(100-cache_hit_rate)*8/300/100/1000/1000)}Mbps。'
+    customer = os.getenv('CUSTOMER_DATA1')
+    if event["currentState"]=="ALARM":
+        requests, last_requests, llast_requests, error_rate, cache_hit_rate, bytes_downloaded = get_metrics(distribution_id)
+        event['requests'] = requests
+        event['last_requests'] = last_requests
+        event['llast_requests'] = llast_requests
+        event['error_rate'] = error_rate
+        event['cache_hit_rate'] = cache_hit_rate
+        event['bytes_downloaded'] = bytes_downloaded
+        if llast_requests>20000 and 'Low-RequestsChangeRate-Alarm' in alarmName:
+            message = f'【AWS】 {distribution_name} 【AWS-CDN+】[{customer}-客户告警]域名：[{distribution_name}]，发生了请求次数突降告警 当前值：域名全网请求数（次）={last_requests}, 为上一周期域名全网请求数的{int(last_requests*100/llast_requests)}%。最近一次告警时间：{timestamp}'
+        if last_requests>20000 and 'ErrorRate-Alarm' in alarmName:
+            message = f'【AWS】 {distribution_name} 【AWS-CDN+】[{customer}-客户告警]域名：[{distribution_name}]，发生了5xx状态码告警 当前值：域名全网请求数（次）={last_requests},域名全网5xx占比（百分比）={error_rate}%。最近一次告警时间：{timestamp}'
+        if 'Requests-Alarm' in alarmName:
+            message = f'【AWS】 {distribution_name} 【AWS-CDN+】[{customer}-客户告警]域名：[{distribution_name}]，发生了请求数告警 当前值：域名全网请求数（次）={last_requests}。最近一次告警时间：{timestamp}'
+        if 'OriginBandwidth-Alarm' in alarmName:
+            message = f'【AWS】 {distribution_name} 【AWS-CDN+】[{customer}-客户告警]域名：[{distribution_name}]，发生了回源带宽告警 当前值：域名全网请求数（次）={last_requests}，域名全网回源带宽（Mbps）={int(bytes_downloaded*(100-cache_hit_rate)*8/300/100/1000/1000)}。最近一次告警时间：{timestamp}'
+
+    if event["currentState"]=="OK" and event["previousState"]=="ALARM":
+        requests, last_requests, llast_requests, error_rate, cache_hit_rate, bytes_downloaded = get_metrics(distribution_id)
+        event['requests'] = requests
+        event['last_requests'] = last_requests
+        event['llast_requests'] = llast_requests
+        event['error_rate'] = error_rate
+        event['cache_hit_rate'] = cache_hit_rate
+        event['bytes_downloaded'] = bytes_downloaded
+        if 'ErrorRate-Alarm' in alarmName:
+            message = f'【AWS】 {distribution_name} 【AWS-CDN+】[{customer}-客户告警]域名：[{distribution_name}]，5xx状态码告警恢复 当前值：域名全网请求数（次）={last_requests},域名全网5xx占比（百分比）={error_rate}%。告警恢复时间：{timestamp}'
+        if 'Requests-Alarm' in alarmName:
+            message = f'【AWS】 {distribution_name} 【AWS-CDN+】[{customer}-客户告警]域名：[{distribution_name}]，请求数告警恢复 当前值：域名全网请求数（次）={last_requests}。告警恢复时间：{timestamp}'
+        if 'OriginBandwidth-Alarm' in alarmName:
+            message = f'【AWS】 {distribution_name} 【AWS-CDN+】[{customer}-客户告警]域名：[{distribution_name}]，回源带宽告警恢复 当前值：域名全网请求数（次）={last_requests}，域名全网回源带宽（Mbps）={int(bytes_downloaded*(100-cache_hit_rate)*8/300/100/1000/1000)}。告警恢复时间：{timestamp}'
     if message: 
         event['message'] = message
         event['subject'] = '【AWS通知】CloudFront告警'
         event['receiver'] = os.getenv('RECEIVER', 'all')
     print(f'Event Out: {event}')
     return event
+
 

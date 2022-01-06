@@ -13,8 +13,8 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.eventTypeCode",
-          "StringEquals": "AWS_EC2_INSTANCE_REBOOT_FLEXIBLE_MAINTENANCE_SCHEDULED",
+          "Variable": "$.service",
+          "StringEquals": "EC2",
           "Next": "FormatEC2MaintenanceEvent"
         }
       ],

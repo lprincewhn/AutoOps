@@ -10,8 +10,8 @@ def lambda_handler(event, context):
     client = boto3.client('sns',region_name=topicRegion)
     response = client.publish(
         TopicArn=os.getenv('SNSTopicArn'),
-        Message=event.get('message'),
         Subject=event.get('subject'),
+        Message=event.get('message'),
         MessageAttributes= {"receiver":  {"DataType": "String", "StringValue": event.get("receiver", "all")}}
     )
     print(response)

@@ -49,3 +49,6 @@ The state machines, who represent operational processes, should be triggered by 
 Q: Why use identical lambda function in each state machine instead of SNS task in step function directory?
 A: Step function cannot invoke services in other region. 
 
+
+aws sns create-topic --name AutoOps --attributes 'DisplayName=【AWS自动运维通知】'
+aws sns subscribe --topic-arn 'arn:aws:sns:us-east-1:597377428377:AutoOps' --protocol email --notification-endpoint 'whuaning@amazon.com'

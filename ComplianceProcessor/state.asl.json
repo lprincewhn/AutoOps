@@ -13,6 +13,11 @@
       "Type": "Choice",
       "Choices": [
         {
+          "Variable": "$.configRuleName",
+          "StringMatches": "*-EbsConfigRule-*",
+          "Next": "GetInstanceId"
+        },
+        {
           "Variable": "$.resourceType",
           "StringEquals": "AWS::IAM::User",
           "Next": "FormatIamComplianceEvent"
@@ -23,6 +28,20 @@
     "FormatIamComplianceEvent": {
       "Type": "Task",
       "Resource": "${FormatIamComplianceEventFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "GetInstanceId": {
+      "Type": "Task",
+      "Resource": "${GetInstanceIdFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateEbsTagsFromEc2"
+    },
+    "CreateEbsTagsFromEc2": {
+      "Type": "Task",
+      "Resource": "${CreateEbsTagsFromEc2FunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
       "Next": "NeedNotify?"

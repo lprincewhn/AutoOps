@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Check invocations of Lambda@Edge and send notification to avoid hitting its limit.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsLEInvocationCheck 
+    Description: Check invocations of Lambda@Edge and send notification to avoid hitting its limit.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
+Resources:
+  LEInvocationCheckStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        GetLEInvocationsFunctionArn: !GetAtt GetLEInvocationsFunction.Arn
+        NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: 'cron(5 * * * ? *)'
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetLEInvocationsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifySnsFunction
+
+  GetLEInvocationsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512 
+      Timeout: 300 
+      CodeUri: GetLEInvocations 
+      Policies: [CloudWatchReadOnlyAccess]
+      Environment:
+        Variables:
+          RPS_QUOTA_us_east_1: 10000
+          RPS_QUOTA_us_east_2: 10000
+          RPS_QUOTA_us_west_1: 10000
+          RPS_QUOTA_us_west_2: 10000
+          RPS_QUOTA_eu_west_1: 10000
+          RPS_QUOTA_eu_central_1: 10000
+          RPS_QUOTA_eu_west_2: 10000
+          RPS_QUOTA_ap_south_1: 10000
+          RPS_QUOTA_ap_southeast_1: 10000
+          RPS_QUOTA_ap_southeast_2: 10000
+          RPS_QUOTA_ap_northeast_1: 10000
+          RPS_QUOTA_ap_northeast_2: 10000
+          RPS_QUOTA_sa_east_1: 10000
+
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: NotifySns
+      Policies: [AmazonSNSFullAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
+
+Outputs:
+  LEInvocationCheckStateMachine:
+    Description: "ARN of LEInvocationCheckStateMachine"
+    Value: !Ref LEInvocationCheckStateMachine
+        

@@ -41,6 +41,7 @@ Resources:
                 state:
                   value:
                     - ALARM
+                    - OK
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref LoadAlarmProcessorInputFunction 

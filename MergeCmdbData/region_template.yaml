@@ -1,11 +1,10 @@
-
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   This stack will deploy athena federation query to get CMDB data and load them into a central bucket.
 Metadata:
   AWS::ServerlessRepo::Application:
-    Name: AutoOpsMergeCmdbData
+    Name: AutoOpsRegionCmdbData
     Description: This stack will deploy athena federation query to get AWS cm data and load them into a central bucket.
     Author: whuaning
     SpdxLicenseId: Apache-2.0
@@ -24,6 +23,7 @@ Parameters:
     Type: String
     Description: S3 bucket where store the query result of Athena.
 Resources:
+
   MergeCmdbDataStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
@@ -54,6 +54,7 @@ Resources:
       Parameters: 
         function: !Join [ ":" , [ "arn", "aws", "lambda", !Ref AWS::Region, !Ref AWS::AccountId, "function", !Ref AthenaCatalogName ] ] 
       Type: LAMBDA
+
   LoadMergeCmdbDataInputFunction:
     Type: 'AWS::Serverless::Function'
     Properties:

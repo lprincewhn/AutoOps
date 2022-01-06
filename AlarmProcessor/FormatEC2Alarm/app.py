@@ -14,6 +14,7 @@ def lambda_handler(event, context):
     region = event['region']
     ec2 = boto3.client('ec2', region_name=region)
     alarmName = event["alarmName"]
+    currentState = event["currentState"]
     timestamp = event["timestamp"]
     instanceId = event["metrics"][0]["metricStat"]["metric"]["dimensions"]["InstanceId"]
     response = ec2.describe_instances(InstanceIds=[instanceId])
@@ -23,7 +24,7 @@ def lambda_handler(event, context):
     instanceName = nametag[0].get('Value') if nametag else '-'
     private_ip = response['Reservations'][0]['Instances'][0].get('PrivateIpAddress')
     message = None
-    if 'High-CPUUtilization-Alarm' in alarmName:
+    if 'High-CPUUtilization-Alarm' in alarmName and currentState=='ALARM':
         message = f'''时间: {timestamp}
 AWS帐号：{account}
 AWS区域：{region}
@@ -32,7 +33,7 @@ AWS区域：{region}
 事件：CPU使用率过高
 详情：{event["reason"]}
 '''
-    if 'Failed-SystemStatusCheck-Alarm' in alarmName:
+    if 'Failed-SystemStatusCheck-Alarm' in alarmName and currentState=='ALARM':
         message = f'''时间: {timestamp}
 AWS帐号：{account}
 AWS区域：{region}
@@ -41,7 +42,7 @@ AWS区域：{region}
 事件：系统健康检查失败（底层硬件故障）
 详情：将启动自动恢复流程，实例将被停止并在健康的宿主机上重启。如果该实例上的应用在系统启动时不会自动启动，则你需要登录到系统中手动完成。
 '''
-    if 'Failed-InstanceStatusCheck-Alarm' in alarmName:
+    if 'Failed-InstanceStatusCheck-Alarm' in alarmName and currentState=='ALARM':
         message = f'''时间: {timestamp}
 AWS帐号：{account}
 AWS区域：{region}

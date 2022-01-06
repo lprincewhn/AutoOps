@@ -11,15 +11,16 @@ Metadata:
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
 Parameters:
-  SnsTopicArn:
+  SnsTopicDisplayName:
     Type: String
-    Description: Enter SNS topic arn which notifications will send to.
-    Default: ""
+    Description: Display name of SNS topic notification will send to.
+    Default: "【AWS自动运维通知】"
 Resources:
   AutoOpsSnsTopic:
     Type: AWS::SNS::Topic
     Properties:
       TopicName: AutoOps
+      DisplayName: !Ref SnsTopicDisplayName
 Outputs:
   SNSTopic:
     Description: "SNS Topic notification will send to"
