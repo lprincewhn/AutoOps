@@ -1,10 +1,16 @@
 #!/bin/bash
 
+PROFILE=default
 POSITIONAL_ARGS=()
 while [[ $# -gt 0 ]]; do
   case $1 in
     -r|--region)
       REGION="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -p|--profile)
+      PROFILE="$2"
       shift # past argument
       shift # past value
       ;;
@@ -29,4 +35,4 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-aws lambda update-function-configuration --function-name $FUNCTION_NAME --region $REGION --environment "{\"Variables\":$PARAMETERS}" --no-cli-pager
+aws lambda update-function-configuration --function-name $FUNCTION_NAME --region $REGION --profile $PROFILE --environment "{\"Variables\":$PARAMETERS}" --no-cli-pager

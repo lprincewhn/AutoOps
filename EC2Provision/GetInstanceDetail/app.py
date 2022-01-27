@@ -19,4 +19,11 @@ def lambda_handler(event, context):
     print(f'Response: {response}')
     event['ImageId'] = response['Reservations'][0]['Instances'][0]['ImageId']
     event['InstanceType'] = response['Reservations'][0]['Instances'][0]['InstanceType']
+    tags_on_ec2 = response['Reservations'][0]['Instances'][0].get('Tags', [])
+    nametag = list(filter(lambda x:x.get('Key')=='Name', tags_on_ec2))
+    event['InstanceName'] = nametag[0].get('Value') if nametag else '-'
+    asgtag = list(filter(lambda x:x.get('Key')=='aws:autoscaling:groupName', tags_on_ec2))
+    event['AutoScalingGroupName'] = asgtag[0].get('Value') if asgtag else '-'
+    event['PrivateIpAddress'] = response['Reservations'][0]['Instances'][0].get('PrivateIpAddress')
+    event['EniCount'] = len(response['Reservations'][0]['Instances'][0]['NetworkInterfaces'])
     return event

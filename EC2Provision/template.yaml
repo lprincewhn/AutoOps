@@ -29,6 +29,7 @@ Resources:
         CreateWindowsDiskAlarmsFunctionArn: !GetAtt CreateWindowsDiskAlarmsFunction.Arn
         CreateCPUAlarmsFunctionArn: !GetAtt CreateCPUAlarmsFunction.Arn
         CreateMemoryAlarmsFunctionArn: !GetAtt CreateMemoryAlarmsFunction.Arn
+        CreateNetworkAlarmsFunctionArn: !GetAtt CreateNetworkAlarmsFunction.Arn
         CreateHealthCheckAlarmsFunctionArn: !GetAtt CreateHealthCheckAlarmsFunction.Arn
         DeleteEC2AlarmsFunctionArn: !GetAtt DeleteEC2AlarmsFunction.Arn
         GetSSMInformationFunctionArn: !GetAtt GetSSMInformationFunction.Arn
@@ -64,6 +65,8 @@ Resources:
             FunctionName: !Ref CreateCPUAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref CreateMemoryAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateNetworkAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref CreateHealthCheckAlarmsFunction
         - LambdaInvokePolicy:
@@ -113,6 +116,19 @@ Resources:
       Environment:
         Variables:
           MEMORY_THRESHOLD: 80
+  CreateNetworkAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateNetworkAlarms
+      Policies: [CloudWatchFullAccess]
+      Environment:
+        Variables:
+          EXCEEDED_BYTES_THRESHOLD: 80
   CreateHealthCheckAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:

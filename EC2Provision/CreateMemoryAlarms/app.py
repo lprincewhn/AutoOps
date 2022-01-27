@@ -12,6 +12,9 @@ def lambda_handler(event, context):
         Namespace='CWAgent',
         Statistic='Average',
         Dimensions=[{
+            'Name': 'AutoScalingGroupName',
+            'Value': event['AutoScalingGroupName']
+        },{
             'Name': 'InstanceId',
             'Value': event['InstanceId']
         },{

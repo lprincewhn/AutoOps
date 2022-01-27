@@ -46,6 +46,13 @@
               "Resource": "${CreateMemoryAlarmsFunctionArn}",
               "InputPath": "$",
               "ResultPath": "$",
+              "Next": "CreateNetworkAlarms"
+            },
+            "CreateNetworkAlarms": {
+              "Type": "Task",
+              "Resource": "${CreateNetworkAlarmsFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
               "Next": "CreateHealthCheckAlarms"
             },
             "CreateHealthCheckAlarms": {

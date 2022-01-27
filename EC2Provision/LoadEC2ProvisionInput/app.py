@@ -6,7 +6,8 @@ def lambda_handler(event, context):
     (datetime.timedelta(hours=8))) if event.get("time") else None
     instancdId = event.get('detail').get('instance-id')
     state = event.get('detail').get('state')
-    return {
+    region = event['region']
+    eventOut = {
         'account': event.get('account'),
         'region': event.get('region'),
         'timestamp': datetime.datetime.strftime(beijing_time, '%Y-%m-%dT%H:%M:%S+0800'), 
@@ -14,3 +15,5 @@ def lambda_handler(event, context):
         'InstanceId': instancdId, 
         'State': state
     }
+
+    return eventOut

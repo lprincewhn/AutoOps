@@ -1,10 +1,16 @@
 #!/bin/bash
 
 POSITIONAL_ARGS=()
+PROFILE=default
 while [[ $# -gt 0 ]]; do
   case $1 in
     -r|--region)
       REGION="$2"
+      shift # past argument
+      shift # past value
+      ;;
+    -p|--profile)
+      PROFILE="$2"
       shift # past argument
       shift # past value
       ;;
@@ -24,9 +30,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-FUNCTIONS=( $(aws cloudformation describe-stack-resources --region $REGION --stack-name $STACK_NAME --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" --output text) )
+FUNCTIONS=( $(aws cloudformation describe-stack-resources --region $REGION --profile $PROFILE --stack-name $STACK_NAME --query "StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId" --output text) )
 for f in ${FUNCTIONS[*]}
 do
   echo $f
-  aws lambda get-function --region $REGION --function-name $f --query "Configuration.Environment.Variables" --no-cli-pager
+  aws lambda get-function --region $REGION --profile $PROFILE --function-name $f --query "Configuration.Environment.Variables" --no-cli-pager
 done

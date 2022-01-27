@@ -38,7 +38,7 @@ def lambda_handler(event, context):
     customer = os.getenv('CUSTOMER_DATA1')
     for r in region_list:
         response = getLambdaInvocations(r)
-        max_invocations = max(response['MetricDataResults'][0]['Values'])
+        max_invocations = max(response['MetricDataResults'][0]['Values']) if response['MetricDataResults'][0]['Values'] else 0
         logger.debug(response['MetricDataResults'][0]['Values'])
         quota = int(os.getenv(f'RPS_QUOTA_{r.replace("-", "_")}', '10000'))
         estimated_rps = int(max_invocations/60*5)

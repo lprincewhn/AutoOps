@@ -69,6 +69,34 @@ Resources:
       Schedule:
         ScheduleExpression: "cron(20 0 ? * * *)"
 
+  CmdbRdsDataCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Role: !GetAtt CentricCmdbDataCrawlerServiceRole.Arn
+      DatabaseName: !Ref CentricCmdbDatabase
+      Targets:
+        S3Targets:
+          - Path: !Join [ '/', [ !Ref CmdbBucket, 'rds' ] ]
+      SchemaChangePolicy:
+        UpdateBehavior: "UPDATE_IN_DATABASE"
+        DeleteBehavior: "LOG"
+      Schedule:
+        ScheduleExpression: "cron(20 0 ? * * *)"
+
+  CmdbSubnetDataCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Role: !GetAtt CentricCmdbDataCrawlerServiceRole.Arn
+      DatabaseName: !Ref CentricCmdbDatabase
+      Targets:
+        S3Targets:
+          - Path: !Join [ '/', [ !Ref CmdbBucket, 'subnet' ] ]
+      SchemaChangePolicy:
+        UpdateBehavior: "UPDATE_IN_DATABASE"
+        DeleteBehavior: "LOG"
+      Schedule:
+        ScheduleExpression: "cron(20 0 ? * * *)"
+
 Outputs:
   CentricCmdbDatabase:
     Description: "ARN of CentricCmdbDatabase"

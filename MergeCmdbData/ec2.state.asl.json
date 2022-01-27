@@ -1,10 +1,10 @@
 {
   "Comment": "Merge Cloudwatch metric data to a cross-region S3 bucket",
-  "StartAt": "LoadMergeCmdbDataInput",
+  "StartAt": "LoadEc2InvSql",
   "States": {
-    "LoadMergeCmdbDataInput": {
+    "LoadEc2InvSql": {
       "Type": "Task",
-      "Resource": "${LoadMergeCmdbDataInputFunctionArn}",
+      "Resource": "${LoadEc2InvSqlFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
       "Next": "CreateTmpTable"

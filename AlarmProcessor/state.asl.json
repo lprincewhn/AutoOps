@@ -38,8 +38,8 @@
           "Next": "FormatRDSAlarm"
         },
         {
-          "Variable": "$.alarmName",
-          "StringMatches": "EC2-*",
+          "Variable": "$.objectType",
+          "StringEquals": "EC2",
           "Next": "FormatEC2Alarm"
         }
       ],

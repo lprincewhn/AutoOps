@@ -17,6 +17,7 @@ def lambda_handler(event, context):
         'stateMachineArn': event['detail']['stateMachineArn']
     }
     message = json.dumps(eventOut, indent=2)
+    message += f'\n\n通过以下链接查看执行详情: https://console.aws.amazon.com/states/home?region={event["region"]}#/executions/details/{eventOut["executionArn"]}'
     print(message)
     subject = '【AWS通知】StepFunction执行失败'
     receiver = 'ops-admin'
