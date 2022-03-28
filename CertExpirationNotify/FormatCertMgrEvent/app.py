@@ -14,7 +14,10 @@ def lambda_handler(event, context):
         )
         print(f'Response: {response}')
         in_use_by = response['Certificate']['InUseBy']
-        message += f'证书ARN: {certArn} 将于{int(event.get("daysToExpiry"))}天后过期。\n关联资源:\n'
+        if int(event.get("daysToExpiry")) > 0:
+            message += f'证书ARN: {certArn} 将于{int(event.get("daysToExpiry"))}天后过期。\n关联资源:\n'
+        else:
+            message += f'证书ARN: {certArn} 已于{-int(event.get("daysToExpiry"))}天前过期。\n关联资源:\n'
         client = boto3.client('cloudfront')
         for r in in_use_by:
             try:
@@ -34,5 +37,6 @@ def lambda_handler(event, context):
         message += '\n'
     if message:
         event['message'] = message 
+        event['subject'] = '【AWS通知】证书过期通知'
     print(f'Event Out: {event}')
     return event 

@@ -22,22 +22,17 @@
         {
           "Variable": "$.message",
           "IsPresent": true,
-          "Next": "SnsNotify"
+          "Next": "NotifySns"
         }
       ],
       "Default": "Successful"
     },
-    "SnsNotify": {
+    "NotifySns": {
       "Type": "Task",
-      "Resource": "arn:aws:states:::sns:publish",
+      "Resource": "${NotifySnsFunctionArn}",
       "InputPath": "$",
-      "ResultPath": "$.snsResponse",
-      "Parameters": {
-        "Subject": "【AWS通知】证书即将过期",
-        "Message.$": "$.message",
-        "TopicArn": "${SNSTopicArn}"
-      },
-      "Next": "Successful"
+      "ResultPath": "$",
+      "End": true
     },
     "Successful": {
       "Type": "Succeed"
