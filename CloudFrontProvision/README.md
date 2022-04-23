@@ -4,17 +4,9 @@
 
     ![](doc/CloudFrontProvision.png)
 
-## Prerequisites
-Enable CloudTrail trace so an API event will be sent. 
-```
+## Install 
 
 ```
-
-## Deploy 
-
-```
-# MAIN_REGION=<main region>
-# SNS_TOPIC_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsCommon --region $MAIN_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`SNSTopic`].OutputValue' --output text)
 # cd ~/AutoOps/CloudFrontProvision
 # REGION=<region>
 # cp -p workflows/state.asl.all.json state.asl.json
