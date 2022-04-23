@@ -7,18 +7,18 @@
       "Resource": "${LoadCloudFrontProvisionInputFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
-      "Next": "CreatedOrDeleted?"
+      "Next": "IsDeleted?"
     },
-    "CreatedOrDeleted?": {
+    "IsDeleted?": {
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.operation",
-          "StringEquals": "created",
-          "Next": "ConfigDistribution"
+          "Variable": "$.detail.eventName",
+          "StringMatches": "Delete*",
+          "Next": "DeleteDistributionAlarms"
         }      
       ],
-      "Default": "DeleteDistributionAlarms"      
+      "Default": "ConfigDistribution"      
     },
     "ConfigDistribution": {
       "Type": "Parallel",

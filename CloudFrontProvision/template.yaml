@@ -38,6 +38,7 @@ Resources:
                 eventName: 
                   - CreateDistribution 
                   - CreateDistributionWithTags
+                  - UpdateDistribution
                   - DeleteDistribution 
       Policies:
         - LambdaInvokePolicy:
@@ -97,6 +98,9 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Team,Project'
       CodeUri: GetDistributionTag
       Policies: [CloudFrontReadOnlyAccess]
 
@@ -108,6 +112,9 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30  
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Team,Project'
       CodeUri: GetRoleAttribute
       Policies: [IAMReadOnlyAccess]
   
@@ -141,6 +148,9 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Team,Project'
       CodeUri: GetUserAttribute
       Policies: [IAMReadOnlyAccess]
 
@@ -148,3 +158,6 @@ Outputs:
   CloudFrontProvisionStateMachine:
     Description: "ARN of CloudFrontProvisionStateMachine"
     Value: !Ref CloudFrontProvisionStateMachine 
+  URL:
+    Description: "You can use this url to view the details fo this workflow"
+    Value: !Join [ '', [ "https://console.aws.amazon.com/states/home?region=", !Ref AWS::Region, "#/statemachines/view/", !Ref CloudFrontProvisionStateMachine ] ] 

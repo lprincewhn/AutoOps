@@ -1,5 +1,5 @@
 {
-  "Comment": "Update tags and alarms when an CloudFront distribution was created/updated/deleted.",
+  "Comment": "Create/Delete CloudFront alarms when an CloudFront distribution was created/deleted.",
   "StartAt": "LoadCloudFrontProvisionInput",
   "States": {
     "LoadCloudFrontProvisionInput": {

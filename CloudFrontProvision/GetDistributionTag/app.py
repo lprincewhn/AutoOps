@@ -18,8 +18,9 @@ def lambda_handler(event, context):
         Resource=event.get("DistributionArn")
     )
     logger.info(f'Response: {response}')
-    distribution_project_tag = list(filter(lambda x:x.get('Key')=='Project', response['Tags'].get('Items', [])))
+    tags_to_sync = os.getenv('TAGS_TO_SYNC').split(',')
+    tags = list(filter(lambda x:x.get('Key') in tags_to_sync and x.get('Value').strip(), response['Tags'].get('Items', [])))
     distribution_owner_tag = list(filter(lambda x:x.get('Key')=='Owner', response['Tags'].get('Items', [])))
-    event['DistributionProject'] = distribution_project_tag[0]['Value'] if distribution_project_tag else ''
+    event['DistributionTagKeys'] =  list(map(lambda x:x.get('Key'), tags))
     event['DistributionOwner'] = distribution_owner_tag[0]['Value'] if distribution_owner_tag else '' 
     return event
