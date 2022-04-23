@@ -21,7 +21,76 @@ Resources:
     Properties:
       TopicName: AutoOps
       DisplayName: !Ref SnsTopicDisplayName
+  AutoOpsTrailsBucket:
+    Type: AWS::S3::Bucket
+  AutoOpsTrailsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: AutoOpsTrailsBucket
+    Properties:
+      Bucket: !Ref AutoOpsTrailsBucket 
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetBucketAcl'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref AutoOpsTrailsBucket 
+            Principal: 
+              Service: 'cloudtrail.amazonaws.com'
+          - Action:
+              - 's3:PutObject'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref AutoOpsTrailsBucket
+                - /*
+            Principal:
+              Service: 'cloudtrail.amazonaws.com'
+            Condition:
+              StringEquals:
+                's3:x-amz-acl': 'bucket-owner-full-control'
+          - Action:
+              - 's3:*'
+            Effect: Deny
+            Resource: 
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref AutoOpsTrailsBucket
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref AutoOpsTrailsBucket
+                  - /*
+            Principal:
+              Service: 'cloudtrail.amazonaws.com'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false' 
+  AutoOpsTrail:
+    Type: AWS::CloudTrail::Trail
+    DependsOn: AutoOpsTrailsBucketPolicy
+    Properties:
+      S3BucketName: !Ref AutoOpsTrailsBucket 
+      S3KeyPrefix: "all-region-management-events"
+      IsLogging: true
+      EnableLogFileValidation: true
+      IncludeGlobalServiceEvents: true
+      IsMultiRegionTrail: true
+      EventSelectors:
+        - IncludeManagementEvents: true
+          ReadWriteType: All
 Outputs:
   SNSTopic:
-    Description: "SNS Topic notification will send to"
+    Description: "Notifications will be sent to this topic"
     Value: !Ref AutoOpsSnsTopic 
+  S3Bucket: 
+    Description: "This bucket will store CloudTrail events"
+    Value: !Ref AutoOpsTrailsBucket
+  CloudTrail:
+    Description: "A cloudtrail to monitor management events from all regions"
+    Value: !Ref AutoOpsTrail

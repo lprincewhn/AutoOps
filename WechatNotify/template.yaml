@@ -11,7 +11,7 @@ Metadata:
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
 Parameters:
-  SNSTopicArn:
+  SnsTopicArn:
     Type: String
     Description: ARN of SNS topic which message comes from.
 Resources:
@@ -30,7 +30,7 @@ Resources:
         SNSTopic:
           Type: 'SNS'
           Properties: 
-            Topic: !Ref SNSTopicArn 
+            Topic: !Ref SnsTopicArn 
   WechatSecret:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -38,3 +38,11 @@ Resources:
       Name: wechat_secret
       SecretString:
         "{\"corpid\":\"\",\"corpsecret\":\"\",\"agentid\":\"\"}"
+
+Outputs:
+  SecretArn:
+    Description: "SecretArn" 
+    Value: !Ref WechatSecret
+  Command:
+    Description: "You need to set your wechat secret with following comand, including corpid, corpsecret, aggentid"
+    Value: !Join [ '', [ "aws secretsmanager put-secret-value --secret-id ", !Ref WechatSecret, " --secret-string ", "'{\"corpid\":\"\",\"corpsecret\":\"\",\"agentid\":\"\"}'" ] ]
