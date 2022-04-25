@@ -67,7 +67,7 @@ Resources:
       MemorySize: 128
       Timeout: 30
       CodeUri: CreateDistributionAlarms
-      Policies: [CloudWatchFullAccess]
+      Policies: [CloudFrontFullAccess,CloudWatchFullAccess]
 
   DeleteDistributionAlarmsFunction:
     Type: 'AWS::Serverless::Function'
@@ -158,6 +158,6 @@ Outputs:
   CloudFrontProvisionStateMachine:
     Description: "ARN of CloudFrontProvisionStateMachine"
     Value: !Ref CloudFrontProvisionStateMachine 
-  URL:
+  StateMachineURL:
     Description: "You can use this url to view the details fo this workflow"
     Value: !Join [ '', [ "https://console.aws.amazon.com/states/home?region=", !Ref AWS::Region, "#/statemachines/view/", !Ref CloudFrontProvisionStateMachine ] ] 
