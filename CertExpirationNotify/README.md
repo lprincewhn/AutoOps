@@ -20,6 +20,6 @@ State machine to process Cloudwatch alarms and send notifications to operators.
 ## Start
 
 ```
-# STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsCertExpirationNotify --region us-east-1 --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`AlarmProcessorStateMachine`].OutputValue' --output text)
-# aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://./examples/ES_FreeStorageSpace_alarm_example.json --region $REGION --no-cli-pager
+# STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsCertExpirationNotify --region $REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`CertExpirationNotifyStateMachine`].OutputValue' --output text)
+# aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://examples/to_exprire_example.json --region $REGION --no-cli-pager
 ```

@@ -1,0 +1,17 @@
+{
+  "version": "0",
+  "id": "9c95e8e4-96a4-ef3f-b739-b6aa5b193afb",
+  "detail-type": "ACM Certificate Approaching Expiration",
+  "source": "aws.acm",
+  "account": "123456789012",
+  "time": "2020-09-30T06:51:08Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:acm:us-east-1:597377428377:certificate/0f659306-56b1-43ed-950e-1525aaba3c0e",
+    "arn:aws:acm:us-east-1:597377428377:certificate/0f659306-56b1-43ed-950e-1525aaba3c0e"
+  ],
+  "detail": {
+    "DaysToExpiry": -31,
+    "CommonName": "Aperture Science Portal Certificate Authority - R4"
+  }
+}

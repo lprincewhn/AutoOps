@@ -1,31 +1,13 @@
 {
   "Comment": "Notify users when certificate will expire.",
-  "StartAt": "LoadCertExpirationNotifyInput",
+  "StartAt": "LoadRelatedResource",
   "States": {
-    "LoadCertExpirationNotifyInput": {
+    "LoadRelatedResource": {
       "Type": "Task",
-      "Resource": "${LoadCertExpirationNotifyInputFunctionArn}",
+      "Resource": "${LoadRelatedResourceFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
-      "Next": "FormatCertMgrEvent"
-    },
-    "FormatCertMgrEvent": {
-      "Type": "Task",
-      "Resource": "${FormatCertMgrEventFunctionArn}",
-      "InputPath": "$",
-      "ResultPath": "$",
-      "Next": "NeedNotify?" 
-    },
-    "NeedNotify?": {
-      "Type": "Choice",
-      "Choices": [
-        {
-          "Variable": "$.message",
-          "IsPresent": true,
-          "Next": "NotifySns"
-        }
-      ],
-      "Default": "Successful"
+      "Next": "NotifySns"
     },
     "NotifySns": {
       "Type": "Task",
@@ -33,9 +15,6 @@
       "InputPath": "$",
       "ResultPath": "$",
       "End": true
-    },
-    "Successful": {
-      "Type": "Succeed"
     }
   }
 }

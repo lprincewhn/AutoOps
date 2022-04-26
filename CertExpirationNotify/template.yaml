@@ -22,8 +22,7 @@ Resources:
     Properties:
       DefinitionUri: state.asl.json
       DefinitionSubstitutions:
-        LoadCertExpirationNotifyInputFunctionArn: !GetAtt LoadCertExpirationNotifyInputFunction.Arn
-        FormatCertMgrEventFunctionArn: !GetAtt FormatCertMgrEventFunction.Arn
+        LoadRelatedResourceFunctionArn: !GetAtt LoadRelatedResourceFunction.Arn
         NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
       Events:
         CWEvent:
@@ -36,13 +35,11 @@ Resources:
                 - "ACM Certificate Approaching Expiration"
       Policies:
         - LambdaInvokePolicy:
-            FunctionName: !Ref LoadCertExpirationNotifyInputFunction 
-        - LambdaInvokePolicy:
-            FunctionName: !Ref FormatCertMgrEventFunction 
+            FunctionName: !Ref LoadRelatedResourceFunction 
         - LambdaInvokePolicy:
             FunctionName: !Ref NotifySnsFunction
 
-  LoadCertExpirationNotifyInputFunction:
+  LoadRelatedResourceFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
@@ -50,18 +47,7 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 15
-      CodeUri: LoadCertExpirationNotifyInput
-
-  FormatCertMgrEventFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties: 
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Description: ''
-      MemorySize: 128
-      Timeout: 15
-      CodeUri: FormatCertMgrEvent
-      Policies: [AWSCertificateManagerReadOnly,CloudFrontReadOnlyAccess]
+      CodeUri: LoadRelatedResource 
   NotifySnsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -75,6 +61,7 @@ Resources:
       Environment:
         Variables:
           SNSTopicArn: !Ref SnsTopicArn
+
 Outputs:
   CertExpirationNotifyStateMachine:
     Description: "ARN of CertExpirationNotifyStateMachine"
