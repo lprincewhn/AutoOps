@@ -1,11 +1,30 @@
 import os
+import json
 import boto3
+import logging
+
+logging.basicConfig()
+logger = logging.getLogger("RDSProvision")
+logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):
-    print(f'Event In: {event}')
+    logger.info(f'Event In: {json.dumps(event)}')
+    client = boto3.client('rds')
+    response = client.modify_db_instance(
+        DBInstanceIdentifier=event.get('dbInstanceIdentifier'),
+        CloudwatchLogsExportConfiguration={
+            'EnableLogTypes': [
+                'string',
+            ],
+            'DisableLogTypes': [
+                'string',
+            ]
+        }
+    )
+    logger.debug(f'Response: {response}')
     client = boto3.client('logs')
     response = client.put_metric_filter(
-        logGroupName='/aws/rds/cluster/database-1/general',
+        logGroupName=f'/aws/rds/cluster/{event.get("dbInstanceIdentifier")}/general',
         filterName='InsertCount',
         filterPattern='"INSERT INTO"',
         metricTransformations=[
@@ -16,10 +35,10 @@ def lambda_handler(event, context):
             }
         ]
     )
-    print(f'Response: {response}')
-    client = ec2 = boto3.client('cloudwatch')
+    logger.debug(f'Response: {response}')
+    client = boto3.client('cloudwatch')
     response = client.put_metric_alarm(
-        AlarmName=f'RDS-database-1-High-InsertCount-Alarm',
+        AlarmName=f'RDS-{event.get("dbInstanceIdentifier")}-High-InsertCount-Alarm',
         ActionsEnabled=False,
         MetricName='InsertCount',
         Namespace='RDS_GENERAL_LOG',
