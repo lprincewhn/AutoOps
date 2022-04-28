@@ -1,0 +1,103 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Create/Delete alarms and EBS tags for EBS volume when they are attached/detached to/from EC2 instance.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsEBSProvision 
+    Description: Create/Delete alarms and EBS tags for EBS volume when they are attached/detached to/from EC2 instance
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
+Resources:
+  EBSProvisionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadEBSProvisionInputFunctionArn: !GetAtt LoadEBSProvisionInputFunction.Arn
+        CreateEbsTagsFromEc2FunctionArn: !GetAtt CreateEbsTagsFromEc2Function.Arn
+        CreateEBSAlarmsFunctionArn: !GetAtt CreateEBSAlarmsFunction.Arn
+        DeleteEBSAlarmsFunctionArn: !GetAtt DeleteEBSAlarmsFunction.Arn
+      Events:
+        CloudWatchEvent:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.ec2
+              detail-type:
+                - "AWS API Call via CloudTrail"
+              detail:
+                eventSource:
+                  - "ec2.amazonaws.com"
+                eventName:
+                  - AttachVolume
+                  - DetachVolume
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadEBSProvisionInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateEbsTagsFromEc2Function
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateEBSAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeleteEBSAlarmsFunction
+  CreateEbsTagsFromEc2Function:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateEbsTagsFromEc2
+      Policies: [AmazonEC2FullAccess]
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Name,Project'
+  LoadEBSProvisionInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadEBSProvisionInput
+      Policies: [AmazonEC2ReadOnlyAccess]
+  CreateEBSAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateEBSAlarms
+      Policies: [CloudWatchFullAccess]
+      Environment:
+        Variables:
+          IOPS_Percentage_THreshold: 80
+          Throughput_Percentage_THreshold: 80
+  DeleteEBSAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: DeleteEBSAlarms
+      Policies: [CloudWatchFullAccess]
+
+Outputs:
+  EBSProvisionStateMachine:
+    Description: "ARN of EBSProvisionStateMachine"
+    Value: !Ref EBSProvisionStateMachine 

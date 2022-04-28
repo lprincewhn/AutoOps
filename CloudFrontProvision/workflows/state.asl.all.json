@@ -36,7 +36,7 @@
                   "Next": "CreateDistributionAlarms"
                 }
               ],
-              "Default": "NoNeedCreate"
+              "Default": "NoActionNeeded"
             },
             "CreateDistributionAlarms": {
               "Type": "Task",
@@ -45,7 +45,7 @@
               "ResultPath": "$",
               "End": true
             },
-            "NoNeedCreate": {
+            "NoActionNeeded": {
               "Type": "Succeed"
             }
           }
