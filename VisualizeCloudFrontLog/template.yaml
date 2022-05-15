@@ -11,8 +11,6 @@ Metadata:
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
 Parameters:
-  SourceBucket:
-    Type: String
   DestinationESArn:
     Type: String
   ESIndexName:
@@ -29,6 +27,12 @@ Parameters:
     Default: FailedDocumentsOnly
     AllowedValues: ["AllDocuments", "FailedDocumentsOnly"]
 Resources:
+  SourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
   CloudFrontLogDeliverStream:
     Type: AWS::KinesisFirehose::DeliveryStream
     Properties: 
@@ -50,7 +54,6 @@ Resources:
   FirehoseLogGroup:
     Type: AWS::Logs::LogGroup
     Properties: 
-      LogGroupName: /aws/kinesisfirehose/CloudFrontLogDeliverStream
       RetentionInDays: 7
   FirehoseLogStream:
     Type: AWS::Logs::LogStream
@@ -166,6 +169,9 @@ Resources:
           CLOUDWATCH_PERIOD_SECS: '60'
 
 Outputs:
+  SourceBucket:
+    Description: "Bucket to store CloudFront standard logs."
+    Value: !Ref SourceBucket
   VisualizeCloudFrontLogStateMachine:
     Description: "Arn of statemachine of Step Function to transform CloudFront standard log and put them to AES or CloudWatch."
     Value: !GetAtt [ VisualizeCloudFrontLogStateMachine, Arn ] 
