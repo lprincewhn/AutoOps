@@ -1,0 +1,36 @@
+{
+  "Comment": "Transform CloudFront standard log and put them to AES or CloudWatch.",
+  "StartAt": "DeliverCloudFrontLog",
+  "States": {
+    "DeliverCloudFrontLog": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "ToAES",
+          "States": {
+            "ToAES": {
+              "Type": "Task",
+              "Resource": "${DeliverToAESFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "ToCloudWatch",
+          "States": {
+            "ToCloudWatch": {
+              "Type": "Task",
+              "Resource": "${DeliverToCloudWatchFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AutoOps contains useful operational processes represented as a state machines with AWS StepFunctions.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCostPush
+    Description: A toolkit for auto ops in AWS.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+Resources:
+  CURReport:
+    Type: AWS::CUR::ReportDefinition
+    Properties: 
+    AdditionalSchemaElements: 
+      - RESOURCES
+    Compression: GZIP
+    Format: textORcsv
+    RefreshClosedReports: False
+    ReportName: !Ref AWS::StackName 
+    ReportVersioning: OVERWRITE_REPORT
+    S3Bucket: String
+    S3Prefix: String
+    S3Region: String
+    TimeUnit: Hourly 
