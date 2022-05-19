@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  A Lambda@Edge function to route user request different according user's location.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCloudFrontLogToES
+    Description: A Lambda@Edge function to route user request different according user's location.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Resources:
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      Policies: [CloudWatchAgentServerPolicy]
+
