@@ -48,6 +48,7 @@ Resources:
       MemorySize: 128
       Timeout: 15
       CodeUri: LoadRelatedResource 
+      Policies: [AWSCertificateManagerReadOnly]
   NotifySnsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:

@@ -11,7 +11,7 @@
     "arn:aws:acm:us-east-1:597377428377:certificate/0f659306-56b1-43ed-950e-1525aaba3c0e"
   ],
   "detail": {
-    "DaysToExpiry": -3,
+    "DaysToExpiry": 3,
     "CommonName": "Aperture Science Portal Certificate Authority - R4"
   }
 }

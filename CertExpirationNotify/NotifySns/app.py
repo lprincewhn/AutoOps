@@ -5,7 +5,7 @@ import logging
 
 
 logging.basicConfig()
-logger = logging.getLogger("CloudFrontProvision")
+logger = logging.getLogger("CertExpirationNotify")
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):

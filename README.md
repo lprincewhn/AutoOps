@@ -39,7 +39,7 @@ You can pickup one region to deploy SNS topic
 - [ESProvision](ESProvision): Deploy CloudWatch alarms for AWS Elasticsearch domain
 - [CloudFrontProvision](CloudFrontProvision): Deploy CloudWatch alarms and update tags for AWS CloudFront distribution
 - [RedshiftAuditLogToES](RedshiftAuditLogToES): Transform and deliver Redshift audit logs in S3 bucket to Amazon ElasticSearch service
-- [CloudFrontLogToES](CloudFrontLogToES): Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service
+- [VisualizeCloudFrontLog](VisualizeCloudFrontLog): Transform and deliver CloudFront standard logs in S3 bucket to CloudWatch or OpenSearch service
 - [TagCompliance](TagCompliance): Check tags of EC2 periodly and notify users when tags are not compliant
 - [MergeMetricData](MergeMetricData): Merge CloudWatch metric data to to centralized S3 bucket
 - [SecurityHarden](SecurityHarden): Harden security by AWS Guardduty

@@ -71,10 +71,9 @@ def lambda_handler(event, context):
                 },
                 {
                     'Id': 'e1',
-                    'Expression': '(m1+m2)/period(m1)',
+                    'Expression': '(m1+m2)/PERIOD(m1)',
                     'Label': 'IOPS',
-                    'ReturnData': True,
-                    'Period': 60
+                    'ReturnData': True
                 },
             ],
             EvaluationPeriods=5,

@@ -1,9 +1,9 @@
 import os
 import re
-import os
 import boto3
 import gzip
 import json
+import math
 import datetime
 import logging
 import geoip2.database
@@ -12,23 +12,29 @@ logging.basicConfig()
 logger = logging.getLogger("VisualizeCloudFrontLog")
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
-s3 = boto3.client('s3')
-firehose = boto3.client('firehose')
+
+# 环境变量参数
+namespace = os.getenv('CLOUDWATCH_NAMESPACE', 'CloudFrontLogs')
+dims = '[' + os.getenv('CLOUDWATCH_DIMENSIONS', '[],["Host"],["Host", "Country"],["Host", "Country","ResponseCode"]') + ']' 
+peroid = int(os.getenv('CLOUDWATCH_PERIOD_SECS', '60'))*1000
+use_emf = os.getenv('USE_EMF', '1')
+use_metric_api = os.getenv('USE_METRIC_API', '1')
+
+countryreader = geoip2.database.Reader('GeoLite2-Country_20220510/GeoLite2-Country.mmdb')
+cityreader = geoip2.database.Reader('GeoLite2-City_20220510/GeoLite2-City.mmdb')
+asnreader = geoip2.database.Reader('GeoLite2-ASN_20220510/GeoLite2-ASN.mmdb')
 
 def parseCloudFrontLog(key, cols, data, metrics):
     keyary = key.split('/')[-1].split('_')
-    countryreader = geoip2.database.Reader('GeoLite2-Country_20220510/GeoLite2-Country.mmdb')
-    cityreader = geoip2.database.Reader('GeoLite2-City_20220510/GeoLite2-City.mmdb')
-    asnreader = geoip2.database.Reader('GeoLite2-ASN_20220510/GeoLite2-ASN.mmdb')
-
     for line in data:
         logger.debug(f'Item: {line}')
         if line.startswith('#') or len(line)<10:
+            # 过滤掉表头和太短的数据行
             continue
         values = line.split()
         record = dict(zip(cols[1:], values))
         if record:
-            # 日志格式转换，准备发送到Firehose和ES
+            # 日志格式转换
             record["timestamp"] = datetime.datetime.strptime(f'{record["date"]} {record["time"]}', '%Y-%m-%d %H:%M:%S').timestamp()*1000
             try:
                 response = asnreader.asn(record['c-ip'])
@@ -52,7 +58,6 @@ def parseCloudFrontLog(key, cols, data, metrics):
                 record['city'] = 'unknown'            
 
             # 计算聚合指标，准备通过emf发送到CloudWatch
-            peroid = int(os.getenv('CLOUDWATCH_PERIOD_SECS', '60'))*1000
             metric_key = (
                 int(record["timestamp"]/peroid)*peroid,
                 record['x-host-header'], 
@@ -64,6 +69,13 @@ def parseCloudFrontLog(key, cols, data, metrics):
             metrics['Requests'][metric_key] = metrics['Requests'].get(metric_key, 0) + 1
             metrics['BytesDownloaded'][metric_key] = metrics['BytesDownloaded'].get(metric_key, 0) + int(record['sc-bytes'])
             metrics['BytesUploaded'][metric_key] = metrics['BytesUploaded'].get(metric_key, 0) + int(record['cs-bytes'])
+            speeddownload = int(record['sc-bytes'])/float(record['time-taken'])
+            metrics['SpeedDownloadSampleCount'][metric_key] = metrics['SpeedDownloadSampleCount'].get(metric_key, 0) + 1
+            metrics['SpeedDownloadSum'][metric_key] = metrics['SpeedDownloadSum'].get(metric_key, 0) + speeddownload
+            if speeddownload>metrics['SpeedDownloadMax'].get(metric_key, 0):
+                metrics['SpeedDownloadMax'][metric_key] = speeddownload
+            if speeddownload<metrics['SpeedDownloadMin'].get(metric_key, 1000000000000000):
+                metrics['SpeedDownloadMin'][metric_key] = speeddownload
 
 def lambda_handler(event, context):
     logger.info(f'Event In: {json.dumps(event)}...')
@@ -80,15 +92,17 @@ def lambda_handler(event, context):
     items = re.split("\n", logs)
     cols = items[1].split()
     logger.info(f'Cols: {cols}')
-    # Kinesis Firehose每次最多接受500条记录, 因此分批处理日志，每批500行。
-    metrics = {'Requests':{}, 'BytesDownloaded': {}, 'BytesUploaded': {}}
-    for start in range(2,len(items),500):
-        logger.info(f'Processing {start}th line of {len(items)}.')
-        parseCloudFrontLog(key, cols, items[start:start+500], metrics)
+
+    metrics = {
+        'Requests':{}, 'BytesDownloaded': {}, 'BytesUploaded': {}, 
+        'SpeedDownloadSampleCount': {}, 'SpeedDownloadSum': {},
+        'SpeedDownloadMax': {}, 'SpeedDownloadMin': {}
+        }
+    parseCloudFrontLog(key, cols, items, metrics)
 
     # 将聚合后指标发送到CloudWatch
-    namespace = os.getenv('CLOUDWATCH_NAMESPACE', 'CloudFrontLogs')
-    dims = '[' + os.getenv('CLOUDWATCH_DIMENSIONS', '[],["Host"],["Host", "Country"],["Host", "Country","ResponseCode"]') + ']' 
+    metricList = []
+    log_size = 0
     for k,v in metrics['Requests'].items():
         emfdata = {
             'SourceFile': f's3://{bucket}/{key}',
@@ -123,6 +137,75 @@ def lambda_handler(event, context):
             'BytesDownloaded': metrics['BytesDownloaded'].get(k, 0),
             'BytesUploaded': metrics['BytesUploaded'].get(k, 0)
         }
-        print(json.dumps(emfdata))
+        if use_emf:
+            print(json.dumps(emfdata))
+        
+        log_size+=len(json.dumps(emfdata))
+        for dim in json.loads(dims):
+            dimensions = []
+            for name in dim:
+                value = emfdata.get(name)
+                dimensions.append({'Name': name, 'Value': value})
+            metricList += [
+                {
+                    'MetricName': 'Requests',
+                    'Dimensions': dimensions,
+                    'Timestamp': datetime.datetime.fromtimestamp(k[0]/1000),
+                    'Value': v,
+                    'Unit': 'Count',
+                    'StorageResolution': 60
+                },
+                {
+                    'MetricName': 'BytesDownloaded',
+                    'Dimensions': dimensions,
+                    'Timestamp': datetime.datetime.fromtimestamp(k[0]/1000),
+                    'Value': metrics['BytesDownloaded'].get(k, 0),
+                    'Unit': 'Bytes',
+                    'StorageResolution': 60
+                },
+                {
+                    'MetricName': 'BytesUploaded',
+                    'Dimensions': dimensions,
+                    'Timestamp': datetime.datetime.fromtimestamp(k[0]/1000),
+                    'Value': metrics['BytesUploaded'].get(k, 0),
+                    'Unit': 'Bytes',
+                    'StorageResolution': 60
+                },
+                {
+                    'MetricName': 'SpeedDownload',
+                    'Dimensions': dimensions,
+                    'Timestamp': datetime.datetime.fromtimestamp(k[0]/1000),
+                    'StatisticValues': {
+                        'SampleCount': metrics['SpeedDownloadSampleCount'].get(k, 0),
+                        'Sum': int(metrics['SpeedDownloadSum'].get(k, 0)),
+                        'Minimum': int(metrics['SpeedDownloadMin'].get(k, 0)),
+                        'Maximum': int(metrics['SpeedDownloadMax'].get(k, 0))
+                    },
+                    'Unit': 'Bytes/Second',
+                    'StorageResolution': 60
+                },
+            ]
+    
+    logger.info(f'payload of put_metric_data(): {str(metricList)}')
+    logger.info(f'Size of put_metric_data() in s3://{bucket}/{key}: {len(str(metricList))}')
+    logger.info(f'Size of EMF Log in s3://{bucket}/{key}: {log_size}')
+
+    if use_metric_api:
+        batch = math.ceil(len(str(metricList))/40960)
+        batch_items = math.ceil(len(metricList)/batch)
+        logger.info(f'{len(str(metricList))}:{batch}:{batch_items}')
+        cloudwatch = boto3.client('cloudwatch')
+        for i in range(batch): 
+            start = i * batch_items
+            end = (i+1) * batch_items
+            logger.info(f'{start}:{end}')
+            try:
+                response = cloudwatch.put_metric_data(
+                    Namespace='test',
+                    MetricData=metricList[start:end]
+                )
+                logger.info(response)
+            except Exception as e:
+                logger.warn(e)
 
 

@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 import logging
+import traceback
 
 logging.basicConfig()
 logger = logging.getLogger("CloudFrontProvision")

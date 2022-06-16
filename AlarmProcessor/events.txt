@@ -1,0 +1,288 @@
+ElastiCache:AddCacheNodeFailed
+ElastiCache:CacheClusterParametersChanged
+ElastiCache:CacheClusterProvisioningFailed
+ElastiCache:CacheClusterScalingFailed
+ElastiCache:CacheClusterSecurityGroupModified
+ElastiCache:CacheNodeReplaceStarted
+ElastiCache:CacheNodeReplaceComplete
+ElastiCache:CacheNodesRebooted
+ElastiCache:CertificateRenewalComplete（仅限 Redis）
+ElastiCache:FailoverComplete（仅限 Redis）
+ElastiCache:NodeReplacementCanceled
+ElastiCache:NodeReplacementRescheduled
+ElastiCache:NodeReplacementScheduled
+ElastiCache:ReplicationGroupScalingFailed
+ElastiCache:SnapshotFailed（仅限 Redis）
+
+
+https://docs.aws.amazon.com/zh_cn/AmazonElastiCache/latest/red-ug/ElastiCacheSNS.html
+
+
+数据库实例事件
+可用性 RDS-EVENT-0006	数据库实例已重启。
+可用性 RDS-EVENT-0004	数据库实例已关闭。
+可用性 RDS-EVENT-0022	重新启动 MySQL 时出现了错误。
+可用性 RDS-EVENT-0221	数据库实例已达到存储已满阈值，并且数据库已关闭。您可以增加分配的存储空间以解决此问题。
+可用性 RDS-EVENT-0222	数据库实例 [instance name] 的免费存储容量低至分配存储空间的 [percentage]%（分配的存储空间：[value]，可用存储空间：[value]）。如果可用存储空间低于 [value]，将关闭数据库以防止损坏。您可以增加分配的存储空间以解决此问题。
+配置更改 RDS-EVENT-0009	数据库实例已添加到安全组。
+配置更改 RDS-EVENT-0024	数据库实例正在转换为多可用区数据库实例。
+配置更改 RDS-EVENT-0030	数据库实例正在转换为单可用区数据库实例。
+配置更改 RDS-EVENT-0012	将修改应用于数据库实例类。
+配置更改 RDS-EVENT-0018	正在更改此数据库实例的当前存储设置。
+配置更改 RDS-EVENT-0011	已更改此数据库实例的参数组。
+配置更改 RDS-EVENT-0092	此数据库实例的参数组已完成更新。
+配置更改 RDS-EVENT-0028	已禁用此数据库实例的自动备份。
+配置更改 RDS-EVENT-0032	已启用此数据库实例的自动备份。
+配置更改 RDS-EVENT-0033	与主用户名称匹配的用户有 [count] 个。已重置没有与特定主机关联的用户。
+配置更改 RDS-EVENT-0025	数据库实例已转换为多可用区数据库实例。
+配置更改 RDS-EVENT-0029	数据库实例已转换为单可用区数据库实例。
+配置更改 RDS-EVENT-0014	已更改此数据库实例的数据库实例类。
+配置更改 RDS-EVENT-0017	已更改此数据库实例的存储设置。
+配置更改 RDS-EVENT-0010	数据库实例已从安全组删除。
+配置更改 RDS-EVENT-0016	已重置数据库实例的主密码。
+配置更改 RDS-EVENT-0067	尝试重置数据库实例的主密码失败。
+配置更改 RDS-EVENT-0078	增强监控配置进行了更改。
+配置更改 RDS-EVENT-0217	正在向已分配的存储应用启用了弹性伸缩的修改。
+配置更改 RDS-EVENT-0218	已向已分配的存储应用启用了弹性伸缩的修改。
+创建 RDS-EVENT-0005	数据库实例已创建。
+删除 RDS-EVENT-0003	数据库实例已删除。
+故障转移 RDS-EVENT-0013	已启用可以提升备用实例性能的多可用区故障转移。
+故障转移 RDS-EVENT-0015	
+已完成可以提升备用实例性能的多可用区故障转移。可能需要几分钟的时间才能让 DNS 传输到新的主数据库实例。
+故障转移 RDS-EVENT-0034	Amazon RDS 不会因为数据库实例上最近出现故障转移而尝试请求故障转移。
+故障转移 RDS-EVENT-0049	多可用区故障转移已完成。
+故障转移 RDS-EVENT-0050	多可用区激活已在成功还原实例后开始。
+故障转移 RDS-EVENT-0051	多可用区激活已完成。现在，应该可以访问您的数据库了。
+故障转移 RDS-EVENT-0065	实例已从部分故障转移恢复。
+失败 RDS-EVENT-0031	由于某个不兼容配置或底层存储问题，数据库实例已失败。开始对数据库实例进行时间点还原。
+失败 RDS-EVENT-0035	数据库实例有无效参数。例如，如果数据库实例因为此实例类的内存相关参数设置过高而无法启动，客户就应该修改内存参数，并重新启动数据库实例。
+失败 RDS-EVENT-0036	数据库实例处于不兼容的网络中。有些指定的子网 ID 无效或者不存在。
+失败 RDS-EVENT-0058	创建 Statspack 用户账户 PERFSTAT 时出错。请先删除该账户，然后再添加 Statspack 选项。
+失败 RDS-EVENT-0079	若没有增强监测 IAM 角色，则无法启用增强监测。有关创建增强监控 IAM 角色的信息，请参阅 为 Amazon RDS 增强监控创建 IAM 角色。
+失败 RDS-EVENT-0080	增强监测因进行配置更改时出错而处于禁用状态。可能是未正确配置增强监测 IAM 角色。有关创建增强监控 IAM 角色的信息，请参阅 为 Amazon RDS 增强监控创建 IAM 角色。
+失败 RDS-EVENT-0081	用于访问您的 Amazon S3 存储桶以执行 SQL Server 本机备份和恢复的 IAM 角色配置不正确。有关更多信息，请参阅“针对本机备份和还原进行设置”。
+失败 RDS-EVENT-0165	RDS Custom 数据库实例位于支持外围之外。
+失败 RDS-EVENT-0188	由于与数据字典相关的不兼容性，Amazon RDS 无法将 MySQL 数据库实例从版本 5.7 升级到版本 8.0 。数据库实例已回滚到 MySQL 版本 5.7。有关更多信息，请参阅从 MySQL 5.7 升级到 8.0 失败后回滚。
+失败 RDS-EVENT-0219	数据库实例处于无效状态。无需采取操作。弹性伸缩稍后将重试。
+失败 RDS-EVENT-0220	由于之前的扩展存储操作，数据库实例正处于冷却期。我们正在优化您的实例。这至少需要六个小时。无需采取操作。弹性伸缩将在冷却期结束后重试。
+失败 RDS-EVENT-0223	存储弹性伸缩无法扩展存储空间的原因：[reason]。
+失败 RDS-EVENT-0224	存储弹性伸缩已触发待处理的扩展存储任务，该任务将达到最大存储阈值。提高最大存储阈值。
+存储不足 RDS-EVENT-0007	
+分配的数据库实例存储空间已使用。要解决此问题，请为数据库实例分配额外存储。有关更多信息，请参阅 RDS 常见问题。您可以使用可用存储空间指标监控数据库实例的存储空间。
+存储不足 RDS-EVENT-0089	数据库实例已使用其分配的存储空间的 90% 以上。您可以使用可用存储空间指标监控数据库实例的存储空间。
+维护 RDS-EVENT-0026	正在进行数据库实例的脱机维护。数据库实例目前无法使用。
+维护 RDS-EVENT-0027	数据库实例的脱机维护已完成。现在可以使用数据库实例。
+维护 RDS-EVENT-0047	数据库实例的修补已完成。
+维护 RDS-EVENT-0155	数据库实例需要进行数据库引擎次要版本升级。
+维护，通知 RDS-EVENT-0191	Oracle 时区文件更新可用。
+
+如果更新您的 Oracle 引擎，如果您没有选择时区文件升级并且数据库不使用实例上可用的最新 DST 时区文件，Amazon RDS 会生成此事件。
+
+有关更多信息，请参阅Oracle 时区文件自动升级。
+
+维护，通知
+
+RDS-EVENT-0192	
+Oracle 时区文件的升级已开始。
+
+有关更多信息，请参阅Oracle 时区文件自动升级。
+
+维护，通知
+
+RDS-EVENT-0193	
+您的 Oracle 数据库实例使用的是最新的时区文件版本，并且以下任一情况为真：
+
+您最近添加了 TIMEZONE_FILE_AUTOUPGRADE 选项。
+
+您的 Oracle 数据库引擎正在升级。
+
+有关更多信息，请参阅Oracle 时区文件自动升级。
+
+维护，通知
+
+RDS-EVENT-0194	
+Oracle 时区文件的升级已完成。
+
+有关更多信息，请参阅Oracle 时区文件自动升级。
+
+维护，故障
+
+RDS-EVENT-0195	
+时区文件升级失败。
+
+有关更多信息，请参阅Oracle 时区文件自动升级。
+
+通知
+
+RDS-EVENT-0044	操作员发出的通知。有关详细信息，请参阅事件消息。
+通知
+
+RDS-EVENT-0048	数据库实例的修补已延迟。
+通知
+
+RDS-EVENT-0054	您正在使用的 MySQL 存储引擎不是 InnoDB，而 InnoDB 是推荐给 Amazon RDS 使用的 MySQL 存储引擎。若要了解有关 MySQL 存储引擎的信息，请参阅 Amazon RDS 上支持 MySQL 的存储引擎​。
+通知
+
+RDS-EVENT-0055	
+数据库实例拥有的表数量超过了 Amazon RDS 最佳实践推荐的数量。请减少数据库实例上的表个数。
+
+有关推荐的最佳实践的信息，请参阅 Amazon RDS 基本操作指导方针。
+
+通知
+
+RDS-EVENT-0056	
+数据库实例包含的数据库数量超过了 Amazon RDS 最佳实践推荐的数量。请减少数据库实例中的数据库数。
+
+有关推荐的最佳实践的信息，请参阅 Amazon RDS 基本操作指导方针。
+
+通知
+
+RDS-EVENT-0064	TDE 密钥进行了轮换。有关推荐的最佳实践的信息，请参阅 Amazon RDS 基本操作指导方针。
+通知
+
+RDS-EVENT-0084	
+您尝试将数据库实例转换为多可用区，但是它包含多可用区不支持的内存文件组。有关更多信息，请参阅“Amazon RDS for Microsoft SQL Server 多可用区部署”。
+
+通知
+
+RDS-EVENT-0087	
+已停止数据库实例。
+
+通知
+
+RDS-EVENT-0088	
+已启动数据库实例。
+
+通知
+
+RDS-EVENT-0154	
+数据库实例将由于它超过最大允许停止的时间而正被启动。
+
+通知
+
+RDS-EVENT-0157	
+RDS 无法修改数据库实例类，因为目标实例类无法支持源数据库实例上存在的数据库数。错误消息显示“实例具有 N 个数据库，但在转换后，只支持 N 个”。
+
+有关更多信息，请参阅“Microsoft SQL Server 数据库实例的限制”。
+
+通知
+
+RDS-EVENT-0158	
+数据库实例处于无法升级的状态。
+
+通知
+
+RDS-EVENT-0167	
+RDS Custom 支持外围配置已更改。
+
+通知
+
+RDS-EVENT-0189	
+RDS 数据库实例的 gp2 突增余额积分不足。要解决此问题，请降低 IOPS 使用率或修改存储设置，以提高性能。
+
+有关更多信息，请参阅《Amazon Elastic Compute Cloud 用户指南》中的输入/输出积分和突增性能。
+
+通知
+
+RDS-EVENT-0225	
+存储大小 [value] GB 已接近最大存储阈值 [value] GB。当存储量达到最大存储阈值的 80% 时，会调用此事件。为避免发生此事件，请提高最大存储阈值。
+
+通知
+
+RDS-EVENT-0231	
+您的数据库实例的存储修改遇到了内部错误。修改请求正在等待处理，稍后将重试。
+
+只读副本
+
+RDS-EVENT-0045	
+在读取复制过程中出错。有关详细信息，请参阅事件消息。
+
+此外，请参阅您的数据库引擎的只读副本的故障排除部分。
+
+排查 MariaDB 只读副本问题
+
+排除 SQL Server 只读副本问题
+
+排查 MySQL 只读副本问题
+
+排查 Oracle 副本的问题
+
+解决 PostgreSQL 只读副本问题
+
+只读副本
+
+RDS-EVENT-0046	只读副本已恢复复制。此消息会在您首次创建只读副本时出现，或显示为确认复制在正常运行的监控消息。如果此消息在 RDS-EVENT-0045 通知之后出现，则复制已在出现错误之后或是停止复制之后进行了恢复。
+只读副本
+
+RDS-EVENT-0057	
+只读副本上的复制已终止。
+
+只读副本
+
+RDS-EVENT-0062	
+只读副本上的复制已手动停止。
+
+只读副本
+
+RDS-EVENT-0063	
+只读副本上的复制已重置。
+
+只读副本
+
+RDS-EVENT-0202	
+创建只读副本失败。
+
+恢复
+
+RDS-EVENT-0020	
+已启动数据库实例的还原。恢复时间会随待恢复数据量的变化而变化。
+
+恢复
+
+RDS-EVENT-0021	
+数据库实例的恢复已完成。
+
+恢复
+
+RDS-EVENT-0023	
+已请求手动备份，但 Amazon RDS 目前处于创建数据库快照的过程中。请在 Amazon RDS 完成数据库快照后再次提交请求。
+
+恢复
+
+RDS-EVENT-0052	
+已启动多可用区实例的恢复。恢复时间会随待恢复数据量的变化而变化。
+
+恢复
+
+RDS-EVENT-0053	
+多可用区实例的恢复已完成。
+
+恢复
+
+RDS-EVENT-0066	
+SQL Server 数据库实例正在重新建立其镜像。在镜像重新建立之前，性能将下降。发现具有非 FULL 恢复模式的数据库。恢复模式已重新更改为 FULL，镜像恢复已启动。(<dbname>: <recovery model found>[,...])”
+
+恢复
+
+RDS-EVENT-0166	
+RDS Custom 数据库实例位于支持外围内。
+
+还原
+
+RDS-EVENT-0019	
+已从时间点备份中恢复数据库实例。
+
+还原
+
+RDS-EVENT-0043	
+已从快照 [snapshot_name] 还原。
+
+已从数据库快照中恢复数据库实例。
+
+安全
+
+RDS-EVENT-0068	
+RDS 正在解密 CloudHSM 分区密码，以对实例进行更新。有关更多信息，请参阅 AWS CloudHSM 用户指南中的使用 AWS CloudHSM 的 Oracle 数据库透明数据加密 (TDE)。
+
+
+https://docs.aws.amazon.com/zh_cn/AmazonRDS/latest/UserGuide/USER_Events.Messages.html
