@@ -9,7 +9,7 @@ import requests
 import geoip2.database
 
 logging.basicConfig()
-logger = logging.getLogger("VisualizeCloudFrontLog")
+logger = logging.getLogger("DialTest")
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 
@@ -21,7 +21,8 @@ use_emf = os.getenv('USE_EMF', '1')
 use_metric_api = os.getenv('USE_METRIC_API', '1')
 cf_domainname = os.getenv('CLOUDFRONT_DOMAINNAME')
 pop_list = os.getenv('CLOUDFRONT_POPLIST')
-dial_target = os.getenv('DIAL_TARGET')
+dial_domainname = os.getenv('DIAL_DOMAINNAME')
+dial_uri = os.getenv('DIAL_URI')
 
 countryreader = geoip2.database.Reader('GeoLite2-Country_20220510/GeoLite2-Country.mmdb')
 cityreader = geoip2.database.Reader('GeoLite2-City_20220510/GeoLite2-City.mmdb')
@@ -32,34 +33,25 @@ def parseTimingHeader(results, metrics):
         logger.debug(f'Item: {result}')
         record = {}
         record["timestamp"] = datetime.datetime.now().timestamp()*1000
-        record['cdn-upstream-succ'] = (1 if result[0]==200 else 0)
-        timing = result[1]
-        print(timing)
+        record['cdn-upstream-succ'] = (1 if result[1]==200 else 0)
+        timing = result[2]
         match = re.match('.*cdn-upstream-dns;dur=(\d+)', timing)
-        if match:
-            record['cdn-upstream-dns'] = match.group(1)
+        record['cdn-upstream-dns'] = match.group(1) if match else 0
         match = re.match('.*cdn-upstream-connect;dur=(\d+)', timing)
-        if match:
-            record['cdn-upstream-connect'] = match.group(1)
+        record['cdn-upstream-connect'] = match.group(1) if match else 0
         match = re.match('.*cdn-upstream-fbl;dur=(\d+)', timing)
-        if match:
-            record['cdn-upstream-fbl'] = match.group(1)
+        record['cdn-upstream-fbl'] = match.group(1) if match else 0
         match = re.match('.*cdn-pop;desc=\"(.+?)\"', timing)
-        if match:
-            record['cdn-city'] = match.group(1)[:3]
-        match = re.match('.*cdn-rid;desc=\"(.+?)\"', timing)
-        if match:
-            record['cdn-rid'] = match.group(1)
+        record['cdn-city'] = match.group(1)[:3] if match else result[0][:3]
 
         # 计算聚合指标，准备通过emf发送到CloudWatch
         metric_key = (
             int(record["timestamp"]/peroid)*peroid,
             record['cdn-city'], 
-            dial_target
+            dial_domainname
         )
         
-        succ = (1 if result[0]==200 else 0)
-        metrics['cdn-upstream-succ-sum'][metric_key] = metrics['cdn-upstream-succ-sum'].get(metric_key, 0) + succ
+        metrics['cdn-upstream-succ-sum'][metric_key] = metrics['cdn-upstream-succ-sum'].get(metric_key, 0) + record['cdn-upstream-succ']
         metrics['cdn-upstream-succ-cnt'][metric_key] = metrics['cdn-upstream-succ-cnt'].get(metric_key, 0) + 1
         if int(record['cdn-upstream-succ'])>metrics['cdn-upstream-succ-max'].get(metric_key, 0):
             metrics['cdn-upstream-succ-max'][metric_key] = int(record['cdn-upstream-succ'])
@@ -91,16 +83,17 @@ def lambda_handler(event, context):
     logger.info(f'Event In: {json.dumps(event)}...')
     results = []
     for popid in pop_list.split(','):
-        url = f'http://{cf_domainname.split(".")[0]}.{popid}.cloudfront.net/echo'
+        url = f'http://{cf_domainname.split(".")[0]}.{popid}.cloudfront.net{dial_uri}'
         for i in range(2):
             try:
+                logger.debug(url)
                 r = requests.head(url, headers={'Host': cf_domainname}, timeout=10, stream=True)
                 # print(r.raw._connection.sock.getpeername()[0])
                 t = r.headers.get('Server-Timing')
-                results.append((r.status_code, t))
+                results.append((popid, r.status_code, t))
             except Exception as e:
                 logger.warning(e)
-                results.append((0, None))
+                results.append((popid, 0, ''))
 
     metrics = {
         'cdn-upstream-succ-cnt':{},'cdn-upstream-succ-sum':{},'cdn-upstream-succ-max':{},'cdn-upstream-succ-min':{},

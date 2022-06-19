@@ -15,15 +15,9 @@ Parameters:
     Type: String
   DialTarget:
     Type: String
-  DialTargetPolicy:
+  DialUri:
     Type: String
-    Default: 'http-only'
-  DialTargetHttpPort:
-    Type: Number
-    Default: 80
-  DialTargetHttpsPort:
-    Type: Number
-    Default: 443
+    Default: '/'
 Resources:
   DialTestDistribution:
     Type: AWS::CloudFront::Distribution
@@ -37,12 +31,17 @@ Resources:
           ViewerProtocolPolicy: "allow-all"
         Enabled: True
         Origins: 
-          - DomainName: !Ref DialTarget
+          - DomainName: !Select [ 2, !Split [ "/", !Ref DialTarget ] ]
             Id: "dial_target"
             CustomOriginConfig:
-              HTTPPort: !Ref DialTargetHttpPort
-              HTTPSPort: !Ref DialTargetHttpsPort
-              OriginProtocolPolicy: !Ref DialTargetPolicy
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: 
+                !Sub
+                  - ${Scheme}-only
+                  - Scheme: !Select [ 0, !Split [ ":", !Ref DialTarget ] ]
+              
+                
 
 
   DialTestFunction:
@@ -62,7 +61,8 @@ Resources:
           CLOUDWATCH_PERIOD_SECS: '300'
           CLOUDFRONT_DOMAINNAME: !GetAtt [ DialTestDistribution, DomainName ]
           CLOUDFRONT_POPLIST: 'FRA56-C1,NRT51-P2,SIN52-C2'
-          DIAL_TARGET: !Ref DialTarget
+          DIAL_DOMAINNAME: !Select [ 2, !Split [ "/", !Ref DialTarget ] ]
+          DIAL_URI: !Ref DialUri
       Events:
         ScheduleEvent:
           Type: Schedule

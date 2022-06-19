@@ -11,9 +11,10 @@
 ``` bash
 cd ~/AutoOps/DialTest
 REGION=<region>
-DestinationESArn=<ARN of AES domain>
+DialTarget=<domain name of dial target>
+DialUri=<uri start with / to check>
 sam build
-sam deploy --stack-name AutoOpsDialTest --region $REGION --parameter-overrides CloudFrontServiceTimingPolicyId=$CloudFrontServiceTimingPolicyId DialTarget=$DialTarget --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+sam deploy --stack-name AutoOpsDialTest --region $REGION --parameter-overrides CloudFrontServiceTimingPolicyId=$CloudFrontServiceTimingPolicyId DialTarget=$DialTarget DialUri=$DialUri --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 
 2. Map role FirehoseRole in AES if finegrained access control is enabled.
