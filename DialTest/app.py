@@ -24,10 +24,6 @@ pop_list = os.getenv('CLOUDFRONT_POPLIST')
 dial_domainname = os.getenv('DIAL_DOMAINNAME')
 dial_uri = os.getenv('DIAL_URI')
 
-countryreader = geoip2.database.Reader('GeoLite2-Country_20220510/GeoLite2-Country.mmdb')
-cityreader = geoip2.database.Reader('GeoLite2-City_20220510/GeoLite2-City.mmdb')
-asnreader = geoip2.database.Reader('GeoLite2-ASN_20220510/GeoLite2-ASN.mmdb')
-
 def parseTimingHeader(results, metrics):
     for result in results:
         logger.debug(f'Item: {result}')
