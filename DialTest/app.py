@@ -6,7 +6,6 @@ import math
 import datetime
 import logging
 import requests
-import geoip2.database
 
 logging.basicConfig()
 logger = logging.getLogger("DialTest")
