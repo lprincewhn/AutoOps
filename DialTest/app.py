@@ -17,7 +17,6 @@ namespace = os.getenv('CLOUDWATCH_NAMESPACE', 'DialTest')
 dims = '[' + os.getenv('CLOUDWATCH_DIMENSIONS', '["Target"],["Target", "City"]') + ']' 
 peroid = int(os.getenv('CLOUDWATCH_PERIOD_SECS', '60'))*1000
 use_emf = os.getenv('USE_EMF', '1')
-use_metric_api = os.getenv('USE_METRIC_API', '1')
 cf_domainname = os.getenv('CLOUDFRONT_DOMAINNAME')
 pop_list = os.getenv('CLOUDFRONT_POPLIST')
 dial_domainname = os.getenv('DIAL_DOMAINNAME')
@@ -218,18 +217,19 @@ def lambda_handler(event, context):
     logger.info(f'Size of put_metric_data(): {len(str(metricList))}')
     logger.info(f'Size of EMF Log: {log_size}')
 
-    if use_metric_api:
-        batch = math.ceil(len(str(metricList))/40960)
-        batch_items = math.ceil(len(metricList)/batch)
-        logger.info(f'{len(str(metricList))}:{batch}:{batch_items}')
+    batch = math.ceil(len(str(metricList))/40960)
+    batch_items = math.ceil(len(metricList)/batch)
+    logger.info(f'API Batchs: {len(str(metricList))}:{batch}:{batch_items}')
+
+    if not use_emf:
         cloudwatch = boto3.client('cloudwatch')
         for i in range(batch): 
             start = i * batch_items
             end = (i+1) * batch_items
-            logger.info(f'{start}:{end}')
+            logger.info(f'Batch {i}: {start}:{end}')
             try:
                 response = cloudwatch.put_metric_data(
-                    Namespace='test',
+                    Namespace=namespace,
                     MetricData=metricList[start:end]
                 )
                 logger.info(response)
