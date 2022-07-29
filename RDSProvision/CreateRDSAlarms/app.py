@@ -3,6 +3,9 @@ import boto3
 
 def lambda_handler(event, context):
     print(f'Event In: {event}')
+    sns_topic = os.getenv('SNS_TOPIC_ARN')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic]
     client = ec2 = boto3.client('cloudwatch')
     dbInstanceIdentifier = event["dbInstanceIdentifier"]
     event['max_iops'] = 0
@@ -29,7 +32,8 @@ def lambda_handler(event, context):
     if event['max_iops']:
         response = client.put_metric_alarm(
             AlarmName=f'RDS-{dbInstanceIdentifier}-High-IOPS-Alarm',
-            ActionsEnabled=False,
+            ActionsEnabled=actions_enable,
+            AlarmActions=actions,
             Metrics=[
                 {
                     'Id': 'm1',
@@ -87,7 +91,8 @@ def lambda_handler(event, context):
     if event['max_throughput']:
         response = client.put_metric_alarm(
             AlarmName=f'RDS-{dbInstanceIdentifier}-High-Throughput-Alarm',
-            ActionsEnabled=False,
+            ActionsEnabled=actions_enable,
+            AlarmActions=actions,
             Metrics=[
                 {
                     'Id': 'm1',
@@ -144,27 +149,9 @@ def lambda_handler(event, context):
         )
         print(f'Response: {response}')
     response = client.put_metric_alarm(
-        AlarmName=f'RDS-{dbInstanceIdentifier}-Low-EBSIOBalance-Alarm',
-        ActionsEnabled=False,
-        MetricName='EBSIOBalance%',
-        Namespace='AWS/RDS',
-        Statistic='Average',
-        Dimensions=[{
-            'Name': 'DBInstanceIdentifier',
-            'Value': dbInstanceIdentifier
-        }],
-        Period=60,
-        EvaluationPeriods=1,
-        DatapointsToAlarm=1,
-        Threshold=20,
-        ComparisonOperator='LessThanOrEqualToThreshold',
-        TreatMissingData='missing',
-        Tags=[]
-    )
-    print(f'Response: {response}')
-    response = client.put_metric_alarm(
         AlarmName=f'RDS-{dbInstanceIdentifier}-High-CPUUtilization-Alarm',
-        ActionsEnabled=False,
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
         MetricName='CPUUtilization',
         Namespace='AWS/RDS',
         Statistic='Average',
@@ -183,7 +170,8 @@ def lambda_handler(event, context):
     print(f'Response: {response}')
     response = client.put_metric_alarm(
         AlarmName=f'RDS-{dbInstanceIdentifier}-High-SwapUsage-Alarm',
-        ActionsEnabled=False,
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
         MetricName='SwapUsage',
         Namespace='AWS/RDS',
         Statistic='Average',
@@ -202,7 +190,8 @@ def lambda_handler(event, context):
     print(f'Response: {response}')
     response = client.put_metric_alarm(
         AlarmName=f'RDS-{dbInstanceIdentifier}-Low-FreeStorageSpace-Alarm',
-        ActionsEnabled=False,
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
         MetricName='FreeStorageSpace',
         Namespace='AWS/RDS',
         Statistic='Average',

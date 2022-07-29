@@ -12,12 +12,12 @@
 # cd ~/AutoOps/RDSProvision
 # REGION=<region>
 # sam build
-# sam deploy --stack-name AutoOpsRDSProvision --region $REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+# sam deploy --stack-name AutoOpsRDSProvision --region $REGION --parameter-overrides SnsTopicArn=$SNS_TOPIC_ARN --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 
 ## Start
 
 ```
-# STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsRDSProvision --region us-east-1 --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`RDSProvisionStateMachine`].OutputValue' --output text)
+# STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsRDSProvision --region $REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`RDSProvisionStateMachine`].OutputValue' --output text)
 # aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --input file://./examples/example_create_rds.json  --region $REGION --no-cli-pager
 ```

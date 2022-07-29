@@ -10,6 +10,11 @@ Metadata:
     SpdxLicenseId: Apache-2.0
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
 Resources:
   RDSProvisionStateMachine:
     Type: AWS::Serverless::StateMachine
@@ -66,6 +71,7 @@ Resources:
       Policies: [CloudWatchFullAccess]
       Environment:
         Variables:
+          SNSTopicArn: !Ref SnsTopicArn
           FreeStorageSpace_Threshold: 20480
           IOPS_Percentage_THreshold: 80
           Throughput_Percentage_THreshold: 80
