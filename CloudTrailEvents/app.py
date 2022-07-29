@@ -43,7 +43,7 @@ def checkCloudTrailLog(record):
             'Time':datetime.datetime.now(),
             'Source':'AutoOpsCloudTrailEvents',
             'DetailType':'AWS Root account login',
-            'Detail':json.dumps(recordsa),
+            'Detail':json.dumps(record),
             'EventBusName': os.getenv('EVENT_BUS_NAME')
         })
     if eventName=='ConsoleLogin' and (not isTrustedIP(sourceIPAddress)):
@@ -51,15 +51,15 @@ def checkCloudTrailLog(record):
             'Time':datetime.datetime.now(),
             'Source':'AutoOpsCloudTrailEvents',
             'DetailType':'Login from untrusted IP',
-            'Detail':json.dumps(recordsa),
+            'Detail':json.dumps(record),
             'EventBusName': os.getenv('EVENT_BUS_NAME')
         })
-    if (eventName.startswith('CreateDbInstance') or eventName.startswith('DeleteDbInstance')) and (not isAuthorizedDBA(userName)):
+    if (eventName.startswith('CreateDBInstance') or eventName.startswith('DeleteDBInstance')) and (not isAuthorizedDBA(userName)):
         events.append({
             'Time':datetime.datetime.now(),
             'Source':'AutoOpsCloudTrailEvents',
             'DetailType':'Unauthorized user create/delte RDS DB Instance',
-            'Detail':json.dumps(recordsa),
+            'Detail':json.dumps(record),
             'EventBusName': os.getenv('EVENT_BUS_NAME')
         })
     if eventName=='RunInstances' and (not isAuthorizedEC2Admin(userName)):
@@ -67,9 +67,10 @@ def checkCloudTrailLog(record):
             'Time':datetime.datetime.now(),
             'Source':'AutoOpsCloudTrailEvents',
             'DetailType':'Unauthorized user start EC2 Instance',
-            'Detail':json.dumps(recordsa),
+            'Detail':json.dumps(record),
             'EventBusName': os.getenv('EVENT_BUS_NAME')
         })
+    logger.debug(f'Found events: {events}')
     return events
 
 def lambda_handler(event, context):
