@@ -3,7 +3,7 @@ import boto3
 
 def lambda_handler(event, context):
     print(f'Event In: {event}')
-    sns_topic = os.getenv('SNS_TOPIC_ARN')
+    sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
     actions = [sns_topic]
     client = ec2 = boto3.client('cloudwatch')
