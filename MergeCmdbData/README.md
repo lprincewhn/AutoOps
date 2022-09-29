@@ -12,6 +12,8 @@
 5. Create a bucket in the central region you picked to store CMDB data from all region.  It will be used in parameter CmdbBucket.
 
 ## Deploy
+
+```
 # MAIN_REGION=us-east-1
 # CMDB_BUCKET=cmdb.597377428377
 # sam build --template ./centric_template.yaml
@@ -21,7 +23,7 @@
 # ATHENA_RESULT_BUCKET=athena-result.virginia.597377428377
 # sam build --template ./region_template.yaml
 # sam deploy --stack-name AutoOpsRegionCmdb --region $REGION --parameter-overrides AthenaCatalogName=${ATHENA_CATALOG_NAME} CmdbBucket=${CMDB_BUCKET} --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
-
+```
 ## Trigger
 
 Scheduled event from Cloudwatch. Defaultly it will do checking at 2:00AM UTC every day.

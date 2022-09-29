@@ -25,10 +25,7 @@ def lambda_handler(event, context):
             event['max_throughput'] = 128*1024*1024
     elif event["storage_type"] == 'io1':
         # 只有在 IOPS 超过 32,000 的情况下，才能保证在 基于 Nitro 系统构建的实例上实现最大 IOPS 和吞吐量。其他实例保证最高为 32,000 IOPS 和 500 MiB/s。除非您修改卷，否则在 2017 年 12 月 6 日之前创建并且自创建以来未修改过的 io1 卷可能无法实现完全性能。
-        if event['iops'] > 32000:
-            event['max_throughput'] = 1000*1024*1024
-        else:
-            event['max_throughput'] = 500*1024*1024
+        event['max_throughput'] = 1000*1024*1024
     if event['max_iops']:
         response = client.put_metric_alarm(
             AlarmName=f'RDS-{dbInstanceIdentifier}-High-IOPS-Alarm',
@@ -67,7 +64,7 @@ def lambda_handler(event, context):
                                 },
                             ]
                         },
-                        'Period': 60,
+                        'Period': 300,
                         'Stat': 'Sum',
                     },
                     'Label': 'WriteIOPS',
@@ -75,13 +72,13 @@ def lambda_handler(event, context):
                 },
                 {
                     'Id': 'e1',
-                    'Expression': '(m1+m2)/PERIOD(m1)',
+                    'Expression': 'm1+m2',
                     'Label': 'IOPS',
                     'ReturnData': True
                 },
             ],
-            EvaluationPeriods=5,
-            DatapointsToAlarm=5,
+            EvaluationPeriods=3,
+            DatapointsToAlarm=3,
             Threshold=int(os.getenv('IOPS_Percentage_THreshold', '80'))*event['max_iops']/100,
             ComparisonOperator='GreaterThanOrEqualToThreshold',
             TreatMissingData='missing',
@@ -137,11 +134,11 @@ def lambda_handler(event, context):
                     'Expression': 'm1+m2',
                     'Label': 'Throughput',
                     'ReturnData': True,
-                    'Period': 60
+                    'Period': 300 
                 },
             ],
-            EvaluationPeriods=1,
-            DatapointsToAlarm=1,
+            EvaluationPeriods=3,
+            DatapointsToAlarm=3,
             Threshold=int(os.getenv('Throughput_Percentage_THreshold', '80'))*event['max_throughput']/100,
             ComparisonOperator='GreaterThanOrEqualToThreshold',
             TreatMissingData='missing',
@@ -159,9 +156,9 @@ def lambda_handler(event, context):
             'Name': 'DBInstanceIdentifier',
             'Value': dbInstanceIdentifier
         }],
-        Period=60,
-        EvaluationPeriods=1,
-        DatapointsToAlarm=1,
+        Period=300,
+        EvaluationPeriods=3,
+        DatapointsToAlarm=3,
         Threshold=75,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='missing',
@@ -179,7 +176,7 @@ def lambda_handler(event, context):
             'Name': 'DBInstanceIdentifier',
             'Value': dbInstanceIdentifier
         }],
-        Period=60,
+        Period=300,
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
         Threshold=100*1024*1024,
