@@ -11,13 +11,18 @@ logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 def lambda_handler(event, context):
     logger.info(f'Event In: {json.dumps(event)}')
     event['subject'] = '【AWS通知】证书过期通知'
-    event['receiver'] = 'all'
+    event['receiver'] = os.getenv('Receiver', 'all')
     event['message'] = ''
+    
     for certArn in event.get('resources'):
         if int(event.get("daysToExpiry")) > 0:
-            event['message'] += f'证书ARN: {certArn} 将于{int(event.get("daysToExpiry"))}天后过期。\n关联资源:\n'
+            event['message'] += f'''证书ARN: {certArn} 将于{int(event.get("daysToExpiry"))}天后过期。
+关联资源:
+'''
         else:
-            event['message'] += f'证书ARN: {certArn} 已于{-int(event.get("daysToExpiry"))}天前过期。\n关联资源:\n'
+            event['message'] += f'''证书ARN: {certArn} 已于{-int(event.get("daysToExpiry"))}天前过期。
+关联资源:
+'''
         for r in event.get('linked_resources').get(certArn):
             event['message'] += f'\t{r["resourceArn"]}'
             if r.get('CNames'):

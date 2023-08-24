@@ -1,0 +1,15 @@
+Comment: "Format ASG events and send notification."
+StartAt: "LoadInstances"
+States:
+  LoadInstances:
+    Type: "Task"
+    Resource: "${LoadInstancesFunctionArn}"
+    InputPath: "$"
+    ResultPath: "$"
+    Next: "NotifySns?"
+  NotifySns?:
+    Type: "Task"
+    Resource: "${NotifySnsFunctionArn}"
+    InputPath: "$"
+    ResultPath: "$"
+    End: true

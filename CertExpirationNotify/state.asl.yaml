@@ -1,0 +1,15 @@
+Comment: "Notify users when certificate will expire."
+StartAt: "LoadRelatedResource"
+States:
+  LoadRelatedResource:
+    Type: "Task"
+    Resource: "${LoadRelatedResourceFunctionArn}"
+    InputPath: "$"
+    ResultPath: "$"
+    Next: "NotifySns"
+  NotifySns:
+    Type: "Task"
+    Resource: "${NotifySnsFunctionArn}"
+    InputPath: "$"
+    ResultPath: "$"
+    End: true

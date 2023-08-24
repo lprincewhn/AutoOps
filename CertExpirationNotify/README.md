@@ -12,6 +12,7 @@ State machine to process Cloudwatch alarms and send notifications to operators.
 MAIN_REGION=<main region>
 SNS_TOPIC_ARN=$(aws cloudformation describe-stacks --stack-name AutoOpsCommon --region $MAIN_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`SNSTopic`].OutputValue' --output text)
 cd ~/AutoOps/CertExpirationNotify
+cp -p workflows/state.asl.yaml ./
 REGION=<region>
 sam build
 sam deploy --stack-name AutoOpsCertExpirationNotify --region $REGION --parameter-overrides SnsTopicArn=$SNS_TOPIC_ARN --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM

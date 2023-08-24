@@ -20,7 +20,7 @@ Resources:
   CertExpirationNotifyStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: state.asl.json
+      DefinitionUri: state.asl.yaml
       DefinitionSubstitutions:
         LoadRelatedResourceFunctionArn: !GetAtt LoadRelatedResourceFunction.Arn
         NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn

@@ -1,0 +1,40 @@
+{
+  "StartAt": "RemediateEC2Alarms",
+  "States": {
+    "RemediateEC2Alarms": {
+      "Type": "Task",
+      "Resource": "${RemediateEC2AlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "RemediateALBAlarms"
+    },
+    "RemediateALBAlarms": {
+      "Type": "Task",
+      "Resource": "${RemediateALBAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "RemediateNLBAlarms"
+    },
+    "RemediateNLBAlarms": {
+      "Type": "Task",
+      "Resource": "${RemediateNLBAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "RemediateVPNAlarms"
+    },
+    "RemediateVPNAlarms": {
+      "Type": "Task",
+      "Resource": "${RemediateVPNAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NotifySns"
+    },
+    "NotifySns": {
+      "Type": "Task",
+      "Resource": "${NotifySnsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true 
+    }
+  }
+}

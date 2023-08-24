@@ -19,10 +19,9 @@ Resources:
   ASGEventProcessor:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: state.asl.json
+      DefinitionUri: state.asl.yaml
       DefinitionSubstitutions:
-        LoadASGEventProcessorInputFunctionArn: !GetAtt LoadASGEventProcessorInputFunction.Arn
-        FormatASGEventFunctionArn: !GetAtt FormatASGEventFunction.Arn
+        LoadInstancesFunctionArn: !GetAtt LoadInstancesFunction.Arn
         NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
       Events:
         ASGEvent:
@@ -38,13 +37,11 @@ Resources:
                 - "EC2 Instance Terminate Unsuccessful"
       Policies:
         - LambdaInvokePolicy:
-            FunctionName: !Ref LoadASGEventProcessorInputFunction
-        - LambdaInvokePolicy:
-            FunctionName: !Ref FormatASGEventFunction
+            FunctionName: !Ref LoadInstancesFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref NotifySnsFunction
 
-  LoadASGEventProcessorInputFunction:
+  LoadInstancesFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
@@ -52,21 +49,8 @@ Resources:
       Description: ''
       MemorySize: 128
       Timeout: 30
-      CodeUri: LoadASGEventProcessorInput
-
-  FormatASGEventFunction:
-    Type: 'AWS::Serverless::Function'
-    Properties:
-      Handler: app.lambda_handler
-      Runtime: python3.7
-      Description: ''
-      MemorySize: 128
-      Timeout: 30
-      CodeUri: FormatASGEvent
+      CodeUri: LoadInstances
       Policies: [AmazonEC2ReadOnlyAccess]
-      Environment:
-        Variables:
-          RECEIVER: 'all'
 
   NotifySnsFunction:
     Type: 'AWS::Serverless::Function'
