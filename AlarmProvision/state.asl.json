@@ -6,6 +6,13 @@
       "Resource": "${RemediateEC2AlarmsFunctionArn}",
       "InputPath": "$",
       "ResultPath": "$",
+      "Next": "RemediateRDSAlarms"
+    },
+    "RemediateRDSAlarms": {
+      "Type": "Task",
+      "Resource": "${RemediateRDSAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
       "Next": "RemediateALBAlarms"
     },
     "RemediateALBAlarms": {

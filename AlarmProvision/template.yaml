@@ -15,6 +15,7 @@ Resources:
       DefinitionUri: state.asl.json
       DefinitionSubstitutions:
         RemediateEC2AlarmsFunctionArn: !GetAtt RemediateEC2AlarmsFunction.Arn
+        RemediateRDSAlarmsFunctionArn: !GetAtt RemediateRDSAlarmsFunction.Arn
         RemediateALBAlarmsFunctionArn: !GetAtt RemediateALBAlarmsFunction.Arn
         RemediateNLBAlarmsFunctionArn: !GetAtt RemediateNLBAlarmsFunction.Arn
         RemediateVPNAlarmsFunctionArn: !GetAtt RemediateVPNAlarmsFunction.Arn
@@ -27,6 +28,8 @@ Resources:
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref RemediateEC2AlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateRDSAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref RemediateALBAlarmsFunction
         - LambdaInvokePolicy:
@@ -44,6 +47,15 @@ Resources:
       Timeout: 30
       CodeUri: RemediateEC2Alarms
       Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+  RemediateRDSAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: RemediateRDSAlarms
+      Policies: [CloudWatchFullAccess,AmazonRDSReadOnlyAccess]
   RemediateALBAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
