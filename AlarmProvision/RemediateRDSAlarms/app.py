@@ -53,6 +53,52 @@ def createCPUUtilizationAlarm(db, alarmNames):
     logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
+def createCPUCreditBalanceAlarm(db, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    dbId = db["DBInstanceIdentifier"]
+    alarmName = f'AWS/RDS-CPUCreditBalance-{dbId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        AlarmDescription='CPU积分余额',
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/RDS',
+                        'MetricName': 'CPUCreditBalance',
+                        'Dimensions': [
+                            {
+                                'Name': 'DBInstanceIdentifier',
+                                'Value': dbId
+                            }
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Average',
+                },
+                'Label': dbId,
+                'ReturnData': True,
+            },
+        ],
+        EvaluationPeriods=3,
+        DatapointsToAlarm=3,
+        Threshold=60,
+        ComparisonOperator='LessThanOrEqualToThreshold',
+        TreatMissingData='breaching',
+        Tags=[]
+    )
+    logging.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+
 def createFreeStorageSpaceAlarm(db, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -277,7 +323,6 @@ def lambda_handler(event, context):
     client = boto3.client('rds')
     paginator = client.get_paginator('describe_db_instances')
     page_iterator = paginator.paginate()
-    logging.debug(f'Response of describe_alarms: {page_iterator}')
     dbList = []
     for page in page_iterator:
         for db in page["DBInstances"]:
@@ -286,7 +331,6 @@ def lambda_handler(event, context):
     client = boto3.client('cloudwatch')
     paginator = client.get_paginator('describe_alarms')
     page_iterator = paginator.paginate(AlarmNamePrefix=f'AWS/RDS-')
-    logging.debug(f'Response of describe_alarms: {page_iterator}')
     alarmNames = []
     for page in page_iterator:
         alarmNames += list(map(lambda x:x.get('AlarmName'), page['MetricAlarms']))
@@ -296,6 +340,9 @@ def lambda_handler(event, context):
     for db in dbList:
         alarmName, created = createCPUUtilizationAlarm(db, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
+        if db["DBInstanceClass"].startswith('db.t'):
+            alarmName, created = createCPUCreditBalanceAlarm(db, alarmNames)
+            numOfAlarmsCreated += 1 if created else 0 
         if not('aurora' in db["Engine"] or 'docdb' in db["Engine"]):
             alarmName, created = createFreeStorageSpaceAlarm(db, alarmNames)
             numOfAlarmsCreated += 1 if created else 0 
@@ -309,7 +356,6 @@ def lambda_handler(event, context):
     response = client.delete_alarms(
         AlarmNames=alarmNames
     )
-    logging.debug(f'Response of delete_alarms: {response}')
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames

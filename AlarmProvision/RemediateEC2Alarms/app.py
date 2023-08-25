@@ -7,11 +7,12 @@ if os.getenv("DEBUG", None):
     logging.info("Set logging level to DEBUG")
     logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.DEBUG, force=True)
 
-def createCPUUtilizationAlarm(instanceId, alarmNames):
+def createCPUUtilizationAlarm(instance, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
     actions = [sns_topic] if sns_topic else []
     client = boto3.client('cloudwatch')
+    instanceId = instance["InstanceId"]
     alarmName = f'AWS/EC2-CPUUtilization-{instanceId}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
@@ -51,12 +52,13 @@ def createCPUUtilizationAlarm(instanceId, alarmNames):
     logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
-def createStatusCheckFailed_SystemAlarm(instanceId, alarmNames):
+def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     region = os.getenv('AWS_REGION')
     actions_enable = (sns_topic!=None) 
     actions = [f'arn:aws:automate:{region}:ec2:recover', sns_topic] if sns_topic else [f'arn:aws:automate:{region}:ec2:recover']
     client = boto3.client('cloudwatch')
+    instanceId = instance["InstanceId"]
     alarmName = f'AWS/EC2-StatusCheckFailed_System-{instanceId}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
@@ -96,28 +98,76 @@ def createStatusCheckFailed_SystemAlarm(instanceId, alarmNames):
     logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
+def createCPUCreditBalanceAlarm(instance, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    instanceId = instance["InstanceId"]
+    alarmName = f'AWS/EC2-CPUCreditBalance-{instanceId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/EC2',
+                        'MetricName': 'CPUCreditBalance',
+                        'Dimensions': [
+                            {
+                                'Name': 'InstanceId',
+                                'Value': instanceId
+                            },
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Average',
+                },
+                'Label': instanceId,
+                'ReturnData': True,
+            },
+        ],
+        EvaluationPeriods=1,
+        DatapointsToAlarm=1,
+        Threshold=60,
+        ComparisonOperator='LessThanThreshold',
+        TreatMissingData='breaching',
+        Tags=[]
+    )
+    logging.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+
 def lambda_handler(event, context):
     logging.info(f'Event In: {json.dumps(event)}')
     # 获取所有EC2实例
     client = boto3.client('ec2')
-    response = client.describe_instances()
-    logging.debug(f'Response of describe_instances: {response}')
-    instanceIds = []
-    for r in response["Reservations"]:
-        for i in r["Instances"]:
-            instanceIds.append(i["InstanceId"])
+    paginator = client.get_paginator('describe_instances')
+    page_iterator = paginator.paginate()
+    instanceList = []
+    for page in page_iterator:
+        for r in page["Reservations"]:
+            for i in r["Instances"]:
+                instanceList.append(i)
     # 获取已创建的告警
     client = boto3.client('cloudwatch')
     response = client.describe_alarms(
         AlarmNamePrefix=f'AWS/EC2-'
     )
-    logging.debug(f'Response of describe_alarms: {response}')
     alarmNames = list(map(lambda x:x.get('AlarmName'), response['MetricAlarms']))
     # 创建告警
     numOfAlarmsCreated = 0
-    for i in instanceIds:
+    for i in instanceList:
         alarmName, created = createCPUUtilizationAlarm(i, alarmNames)
-        numOfAlarmsCreated += 1 if created else 0 
+        numOfAlarmsCreated += 1 if created else 0
+        if i["InstanceType"].startswith("t"):
+            alarmName, created = createCPUCreditBalanceAlarm(i, alarmNames)
+            numOfAlarmsCreated += 1 if created else 0
         try:
             alarmName, created = createStatusCheckFailed_SystemAlarm(i, alarmNames)
             numOfAlarmsCreated += 1 if created else 0 
