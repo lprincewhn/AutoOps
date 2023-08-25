@@ -50,6 +50,9 @@ Resources:
       Timeout: 300
       CodeUri: RemediateEC2Alarms
       Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
   RemediateEBSAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -59,6 +62,9 @@ Resources:
       Timeout: 300
       CodeUri: RemediateEBSAlarms
       Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
   RemediateRDSAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -68,6 +74,9 @@ Resources:
       Timeout: 300
       CodeUri: RemediateRDSAlarms
       Policies: [CloudWatchFullAccess,AmazonRDSReadOnlyAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
   RemediateALBAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -77,6 +86,9 @@ Resources:
       Timeout: 300
       CodeUri: RemediateALBAlarms
       Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
   RemediateNLBAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -86,6 +98,9 @@ Resources:
       Timeout: 300
       CodeUri: RemediateNLBAlarms
       Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
   RemediateVPNAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -95,6 +110,9 @@ Resources:
       Timeout: 300
       CodeUri: RemediateVPNAlarms
       Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
   NotifySnsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
