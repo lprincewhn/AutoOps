@@ -48,8 +48,7 @@ def createTunnelStateAlarm(connectionId, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
-    return alarmName, describe_target_groups
+    return alarmName, True
 
 def lambda_handler(event, context):
     logging.info(f'Event In: {json.dumps(event)}')
@@ -65,7 +64,6 @@ def lambda_handler(event, context):
     response = client.describe_alarms(
         AlarmNamePrefix=f'AWS/VPN-'
     )
-    logging.debug(f'Response of describe_alarms: {response}')
     alarmNames = list(map(lambda x:x.get('AlarmName'), response['MetricAlarms']))
     # 创建告警
     numOfAlarmsCreated = 0
@@ -77,7 +75,6 @@ def lambda_handler(event, context):
     response = client.delete_alarms(
         AlarmNames=alarmNames
     )
-    logging.debug(f'Response of delete_alarms: {response}')
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames
