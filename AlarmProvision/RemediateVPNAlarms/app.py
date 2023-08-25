@@ -59,7 +59,7 @@ def lambda_handler(event, context):
     logging.debug(f'Response of describe_vpn_connections: {response}')
     connectionIds = []
     for c in response["VpnConnections"]:
-        connectionIds.append(i["VpnConnectionId"])
+        connectionIds.append(c["VpnConnectionId"])
     # 获取已创建的告警
     client = boto3.client('cloudwatch')
     response = client.describe_alarms(
