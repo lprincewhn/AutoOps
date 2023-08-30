@@ -26,7 +26,7 @@ EXECUTION_ARN=$(aws stepfunctions start-execution --state-machine-arn $STATE_MAC
 echo $EXECUTION_ARN
 ```
 
-## Check the result
+## Check the execution
 
 ``` bash
 aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN --region $AWS_REGION --no-cli-pager
