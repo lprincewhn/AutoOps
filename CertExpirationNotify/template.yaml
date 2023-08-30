@@ -14,8 +14,9 @@ Metadata:
 Parameters:
   SnsTopicArn:
     Type: String
-    Description: Enter SNS topic arn which notifications will send to.
+    Description: SNS topic receive AutoOps notification. Messages of this topic will be sent by StepFunction or Lambda, so it should be in the home region
     Default: ""
+
 Resources:
   CertExpirationNotifyStateMachine:
     Type: AWS::Serverless::StateMachine
