@@ -4,13 +4,14 @@ State machine to process Cloudwatch alarms and send notifications to operators.
 
 ![](doc/CertExpirationNotify.png)
 
-* Following command are for AWSCLIv2, if you are using v1, please remove the --no-cli-pager option.
+**Commands in this document are for [AWSCLIv2](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [SAM](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html). You can excecute them in [CloudShell](https://console.aws.amazon.com/cloudshell), in which these tools have been installed.**
 
 ## Install 
 
 ``` bash
+git clone https://github.com/lprincewhn/AutoOps.git
+cd AutoOps/CertExpirationNotify
 AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
-cd ~/AutoOps/AlarmProvision
 AWS_REGION=<region>
 STACK_NAME=AutoOpsCertExpirationNotify
 sam build
