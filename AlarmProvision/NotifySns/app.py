@@ -25,7 +25,6 @@ def lambda_handler(event, context):
             MessageAttributes= {'receiver':  {'DataType': 'String', 'StringValue': event.get('receiver', 'all')}},
             Message=event.get('message')
         )
-        logging.debug(f'Response of publish: {response}')
         event['snsResponse'] = response
         logging.info(f'Event Out: {json.dumps(event)}')
     return event

@@ -55,7 +55,6 @@ def createUnHealthyHostCountAlarm(tg, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def createTargetResponseTimeAlarm(tg, alarmNames):
@@ -106,7 +105,6 @@ def createTargetResponseTimeAlarm(tg, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def createHTTPCode_Target_5XX_RateAlarm(lb, alarmNames):
@@ -177,7 +175,6 @@ def createHTTPCode_Target_5XX_RateAlarm(lb, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def lambda_handler(event, context):
@@ -215,10 +212,10 @@ def lambda_handler(event, context):
             
     # 删除不再使用的告警
     logging.info(f'Delete orphan alarms: {alarmNames}')
-    response = client.delete_alarms(
-        AlarmNames=alarmNames
-    )
-    logging.debug(f'Response of delete_alarms: {response}')
+    for x in range(0, len(alarmNames), 100):
+        response = client.delete_alarms(
+            AlarmNames=alarmNames[x:x+100]
+        )
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames

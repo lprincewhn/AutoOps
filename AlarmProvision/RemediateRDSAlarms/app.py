@@ -353,9 +353,10 @@ def lambda_handler(event, context):
             
     # 删除不再使用的告警
     logging.info(f'Delete orphan alarms: {alarmNames}')
-    response = client.delete_alarms(
-        AlarmNames=alarmNames
-    )
+    for x in range(0, len(alarmNames), 100):
+        response = client.delete_alarms(
+            AlarmNames=alarmNames[x:x+100]
+        )
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames

@@ -7,10 +7,11 @@ if os.getenv("DEBUG", None):
     logging.info("Set logging level to DEBUG")
     logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.DEBUG, force=True)
 
-def createTunnelStateAlarm(connectionId, alarmNames):
+def createTunnelStateAlarm(connection, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
     actions = [sns_topic] if sns_topic else []
+    connectionId = connection["VpnConnectionId"]
     alarmName = f'AWS/VPN-TunnelState-{connectionId}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
@@ -56,9 +57,9 @@ def lambda_handler(event, context):
     client = boto3.client('ec2')
     response = client.describe_vpn_connections()
     logging.debug(f'Response of describe_vpn_connections: {response}')
-    connectionIds = []
+    connections = []
     for c in response["VpnConnections"]:
-        connectionIds.append(c["VpnConnectionId"])
+        connections.append(c)
     # 获取已创建的告警
     client = boto3.client('cloudwatch')
     response = client.describe_alarms(
@@ -67,14 +68,15 @@ def lambda_handler(event, context):
     alarmNames = list(map(lambda x:x.get('AlarmName'), response['MetricAlarms']))
     # 创建告警
     numOfAlarmsCreated = 0
-    for i in connectionIds:
+    for i in connections:
         alarmName, created = createTunnelStateAlarm(i, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
     # 删除不再使用的告警
     logging.info(f'Delete orphan alarms: {alarmNames}')
-    response = client.delete_alarms(
-        AlarmNames=alarmNames
-    )
+    for x in range(0, len(alarmNames), 100):
+        response = client.delete_alarms(
+            AlarmNames=alarmNames[x:x+100]
+        )
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames

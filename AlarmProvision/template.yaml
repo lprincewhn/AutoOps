@@ -6,13 +6,13 @@ Metadata:
 Parameters:
   SnsTopicArn:
     Type: String
-    Description: Enter SNS topic arn which notifications will send to.
+    Description: Enter SNS topic arn which notifications will send to. This SNS topic should be in the same region as this stack deployed.
     Default: ""
 Resources:
   AlarmProvisionStateMachine:
     Type: AWS::Serverless::StateMachine
     Properties:
-      DefinitionUri: state.asl.json
+      DefinitionUri: state.asl.yaml
       DefinitionSubstitutions:
         RemediateEC2AlarmsFunctionArn: !GetAtt RemediateEC2AlarmsFunction.Arn
         RemediateEBSAlarmsFunctionArn: !GetAtt RemediateEBSAlarmsFunction.Arn
@@ -125,6 +125,7 @@ Resources:
       Environment:
         Variables:
           SNSTopicArn: !Ref SnsTopicArn
+          
 Outputs:
   AlarmProvisionStateMachine:
     Description: "StateMachine ARN"
