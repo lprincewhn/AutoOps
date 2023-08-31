@@ -4,12 +4,13 @@ import boto3
 import logging
 import traceback
 
-logging.basicConfig()
-logger = logging.getLogger("LoadRelatedResource")
-logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
+logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.INFO, force=True)
+if os.getenv("DEBUG", None):
+    logging.info("Set logging level to DEBUG")
+    logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.DEBUG, force=True)
 
 def lambda_handler(event, context):
-    logger.info(f'Event In: {json.dumps(event)}')
+    logging.info(f'Event In: {json.dumps(event)}')
     resources = event.get('resources')
     daysToExpiry = event.get('detail').get('DaysToExpiry')
     client = boto3.client('acm')
@@ -18,7 +19,6 @@ def lambda_handler(event, context):
         response = client.describe_certificate(
             CertificateArn = certArn
         )
-        logger.debug(f'Response: {response}')
         in_use_by = response['Certificate']['InUseBy']
         cloudfront = boto3.client('cloudfront')
         linked_resources = []
@@ -29,7 +29,6 @@ def lambda_handler(event, context):
                     response = cloudfront.get_distribution_config(
                         Id=id
                     )
-                    logger.debug(f'Response: {response}')
                     cnames =  response['DistributionConfig']['Aliases']['Items']
                     linked_resources.append({'resourceArn': r, 'CNames': cnames})    
                 else:
@@ -38,4 +37,5 @@ def lambda_handler(event, context):
                 traceback.print_exc()
         event['linked_resources'][certArn] = linked_resources
     event['daysToExpiry'] = daysToExpiry
+    logging.info(f'Event Out: {json.dumps(event)}')
     return event 

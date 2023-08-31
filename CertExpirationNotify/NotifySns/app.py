@@ -3,13 +3,14 @@ import json
 import boto3
 import logging
 
+logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.INFO, force=True)
+if os.getenv("DEBUG", None):
+    logging.info("Set logging level to DEBUG")
+    logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.DEBUG, force=True)
 
-logging.basicConfig()
-logger = logging.getLogger("CertExpirationNotify")
-logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 
 def lambda_handler(event, context):
-    logger.info(f'Event In: {json.dumps(event)}')
+    logging.info(f'Event In: {json.dumps(event)}')
     event['subject'] = '【AWS通知】证书过期通知'
     event['receiver'] = os.getenv('Receiver', 'all')
     event['message'] = ''
@@ -29,10 +30,10 @@ def lambda_handler(event, context):
                 event['message'] += f'\t域名: {",".join(r.get("CNames"))}'
             event['message'] += '\n'
         event['message'] += '\n'
-    logger.info(f'Message: {event["message"]}')
+    logging.info(f'Message: {event["message"]}')
 
     if event['message']:
-        logger.info(f'SNSTopicArn: {os.getenv("SNSTopicArn")}')
+        logging.info(f'SNSTopicArn: {os.getenv("SNSTopicArn")}')
         topicArn = os.getenv("SNSTopicArn")
         topicRegion = topicArn.split(':')[3]
         client = boto3.client('sns',region_name=topicRegion)
@@ -42,6 +43,6 @@ def lambda_handler(event, context):
             MessageAttributes= {'receiver':  {'DataType': 'String', 'StringValue': event.get('receiver', 'all')}},
             Message=event.get('message')
         )
-        logger.debug(response)
         event['snsResponse'] = response
+    logging.info(f'Event Out: {json.dumps(event)}')
     return event
