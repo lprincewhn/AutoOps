@@ -25,11 +25,11 @@ sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides A
 
 ``` bash
 git clone https://github.com/lprincewhn/AutoOps.git
-cd AutoOps/CertExpirationNotify
+cd AutoOps/AlarmProvision
 AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
 RAW_ALARM_TOPIC=<Additional SNS topic receive Cloudwatch alarm notification> # Must in the same region as this SAM appliction
 AWS_REGION=<region>
-STACK_NAME=AutoOpsAlarmProvision
+STACK_NAME="AutoOps$(basename $(pwd))"
 sam build
 sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AUTO_OPS_TOPIC RawAlarmTopicArn=$RAW_ALARM_TOPIC --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
