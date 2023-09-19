@@ -53,7 +53,7 @@ def createCPUUtilizationAlarm(db, alarmNames):
     logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
-def createCPUCreditBalanceAlarm(db, alarmNames):
+def createCPUCreditBalanceAlarm(db, instanceTypes, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
     actions = [sns_topic] if sns_topic else []
@@ -62,6 +62,9 @@ def createCPUCreditBalanceAlarm(db, alarmNames):
     alarmName = f'AWS/RDS-CPUCreditBalance-{dbId}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
+        return alarmName, False
+    vcpus = instanceTypes[db["DBInstanceClass"].strip('db.')]["VCpuInfo"]["DefaultVCpus"]
+    if not vcpus:
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -91,7 +94,7 @@ def createCPUCreditBalanceAlarm(db, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=60,
+        Threshold=vcpus*30,
         ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -432,7 +435,7 @@ def lambda_handler(event, context):
         alarmName, created = createCPUUtilizationAlarm(db, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
         if db["DBInstanceClass"].startswith('db.t'):
-            alarmName, created = createCPUCreditBalanceAlarm(db, alarmNames)
+            alarmName, created = createCPUCreditBalanceAlarm(db, instanceTypeMap, alarmNames)
             numOfAlarmsCreated += 1 if created else 0 
         if not('aurora' in db["Engine"] or 'docdb' in db["Engine"]):
             alarmName, created = createFreeStorageSpaceAlarm(db, alarmNames)

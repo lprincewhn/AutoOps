@@ -53,7 +53,53 @@ def createCPUUtilizationAlarm(node, alarmNames):
     logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
-def createCPUCreditBalanceAlarm(node, alarmNames):
+def createEngineCPUUtilizationAlarm(node, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    nodeId = node["CacheClusterId"]
+    alarmName = f'AWS/ElastiCache-EngineCPUUtilization-{nodeId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        AlarmDescription='提供 Redis 引擎线程的 CPU 使用率。由于 Redis 是单线程的，您可以使用该指标来分析 Redis 进程本身的负载。EngineCPUUtilization 指标更精确地呈现了 Redis 流程。您可以将其与 CPUUtilization 指标配合使用。CPUUtilization 公开服务器实例整体的 CPU 使用率，包括其他操作系统和管理流程。对于有四个或更多 vCPU 的较大节点类型，可使用 EngineCPUUtilization 指标来监控和设置扩展阈值。注意：在 ElastiCache 主机上，后台进程将监控主机以提供托管式数据库体验。这些后台进程可能会占用很大一部分 CPU 工作负载。这在具有两个以上 vCPU 的大型主机上影响不大，但在 vCPU 个数不超过 2 个的小型主机上影响较大。如果仅监控 EngineCPUUtilization 指标，您将无法发现因 Redis 或后台监控进程的 CPU 使用率过高而导致主机过载情况。因此，我们建议对于具有不超过两个 vCPU 的主机，还需要监控 CPUUtilization 指标。',
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/ElastiCache',
+                        'MetricName': 'EngineCPUUtilization',
+                        'Dimensions': [
+                            {
+                                'Name': 'CacheClusterId',
+                                'Value': nodeId
+                            }
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Average',
+                },
+                'Label': nodeId,
+                'ReturnData': True,
+            },
+        ],
+        EvaluationPeriods=3,
+        DatapointsToAlarm=3,
+        Threshold=80,
+        ComparisonOperator='GreaterThanOrEqualToThreshold',
+        TreatMissingData='breaching',
+        Tags=[]
+    )
+    logging.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+
+def createCPUCreditBalanceAlarm(node, instanceTypes, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
     actions = [sns_topic] if sns_topic else []
@@ -62,6 +108,9 @@ def createCPUCreditBalanceAlarm(node, alarmNames):
     alarmName = f'AWS/ElastiCache-CPUCreditBalance-{nodeId}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
+        return alarmName, False
+    vcpus = instanceTypes[node["CacheNodeType"].strip('cache.')]["VCpuInfo"]["DefaultVCpus"]
+    if not vcpus:
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -91,8 +140,54 @@ def createCPUCreditBalanceAlarm(node, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=60,
+        Threshold=vcpus*30,
         ComparisonOperator='LessThanOrEqualToThreshold',
+        TreatMissingData='breaching',
+        Tags=[]
+    )
+    logging.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+
+def createDatabaseMemoryUsagePercentageAlarm(node, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    nodeId = node["CacheClusterId"]
+    alarmName = f'AWS/ElastiCache-DatabaseMemoryUsagePercentage-{nodeId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        AlarmDescription='集群中正在使用的内存的百分比。这是使用 used_memory/maxmemory 从 Redis INFO 计算得来的。',
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/ElastiCache',
+                        'MetricName': 'DatabaseMemoryUsagePercentage',
+                        'Dimensions': [
+                            {
+                                'Name': 'CacheClusterId',
+                                'Value': nodeId
+                            }
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Average',
+                },
+                'Label': nodeId,
+                'ReturnData': True,
+            },
+        ],
+        EvaluationPeriods=3,
+        DatapointsToAlarm=3,
+        Threshold=80,
+        ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
     )
@@ -215,8 +310,12 @@ def lambda_handler(event, context):
         alarmName, created = createCPUUtilizationAlarm(node, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
         if node["CacheNodeType"].startswith('cache.t'):
-            alarmName, created = createCPUCreditBalanceAlarm(node, alarmNames)
+            alarmName, created = createCPUCreditBalanceAlarm(node, instanceTypeMap, alarmNames)
             numOfAlarmsCreated += 1 if created else 0 
+        alarmName, created = createEngineCPUUtilizationAlarm(node, alarmNames)
+        numOfAlarmsCreated += 1 if created else 0 
+        alarmName, created = createDatabaseMemoryUsagePercentageAlarm(node, alarmNames)
+        numOfAlarmsCreated += 1 if created else 0         
         alarmName, created = createInstanceNetworkBandwidthlarm(node, instanceTypeMap, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
             

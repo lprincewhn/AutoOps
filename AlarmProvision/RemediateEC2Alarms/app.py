@@ -98,6 +98,51 @@ def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
     logging.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
+def createStatusCheckFailed_InstanceAlarm(instance, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    instanceId = instance["InstanceId"]
+    alarmName = f'AWS/EC2-StatusCheckFailed_Instance-{instanceId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/EC2',
+                        'MetricName': 'StatusCheckFailed_Instance',
+                        'Dimensions': [
+                            {
+                                'Name': 'InstanceId',
+                                'Value': instanceId
+                            },
+                        ]
+                    },
+                    'Period': 60,
+                    'Stat': 'Average',
+                },
+                'Label': instanceId,
+                'ReturnData': True,
+            },
+        ],
+        EvaluationPeriods=3,
+        DatapointsToAlarm=3,
+        Threshold=0,
+        ComparisonOperator='GreaterThanThreshold',
+        TreatMissingData='missing',
+        Tags=[]
+    )
+    logging.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+
 def createCPUCreditBalanceAlarm(instance, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -107,6 +152,9 @@ def createCPUCreditBalanceAlarm(instance, alarmNames):
     alarmName = f'AWS/EC2-CPUCreditBalance-{instanceId}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
+        return alarmName, False
+    vcpus = instance["CpuOptions"]["CoreCount"]*instance["CpuOptions"]["ThreadsPerCore"]
+    if not vcpus:
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -135,7 +183,7 @@ def createCPUCreditBalanceAlarm(instance, alarmNames):
         ],
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=60,
+        Threshold=vcpus*30,
         ComparisonOperator='LessThanThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -423,6 +471,8 @@ def lambda_handler(event, context):
             numOfAlarmsCreated += 1 if created else 0
         try:
             alarmName, created = createStatusCheckFailed_SystemAlarm(i, alarmNames)
+            numOfAlarmsCreated += 1 if created else 0
+            alarmName, created = createStatusCheckFailed_InstanceAlarm(i, alarmNames)
             numOfAlarmsCreated += 1 if created else 0 
         except Exception as e:
             logging.warning(f'{e}')
