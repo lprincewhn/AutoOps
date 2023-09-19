@@ -363,7 +363,7 @@ def createInstanceNetworkBandwidthlarm(instance, instanceTypes, alarmNames):
             },
             {
                 'Id': 'e1',
-                'Expression': 'MAX([m1,m2])',
+                'Expression': 'MAX([m1,m2])/PERIOD(m1)',
                 'Label': instanceId,
                 'ReturnData': True,
             },

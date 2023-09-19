@@ -21,6 +21,7 @@ Resources:
         RemediateEC2AlarmsFunctionArn: !GetAtt RemediateEC2AlarmsFunction.Arn
         RemediateEBSAlarmsFunctionArn: !GetAtt RemediateEBSAlarmsFunction.Arn
         RemediateRDSAlarmsFunctionArn: !GetAtt RemediateRDSAlarmsFunction.Arn
+        RemediateRedisAlarmsFunctionArn: !GetAtt RemediateRedisAlarmsFunction.Arn
         RemediateALBAlarmsFunctionArn: !GetAtt RemediateALBAlarmsFunction.Arn
         RemediateNLBAlarmsFunctionArn: !GetAtt RemediateNLBAlarmsFunction.Arn
         RemediateVPNAlarmsFunctionArn: !GetAtt RemediateVPNAlarmsFunction.Arn
@@ -37,6 +38,8 @@ Resources:
             FunctionName: !Ref RemediateEBSAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref RemediateRDSAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateRedisAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref RemediateALBAlarmsFunction
         - LambdaInvokePolicy:
@@ -77,7 +80,19 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: RemediateRDSAlarms
-      Policies: [CloudWatchFullAccess,AmazonRDSReadOnlyAccess]
+      Policies: [CloudWatchFullAccess,AmazonRDSReadOnlyAccess,AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+  RemediateRedisAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateRedisAlarms
+      Policies: [CloudWatchFullAccess,AmazonElastiCacheReadOnlyAccess,AmazonEC2ReadOnlyAccess]
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn

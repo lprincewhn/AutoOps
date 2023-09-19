@@ -10,9 +10,8 @@
 
 ``` bash
 git clone https://github.com/lprincewhn/AutoOps.git
-cd AutoOps/CertExpirationNotify
-AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
 cd ~/AutoOps/AlarmProvision
+AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
 AWS_REGION=<region>
 STACK_NAME=AutoOpsAlarmProvision
 sam build

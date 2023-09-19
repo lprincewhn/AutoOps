@@ -1,0 +1,20 @@
+StartAt: CopyTagsToEBS
+States:
+  CopyTagsToEBS:
+    Type: Task
+    Resource: '${CopyTagsToEBSFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: CopyTagsToRDSInstance
+  CopyTagsToRDSInstance:
+    Type: Task
+    Resource: '${CopyTagsToRDSInstanceFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: CreateResourceGroup
+  CreateResourceGroup:
+    Type: Task
+    Resource: '${CreateResourceGroupFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    End: true
