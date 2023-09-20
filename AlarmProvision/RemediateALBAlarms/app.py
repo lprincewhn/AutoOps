@@ -2,10 +2,12 @@ import os
 import json
 import boto3
 import logging
-logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.INFO, force=True)
-if os.getenv("DEBUG", None):
-    logging.info("Set logging level to DEBUG")
-    logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.DEBUG, force=True)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
+ch = logging.StreamHandler()
+ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
+logger.addHandler(ch)
 
 def createUnHealthyHostCountAlarm(tg, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
@@ -178,12 +180,12 @@ def createHTTPCode_Target_5XX_RateAlarm(lb, alarmNames):
     return alarmName, True
 
 def lambda_handler(event, context):
-    logging.info(f'Event In: {json.dumps(event)}')
+    logger.info(f'Event In: {json.dumps(event)}')
     # 获取所有ALB目标组
     client = boto3.client('elbv2')
     paginator = client.get_paginator('describe_target_groups')
     page_iterator = paginator.paginate()
-    logging.debug(f'Response of describe_alarms: {page_iterator}')
+    logger.debug(f'Response of describe_alarms: {page_iterator}')
     targetGroups = []
     for page in page_iterator:
         for tg in page["TargetGroups"]:
@@ -193,7 +195,7 @@ def lambda_handler(event, context):
     client = boto3.client('cloudwatch')
     paginator = client.get_paginator('describe_alarms')
     page_iterator = paginator.paginate(AlarmNamePrefix=f'AWS/ALB-')
-    logging.debug(f'Response of describe_alarms: {page_iterator}')
+    logger.debug(f'Response of describe_alarms: {page_iterator}')
     alarmNames = []
     for page in page_iterator:
         alarmNames += list(map(lambda x:x.get('AlarmName'), page['MetricAlarms']))
@@ -211,7 +213,7 @@ def lambda_handler(event, context):
         numOfAlarmsCreated += 1 if created else 0
             
     # 删除不再使用的告警
-    logging.info(f'Delete orphan alarms: {alarmNames}')
+    logger.info(f'Delete orphan alarms: {alarmNames}')
     for x in range(0, len(alarmNames), 100):
         response = client.delete_alarms(
             AlarmNames=alarmNames[x:x+100]
@@ -219,7 +221,7 @@ def lambda_handler(event, context):
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames
-    logging.info(f'Event Out: {json.dumps(event)}')
+    logger.info(f'Event Out: {json.dumps(event)}')
     return event
 
 if __name__ == '__main__':

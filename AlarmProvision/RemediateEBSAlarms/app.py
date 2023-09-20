@@ -2,10 +2,12 @@ import os
 import json
 import boto3
 import logging
-logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.INFO, force=True)
-if os.getenv("DEBUG", None):
-    logging.info("Set logging level to DEBUG")
-    logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.DEBUG, force=True)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
+ch = logging.StreamHandler()
+ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
+logger.addHandler(ch)
 
 def createIopsAlarm(vol, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
@@ -85,7 +87,7 @@ def createIopsAlarm(vol, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
+    logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def createThroughputAlarm(vol, alarmNames):
@@ -170,11 +172,11 @@ def createThroughputAlarm(vol, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
+    logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def lambda_handler(event, context):
-    logging.info(f'Event In: {json.dumps(event)}')
+    logger.info(f'Event In: {json.dumps(event)}')
     # 获取所有EBS实例
     client = boto3.client('ec2')
     paginator = client.get_paginator('describe_volumes')
@@ -201,7 +203,7 @@ def lambda_handler(event, context):
         numOfAlarmsCreated += 1 if created else 0 
             
     # 删除不再使用的告警
-    logging.info(f'Delete orphan alarms: {alarmNames}')
+    logger.info(f'Delete orphan alarms: {alarmNames}')
     for x in range(0, len(alarmNames), 100):
         response = client.delete_alarms(
             AlarmNames=alarmNames[x:x+100]
@@ -209,7 +211,7 @@ def lambda_handler(event, context):
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames
-    logging.info(f'Event Out: {json.dumps(event)}')
+    logger.info(f'Event Out: {json.dumps(event)}')
     return event
 
 if __name__ == '__main__':

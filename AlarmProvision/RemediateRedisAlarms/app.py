@@ -2,10 +2,12 @@ import os
 import json
 import boto3
 import logging
-logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.INFO, force=True)
-if os.getenv("DEBUG", None):
-    logging.info("Set logging level to DEBUG")
-    logging.basicConfig(format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s', level=logging.DEBUG, force=True)
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
+ch = logging.StreamHandler()
+ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
+logger.addHandler(ch)
 
 def createCPUUtilizationAlarm(node, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
@@ -50,7 +52,7 @@ def createCPUUtilizationAlarm(node, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
+    logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def createEngineCPUUtilizationAlarm(node, alarmNames):
@@ -96,7 +98,7 @@ def createEngineCPUUtilizationAlarm(node, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
+    logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def createCPUCreditBalanceAlarm(node, instanceTypes, alarmNames):
@@ -145,7 +147,7 @@ def createCPUCreditBalanceAlarm(node, instanceTypes, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
+    logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def createDatabaseMemoryUsagePercentageAlarm(node, alarmNames):
@@ -191,7 +193,7 @@ def createDatabaseMemoryUsagePercentageAlarm(node, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
+    logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
 def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
@@ -211,7 +213,7 @@ def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
     base_throughput=baselineBandwidthInGbps*1000*1000*1000/8
     max_throughput=maxBandwidthInGbps*1000*1000*1000/8
     threshold = 0.8*max_throughput if max_throughput==base_throughput else base_throughput
-    logging.info(f'Network Base Throughput: ${base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
+    logger.info(f'Network Base Throughput: ${base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
         AlarmDescription='实例网络带宽限制。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/instance-types.html#instance-type-summary-table。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 通常，有 16 个或更少 vCPU 的实例（大小为 4xlarge 或更小）被记录为具有“高达”的指定带宽；例如，“高达 10 Gbps”。这些实例具备基准带宽。为满足其他需求，可以使用网络 I/O 积分机制，以突增超出其基准带宽。实例可以在有限时间内使用突增带宽，通常为5到60分钟，具体取决于实例的大小。），告警阈值为基线性能',
@@ -270,7 +272,7 @@ def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
         TreatMissingData='breaching',
         Tags=[]
     )
-    logging.debug(f'Response of put_metric_alarm: {response}')
+    logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
     
 def getInstanceTypes(): 
@@ -285,7 +287,7 @@ def getInstanceTypes():
     return result
 
 def lambda_handler(event, context):
-    logging.info(f'Event In: {json.dumps(event)}')
+    logger.info(f'Event In: {json.dumps(event)}')
     instanceTypeMap = getInstanceTypes()
     # 获取所有Cache实例
     client = boto3.client('elasticache')
@@ -320,7 +322,7 @@ def lambda_handler(event, context):
         numOfAlarmsCreated += 1 if created else 0 
             
     # 删除不再使用的告警
-    logging.info(f'Delete orphan alarms: {alarmNames}')
+    logger.info(f'Delete orphan alarms: {alarmNames}')
     for x in range(0, len(alarmNames), 100):
         response = client.delete_alarms(
             AlarmNames=alarmNames[x:x+100]
@@ -328,7 +330,7 @@ def lambda_handler(event, context):
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames
-    logging.info(f'Event Out: {json.dumps(event)}')
+    logger.info(f'Event Out: {json.dumps(event)}')
     return event
 
 if __name__ == '__main__':
