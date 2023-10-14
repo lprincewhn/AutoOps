@@ -11,6 +11,36 @@ States:
     Resource: '${RemediateNLBAlarmsFunctionArn}'
     InputPath: $
     ResultPath: $
+    Next: RemediateEC2Alarms
+  RemediateEC2Alarms:
+    Type: Task
+    Resource: '${RemediateEC2AlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateEBSAlarms
+  RemediateEBSAlarms:
+    Type: Task
+    Resource: '${RemediateEBSAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateRDSAlarms
+  RemediateRDSAlarms:
+    Type: Task
+    Resource: '${RemediateRDSAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateRedisAlarms
+  RemediateRedisAlarms:
+    Type: Task
+    Resource: '${RemediateRedisAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateIPAMAlarms
+  RemediateIPAMAlarms:
+    Type: Task
+    Resource: '${RemediateIPAMAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
     Next: RemediateVPNAlarms
   RemediateVPNAlarms:
     Type: Task
