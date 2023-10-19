@@ -51,3 +51,11 @@ aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN --region $AW
 ``` bash
 aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager
 ```
+
+## Customized Threshold
+Add tag "AlarmThreshold" to specify dedicate threshold for each resource, the value should be a JSON string, like:
+{"CPUUtilization":90, "CPUCreditBalance", 20}
+
+:----|:----|:----|:----
+EC2 Instance|CPUUtilization|80|CPU utilization rate
+EC2 Instance|CPUCreditBalance|30|The left minutes the instances can run with 100% CPUUtilization. Depends on the number of vcpu, so it needs adjustment after the instance type changed.

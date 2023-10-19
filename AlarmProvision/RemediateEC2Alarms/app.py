@@ -9,6 +9,16 @@ ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
 
+def getThreshold(tags, metric, default):
+    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
+    threshold = default
+    try:
+        threshold = json.loads(thresholds[0].get("Value"))[metric]
+        logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
+    except:
+        logger.info(f"Set threshold of {metric} with default value: {threshold}")
+    return threshold
+
 def createCPUUtilizationAlarm(instance, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -21,6 +31,7 @@ def createCPUUtilizationAlarm(instance, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
+        AlarmDescription="CPU利用率过高",
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         Metrics=[
@@ -46,7 +57,7 @@ def createCPUUtilizationAlarm(instance, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=80,
+        Threshold=getThreshold(instance["Tags"], 'CPUUtilization', 80),
         ComparisonOperator='GreaterThanThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -67,6 +78,7 @@ def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
+        AlarmDescription="系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况。",
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         Metrics=[
@@ -112,6 +124,7 @@ def createStatusCheckFailed_InstanceAlarm(instance, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
+        AlarmDescription="实例健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。",
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         Metrics=[
@@ -160,6 +173,7 @@ def createCPUCreditBalanceAlarm(instance, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
+        AlarmDescription="T系列机器CPU积分不足(1个CPU积分=1个vCPU*100%利用率*1分钟)。请参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html#key-concepts",
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         Metrics=[
@@ -185,7 +199,7 @@ def createCPUCreditBalanceAlarm(instance, alarmNames):
         ],
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=vcpus*30,
+        Threshold=vcpus*getThreshold(instance["Tags"], 'CPUCreditBalance', 30),
         ComparisonOperator='LessThanThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -263,7 +277,7 @@ def createInstanceEBSIOPSAlarm(instance, instanceTypes, alarmNames):
         ],
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=base_iops,
+        Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -492,6 +506,6 @@ def lambda_handler(event, context):
     return event
 
 if __name__ == '__main__':
-    lambda_handler({}, {})
+    print(lambda_handler({}, {}))
 
 
