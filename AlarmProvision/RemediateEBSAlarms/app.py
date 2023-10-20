@@ -9,6 +9,16 @@ ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
 
+def getThreshold(tags, metric, default):
+    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
+    threshold = default
+    try:
+        threshold = json.loads(thresholds[0].get("Value"))[metric]
+        logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
+    except:
+        logger.info(f"Set threshold of {metric} with default value: {threshold}")
+    return threshold
+
 def createIopsAlarm(vol, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -82,7 +92,7 @@ def createIopsAlarm(vol, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=0.8*base_iops,
+        Threshold=getThreshold(vol.get('Tags', []), 'IOPS', 0.8)*base_iops,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -167,7 +177,7 @@ def createThroughputAlarm(vol, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=0.8*base_throughput,
+        Threshold=getThreshold(vol.get('Tags', []), 'Throughput', 0.8)*base_throughput,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]

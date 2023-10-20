@@ -82,7 +82,18 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: RemediateEC2Alarms
-      Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ec2:DescribeInstances
+          - ec2:DescribeInstanceTypes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
@@ -94,7 +105,17 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: RemediateEBSAlarms
-      Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ec2:DescribeVolumes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
@@ -106,7 +127,18 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: RemediateRDSAlarms
-      Policies: [CloudWatchFullAccess,AmazonRDSReadOnlyAccess,AmazonEC2ReadOnlyAccess]
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - rds:DescribeDbInstances
+          - ec2:DescribeInstanceTypes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
@@ -118,7 +150,19 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: RemediateRedisAlarms
-      Policies: [CloudWatchFullAccess,AmazonElastiCacheReadOnlyAccess,AmazonEC2ReadOnlyAccess]
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - elasticache:DescribeCacheClusters
+          - ec2:DescribeInstanceTypes
+          - elasticache:ListTagsForResource
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
@@ -130,7 +174,18 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: RemediateALBAlarms
-      Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - elasticloadbalancing:DescribeTargetGroups
+          - elasticloadbalancing:DescribeTags
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
@@ -142,7 +197,18 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: RemediateNLBAlarms
-      Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - elasticloadbalancing:DescribeTargetGroups
+          - elasticloadbalancing:DescribeTags
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
@@ -154,7 +220,17 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: RemediateVPNAlarms
-      Policies: [CloudWatchFullAccess,AmazonEC2ReadOnlyAccess]
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ec2:DescribeVpnConnections
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
@@ -166,7 +242,14 @@ Resources:
       MemorySize: 128
       Timeout: 300
       CodeUri: NotifySns
-      Policies: [AmazonSNSFullAccess]
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - sns:Publish
+          Resource:
+          - !Ref AutoOpsTopicArn
       Environment:
         Variables:
           SNSTopicArn: !Ref AutoOpsTopicArn

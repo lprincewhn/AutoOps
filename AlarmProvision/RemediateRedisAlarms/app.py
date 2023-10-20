@@ -9,6 +9,17 @@ ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
 
+def getThreshold(tags, metric, default):
+    print(tags)
+    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
+    threshold = default
+    try:
+        threshold = json.loads(thresholds[0].get("Value"))[metric]
+        logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
+    except:
+        logger.info(f"Set threshold of {metric} with default value: {threshold}")
+    return threshold
+    
 def createCPUUtilizationAlarm(node, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -47,7 +58,7 @@ def createCPUUtilizationAlarm(node, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=80,
+        Threshold=getThreshold(node.get("TagList"), "CPUUtilization", 80),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -93,7 +104,7 @@ def createEngineCPUUtilizationAlarm(node, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=80,
+        Threshold=getThreshold(node.get("TagList"), "EngineCPUUtilization", 80),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -128,7 +139,7 @@ def createCPUCreditBalanceAlarm(node, instanceTypes, alarmNames):
                         'MetricName': 'CPUCreditBalance',
                         'Dimensions': [
                             {
-                                'Name': 'DBInstanceIdentifier',
+                                'Name': 'CacheClusterId',
                                 'Value': nodeId
                             }
                         ]
@@ -142,7 +153,7 @@ def createCPUCreditBalanceAlarm(node, instanceTypes, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=vcpus*30,
+        Threshold=vcpus*getThreshold(node.get("TagList"), "CreditSupportMinute", 30),
         ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -188,7 +199,7 @@ def createDatabaseMemoryUsagePercentageAlarm(node, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=80,
+        Threshold=getThreshold(node.get("TagList"), "DatabaseMemoryUsagePercentage", 80),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -212,8 +223,8 @@ def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
         return alarmName, False
     base_throughput=baselineBandwidthInGbps*1000*1000*1000/8
     max_throughput=maxBandwidthInGbps*1000*1000*1000/8
-    threshold = 0.8*max_throughput if max_throughput==base_throughput else base_throughput
-    logger.info(f'Network Base Throughput: ${base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
+    threshold = getThreshold(node.get("TagList"), "MaxNetworkBandwidth", 0.8)*max_throughput if max_throughput==base_throughput else getThreshold(node.get("TagList"), "BaseNetworkBandwidth", 1)*base_throughput
+    logger.info(f'Network Base Throughput: {base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
         AlarmDescription='实例网络带宽限制。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/instance-types.html#instance-type-summary-table。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 通常，有 16 个或更少 vCPU 的实例（大小为 4xlarge 或更小）被记录为具有“高达”的指定带宽；例如，“高达 10 Gbps”。这些实例具备基准带宽。为满足其他需求，可以使用网络 I/O 积分机制，以突增超出其基准带宽。实例可以在有限时间内使用突增带宽，通常为5到60分钟，具体取决于实例的大小。），告警阈值为基线性能',
@@ -297,6 +308,8 @@ def lambda_handler(event, context):
     for page in page_iterator:
         for cache in page["CacheClusters"]:
             if cache["Engine"]=='redis':
+                response = client.list_tags_for_resource(ResourceName=cache["ARN"])
+                cache["TagList"] = response["TagList"]
                 cacheNodeList.append(cache)
     # 获取已创建的告警
     client = boto3.client('cloudwatch')

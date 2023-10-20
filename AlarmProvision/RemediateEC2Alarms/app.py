@@ -57,7 +57,7 @@ def createCPUUtilizationAlarm(instance, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(instance["Tags"], 'CPUUtilization', 80),
+        Threshold=getThreshold(instance.get('Tags', []), 'CPUUtilization', 80),
         ComparisonOperator='GreaterThanThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -199,7 +199,7 @@ def createCPUCreditBalanceAlarm(instance, alarmNames):
         ],
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=vcpus*getThreshold(instance["Tags"], 'CPUCreditBalance', 30),
+        Threshold=vcpus*getThreshold(instance.get('Tags', []), 'CreditSupportMinute', 30),
         ComparisonOperator='LessThanThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -222,7 +222,7 @@ def createInstanceEBSIOPSAlarm(instance, instanceTypes, alarmNames):
         return alarmName, False
     base_iops=ebsOptimizedInfo["BaselineIops"]
     max_iops=ebsOptimizedInfo["MaximumIops"]
-    threshold = 0.8*max_iops if max_iops==base_iops else base_iops
+    threshold = getThreshold(instance.get('Tags', []), 'MaxIOPS', 0.8)*max_iops if max_iops==base_iops else getThreshold(instance.get('Tags', []), 'BaseIOPS', 1)*base_iops
     logger.info(f'EBS Base IOPS: ${base_iops}, Max IOPS: {max_iops}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -300,7 +300,7 @@ def createInstanceEBSThroughputlarm(instance, instanceTypes, alarmNames):
         return alarmName, False
     base_throughput=ebsOptimizedInfo["BaselineThroughputInMBps"]*1000*1000/8
     max_throughput=ebsOptimizedInfo["MaximumBandwidthInMbps"]*1000*1000/8
-    threshold = 0.8*max_throughput if max_throughput==base_throughput else base_throughput
+    threshold = getThreshold(instance.get('Tags', []), 'MaxThroughput', 0.8)*max_throughput if max_throughput==base_throughput else getThreshold(instance.get('Tags', []), 'BaseThroughput', 1)*base_throughput
     logger.info(f'EBS Base Throughput: ${base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -379,8 +379,8 @@ def createInstanceNetworkBandwidthlarm(instance, instanceTypes, alarmNames):
         return alarmName, False
     base_throughput=baselineBandwidthInGbps*1000*1000*1000/8
     max_throughput=maxBandwidthInGbps*1000*1000*1000/8
-    threshold = 0.8*max_throughput if max_throughput==base_throughput else base_throughput
-    logger.info(f'Network Base Throughput: ${base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
+    threshold = getThreshold(instance.get('Tags', []), 'MaxNetworkBandwidth', 0.8)*max_throughput if max_throughput==base_throughput else getThreshold(instance.get('Tags', []), 'BaseNetworkBandwidth', 1)*base_throughput
+    logger.info(f'Network Base Throughput: {base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
         AlarmDescription='实例网络带宽限制。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/instance-types.html#instance-type-summary-table。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 通常，有 16 个或更少 vCPU 的实例（大小为 4xlarge 或更小）被记录为具有“高达”的指定带宽；例如，“高达 10 Gbps”。这些实例具备基准带宽。为满足其他需求，可以使用网络 I/O 积分机制，以突增超出其基准带宽。实例可以在有限时间内使用突增带宽，通常为5到60分钟，具体取决于实例的大小。），告警阈值为基线性能',

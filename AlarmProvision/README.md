@@ -14,8 +14,7 @@ cd ~/AutoOps/AlarmProvision
 AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
 AWS_REGION=<region>
 STACK_NAME=AutoOpsAlarmProvision
-sam build
-sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AUTO_OPS_TOPIC --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AUTO_OPS_TOPIC --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 
 ## Deploy option #2: w/i CloudWatch alarm notification of raw format
@@ -29,8 +28,7 @@ AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic
 RAW_ALARM_TOPIC=<Additional SNS topic receive Cloudwatch alarm notification> # Must in the same region as this SAM appliction
 AWS_REGION=<region>
 STACK_NAME="AutoOps$(basename $(pwd))"
-sam build
-sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AUTO_OPS_TOPIC RawAlarmTopicArn=$RAW_ALARM_TOPIC --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AUTO_OPS_TOPIC RawAlarmTopicArn=$RAW_ALARM_TOPIC --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 
 ## Start
@@ -52,10 +50,69 @@ aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN --region $AW
 aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager
 ```
 
-## Customized Threshold
-Add tag "AlarmThreshold" to specify dedicate threshold for each resource, the value should be a JSON string, like:
-{"CPUUtilization":90, "CPUCreditBalance", 20}
+## Default and Dedicate Threshold
+Add tag "AlarmThreshold" to set dedicate threshold for each resource, the tag value should be a JSON string, like:
+```
+{"CPUUtilization":90, "CreditSupportMinute", 20}
+```
+If not set, default threshold will be used.
 
-:----|:----|:----|:----
-EC2 Instance|CPUUtilization|80|CPU utilization rate
-EC2 Instance|CPUCreditBalance|30|The left minutes the instances can run with 100% CPUUtilization. Depends on the number of vcpu, so it needs adjustment after the instance type changed.
+### ALB Targetgroup
+Parameter|Default Value|Details
+:----|----:|:----
+UnHealthyHostCount|1|It is the threshold of UnHealthyHostCount.
+TargetResponseTime|0.1|It is the threshold of TargetResponseTime.
+
+### ALB 
+Parameter|Default Value|Details
+:----|----:|:----
+Target5XXRate|1|It is the threshold of HTTPCode_Target_5XX_Count/RequestCount*100.
+
+### NLB Targetgroup
+Parameter|Default Value|Details
+:----|----:|:----
+UnHealthyHostCount|1|It is the threshold of UnHealthyHostCount.
+
+### NLB 
+Parameter|Default Value|Details
+:----|----:|:----
+TargetResetRate|1|It is the threshold of TCP_Target_Reset_Count/NewFlowCount*100.
+
+### EC2 Instance
+Parameter|Default Value|Details
+:----|----:|:----
+CPUUtilization|80|It is the threshold of CPUUtilization.
+CreditSupportMinute|30|The left minutes the instances can run with 100% CPUUtilization. Adjustment is needed after the instance type changed because it depends on the number of vcpu. It will determine the threshold of CPUCreditBalance.
+BaseIOPS|1|Only for instance with burst IO performacne. It will determine the threshold of EBSReadOps+EBSWriteOps. Adjustment is needed after the instance type changed.
+MaxIOPS|0.8|Only for instance with consistant IO performacne. It will determine the threshold of EBSReadOps+EBSWriteOps. Adjustment is needed after the instance type changed.
+BaseThroughput|1|Only for instance with burst IO performacne. It will determine the threshold of EBSReadBytes+EBSWriteBytes. Adjustment is needed after the instance type changed.
+MaxThroughput|0.8|Only for instance with consistant IO performacne. It will determine the threshold of EBSReadBytes+EBSWriteBytes. Adjustment is needed after the instance type changed.
+BaseNetworkBandwidth|1|Only for instance with burst IO performacne. It will determine the threshold of max(NetworkIn,NetworkOut). Adjustment is needed after the instance type changed.
+MaxNetworkBandwidth|0.8|Only for instance with consistant IO performacne. It will determine the threshold of max(NetworkIn,NetworkOut). Adjustment is needed after the instance type changed.
+
+### EBS Volume
+Parameter|Default Value|Details
+:----|----:|:----
+IOPS|0.8|It will determine the threshold of (VolumeReadOps+VolumeWriteOps)/PERIOD. Adjustment is needed after the volume type or performance changed.
+Throughput|0.8|It will determine the threshold of (VolumeReadBytes+VolumeWriteBytes)/PERIOD. Adjustment is needed after the volume type or performance changed.
+
+### RDS DB Instance
+Parameter|Default Value|Details
+:----|----:|:----
+CPUUtilization|80|It is the threshold of CPUUtilization.
+CreditSupportMinute|30|The left minutes the instances can run with 100% CPUUtilization. Adjustment is needed after the instance type changed because it depends on the number of vcpu. It will determine the threshold of CPUCreditBalance.
+FreeStorageSpaceGB|50|It will determine the threshold of FreeStorageSpace.
+IOPS|0.8|It will determine the threshold of (ReadIOPS+WriteIOPS). Adjustment is needed after the volume type or performance changed.
+Throughput|0.8|It will determine the threshold of ReadThroughput+WriteThroughput. Adjustment is needed after the volume type or performance changed.
+BaseNetworkBandwidth|1|Only for instance with burst IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
+MaxNetworkBandwidth|0.8|Only for instance with consistant IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
+
+### ElastiCache for Redis Instance
+Parameter|Default Value|Details
+:----|----:|:----
+CPUUtilization|80|It is the threshold of CPUUtilization.
+EngineCPUUtilization|80|It is the threshold of EngineCPUUtilization.
+CreditSupportMinute|30|The left minutes the instances can run with 100% CPUUtilization. Adjustment is needed after the instance type changed because it depends on the number of vcpu. It will determine the threshold of CPUCreditBalance.
+DatabaseMemoryUsagePercentage|80|It is the threshold of DatabaseMemoryUsagePercentage.
+BaseNetworkBandwidth|1|Only for instance with burst IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
+MaxNetworkBandwidth|0.8|Only for instance with consistant IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.

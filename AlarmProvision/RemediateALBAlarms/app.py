@@ -9,13 +9,23 @@ ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
 
+def getThreshold(tags, metric, default):
+    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
+    threshold = default
+    try:
+        threshold = json.loads(thresholds[0].get("Value"))[metric]
+        logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
+    except:
+        logger.info(f"Set threshold of {metric} with default value: {threshold}")
+    return threshold
+
 def createUnHealthyHostCountAlarm(tg, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
     actions = [sns_topic] if sns_topic else []
     client = boto3.client('cloudwatch')
-    lbName = '/'.join(tg[0].split(':')[5].split('/')[1:])
-    tgName = tg[1]
+    lbName = '/'.join(tg["LoadBalancerArn"].split(':')[5].split('/')[1:])
+    tgName = tg["TargetGroupName"]
     alarmName = f'AWS/ALB-UnHealthyHostCount-{lbName}-{tgName}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
@@ -39,7 +49,7 @@ def createUnHealthyHostCountAlarm(tg, alarmNames):
                             },
                             {
                                 'Name': 'TargetGroup',
-                                'Value': tgName
+                                'Value': f'targetgroup/{tgName}'
                             },
                         ]
                     },
@@ -52,7 +62,7 @@ def createUnHealthyHostCountAlarm(tg, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=1,
+        Threshold=getThreshold(tg.get('Tags', []), 'UnHealthyHostCount', 1),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -64,8 +74,8 @@ def createTargetResponseTimeAlarm(tg, alarmNames):
     actions_enable = (sns_topic!=None) 
     actions = [sns_topic] if sns_topic else []
     client = boto3.client('cloudwatch')
-    lbName = '/'.join(tg[0].split(':')[5].split('/')[1:])
-    tgName = tg[1]
+    lbName = '/'.join(tg["LoadBalancerArn"].split(':')[5].split('/')[1:])
+    tgName = tg["TargetGroupName"]
     alarmName = f'AWS/ALB-TargetResponseTime-{lbName}-{tgName}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
@@ -102,7 +112,7 @@ def createTargetResponseTimeAlarm(tg, alarmNames):
         ],
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=0.1,
+        Threshold=getThreshold(tg.get('Tags', []), 'TargetResponseTime', 0.1),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -114,7 +124,7 @@ def createHTTPCode_Target_5XX_RateAlarm(lb, alarmNames):
     actions_enable = (sns_topic!=None) 
     actions = [sns_topic] if sns_topic else []
     client = boto3.client('cloudwatch')
-    lbName = '/'.join(lb.split(':')[5].split('/')[1:])
+    lbName = '/'.join(lb["Name"].split(':')[5].split('/')[1:])
     alarmName = f'AWS/ALB-HTTPCode_Target_5XX_Rate-{lbName}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
@@ -172,7 +182,7 @@ def createHTTPCode_Target_5XX_RateAlarm(lb, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=1,
+        Threshold=getThreshold(lb.get('Tags', []), 'Target5XXRate', 1),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -185,12 +195,17 @@ def lambda_handler(event, context):
     client = boto3.client('elbv2')
     paginator = client.get_paginator('describe_target_groups')
     page_iterator = paginator.paginate()
-    logger.debug(f'Response of describe_alarms: {page_iterator}')
+    logger.debug(f'Response of describe_target_groups: {page_iterator}')
     targetGroups = []
     for page in page_iterator:
         for tg in page["TargetGroups"]:
-            if tg["LoadBalancerArns"] and 'app' in tg["LoadBalancerArns"][0]:
-                targetGroups.append((tg["LoadBalancerArns"][0], tg["TargetGroupName"]))
+            if tg["LoadBalancerArns"] and tg["LoadBalancerArns"][0].split("/")[1]=='app':
+                targetGroups.append({
+                    "LoadBalancerArn": tg["LoadBalancerArns"][0], 
+                    "TargetGroupName": tg["TargetGroupName"],
+                    "TargetGroupArn": tg["TargetGroupArn"]
+                })
+    
     # 获取已创建的告警
     client = boto3.client('cloudwatch')
     paginator = client.get_paginator('describe_alarms')
@@ -200,20 +215,41 @@ def lambda_handler(event, context):
     for page in page_iterator:
         alarmNames += list(map(lambda x:x.get('AlarmName'), page['MetricAlarms']))
 
-    # 创建告警
+    # 获取TargetGroup标签
+    targetGroupTag = {}
+    client = boto3.client('elbv2') 
+    for i in range(0,len(targetGroups), 20):
+        response = client.describe_tags(ResourceArns=list(map(lambda x:x.get("TargetGroupArn"), targetGroups[i:i+20])))
+        targetGroupTag.update(dict(zip(map(lambda x:x["ResourceArn"], response.get("TagDescriptions")), map(lambda x:x.get('Tags', []), response.get("TagDescriptions")))))
+    logger.debug(f'targetGroupTag: {targetGroupTag}')
+    # 创建TargetGroup告警
     numOfAlarmsCreated = 0
     for tg in targetGroups:
+        tg['Tags'] = targetGroupTag[tg["TargetGroupArn"]]
         alarmName, created = createUnHealthyHostCountAlarm(tg, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
         alarmName, created = createTargetResponseTimeAlarm(tg, alarmNames)
         numOfAlarmsCreated += 1 if created else 0
-            
-    for lb in set(map(lambda x:x[0], targetGroups)):
+    # 获取LoadBalancer标签
+    loadBalancers = list(set(map(lambda x:x["LoadBalancerArn"], targetGroups))) 
+    loadBalancerTag = {}
+    client = boto3.client('elbv2') 
+    for i in range(0,len(loadBalancers), 20):
+        response = client.describe_tags(ResourceArns=loadBalancers[i:i+20])
+        loadBalancerTag.update(dict(zip(map(lambda x:x["ResourceArn"], response.get("TagDescriptions")), map(lambda x:x.get('Tags', []), response.get("TagDescriptions")))))
+    logger.debug(f'loadBalancerTag: {targetGroupTag}')
+    # 创建LoadBalancer告警      
+    for lbName in loadBalancers:
+        lb = {
+            "Name": lbName,
+            "Tags": loadBalancerTag[lbName]
+        }
         alarmName, created = createHTTPCode_Target_5XX_RateAlarm(lb, alarmNames)
         numOfAlarmsCreated += 1 if created else 0
             
     # 删除不再使用的告警
     logger.info(f'Delete orphan alarms: {alarmNames}')
+    client = boto3.client('cloudwatch')
     for x in range(0, len(alarmNames), 100):
         response = client.delete_alarms(
             AlarmNames=alarmNames[x:x+100]
