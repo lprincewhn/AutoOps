@@ -25,7 +25,7 @@ def createUnHealthyHostCountAlarm(tg, alarmNames):
     actions = [sns_topic] if sns_topic else []
     client = boto3.client('cloudwatch')
     lbName = '/'.join(tg["LoadBalancerArn"].split(':')[5].split('/')[1:])
-    tgName = tg["TargetGroupName"]
+    tgName = '/'.join(tg["TargetGroupArn"].split(':')[5].split('/')[1:])
     alarmName = f'AWS/ALB-UnHealthyHostCount-{lbName}-{tgName}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
@@ -75,7 +75,7 @@ def createTargetResponseTimeAlarm(tg, alarmNames):
     actions = [sns_topic] if sns_topic else []
     client = boto3.client('cloudwatch')
     lbName = '/'.join(tg["LoadBalancerArn"].split(':')[5].split('/')[1:])
-    tgName = tg["TargetGroupName"]
+    tgName = '/'.join(tg["TargetGroupArn"].split(':')[5].split('/')[1:])
     alarmName = f'AWS/ALB-TargetResponseTime-{lbName}-{tgName}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
@@ -99,7 +99,7 @@ def createTargetResponseTimeAlarm(tg, alarmNames):
                             },
                             {
                                 'Name': 'TargetGroup',
-                                'Value': tgName
+                                'Value': f'targetgroup/{tgName}'
                             },
                         ]
                     },
@@ -202,7 +202,6 @@ def lambda_handler(event, context):
             if tg["LoadBalancerArns"] and tg["LoadBalancerArns"][0].split("/")[1]=='app':
                 targetGroups.append({
                     "LoadBalancerArn": tg["LoadBalancerArns"][0], 
-                    "TargetGroupName": tg["TargetGroupName"],
                     "TargetGroupArn": tg["TargetGroupArn"]
                 })
     
