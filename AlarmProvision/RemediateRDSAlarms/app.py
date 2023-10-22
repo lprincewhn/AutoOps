@@ -2,22 +2,13 @@ import os
 import json
 import boto3
 import logging
+import common
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
-
-def getThreshold(tags, metric, default):
-    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
-    threshold = default
-    try:
-        threshold = json.loads(thresholds[0].get("Value"))[metric]
-        logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
-    except:
-        logger.info(f"Set threshold of {metric} with default value: {threshold}")
-    return threshold
 
 def createCPUUtilizationAlarm(db, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
@@ -57,7 +48,7 @@ def createCPUUtilizationAlarm(db, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(db.get("TagList"), "CPUUtilization", 80),
+        Threshold=common.getThreshold(db.get("TagList"), "CPUUtilization", 80),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -106,7 +97,7 @@ def createCPUCreditBalanceAlarm(db, instanceTypes, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=vcpus*getThreshold(db.get("TagList", []), "CreditSupportMinute", 80),
+        Threshold=vcpus*common.getThreshold(db.get("TagList", []), "CreditSupportMinute", 80),
         ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -152,7 +143,7 @@ def createFreeStorageSpaceAlarm(db, alarmNames):
         ],
         EvaluationPeriods=5,
         DatapointsToAlarm=5,
-        Threshold=getThreshold(db.get("TagList", []), "FreeStorageSpaceGB", 50)*1024*1024*1024,
+        Threshold=common.getThreshold(db.get("TagList", []), "FreeStorageSpaceGB", 50)*1024*1024*1024,
         ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -236,7 +227,7 @@ def createIopsAlarm(db, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(db.get("TagList", []), "IOPS", 0.8)*base_iops,
+        Threshold=common.getThreshold(db.get("TagList", []), "IOPS", 0.8)*base_iops,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -324,7 +315,7 @@ def createThroughputAlarm(db, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(db.get("TagList", []), "Throughput", 0.8)*base_throughput,
+        Threshold=common.getThreshold(db.get("TagList", []), "Throughput", 0.8)*base_throughput,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -348,7 +339,7 @@ def createInstanceNetworkBandwidthlarm(db, instanceTypes, alarmNames):
         return alarmName, False
     base_throughput=baselineBandwidthInGbps*1000*1000*1000/8
     max_throughput=maxBandwidthInGbps*1000*1000*1000/8
-    threshold = getThreshold(db.get('TagList', []), 'MaxNetworkBandwidth', 1)*max_throughput if max_throughput==base_throughput else getThreshold(db.get('TagList', []), 'BaseNetworkBandwidth', 1)*base_throughput
+    threshold = common.getThreshold(db.get('TagList', []), 'MaxNetworkBandwidth', 1)*max_throughput if max_throughput==base_throughput else common.getThreshold(db.get('TagList', []), 'BaseNetworkBandwidth', 1)*base_throughput
     logger.info(f'Network Base Throughput: {base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -410,21 +401,10 @@ def createInstanceNetworkBandwidthlarm(db, instanceTypes, alarmNames):
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
-    
-def getInstanceTypes(): 
-    # 获取所有EC2实例类型
-    client = boto3.client('ec2')
-    paginator = client.get_paginator('describe_instance_types')
-    page_iterator = paginator.paginate()
-    result = {}
-    for page in page_iterator:
-        for r in page["InstanceTypes"]:
-            result[r["InstanceType"]] = r
-    return result
 
 def lambda_handler(event, context):
     logger.info(f'Event In: {json.dumps(event)}')
-    instanceTypeMap = getInstanceTypes()
+    instanceTypeMap = common.getInstanceTypes()
     # 获取所有RDS实例
     client = boto3.client('rds')
     paginator = client.get_paginator('describe_db_instances')

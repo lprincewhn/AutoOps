@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 import logging
+import common
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)

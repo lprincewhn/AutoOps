@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 import logging
+import common
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
@@ -20,9 +21,11 @@ def createSubnetIPUsageAlarm(cidr, alarmNames):
         return alarmName, False
     addressCount = 2**(32-int(cidr["ResourceCidr"].split('/')[1]))
     addressThreshold = 20
+    addressPercentageThreshold = 1
+    threshold = min(100-addressPercentageThreshold, (addressCount-addressThreshold)*100/addressCount)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'子网剩余IP数量不足{addressThreshold}个',
+        AlarmDescription=f'子网剩余IP数量不足{addressThreshold}个或{addressPercentageThreshold}%',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         Metrics=[
@@ -68,7 +71,7 @@ def createSubnetIPUsageAlarm(cidr, alarmNames):
         ],
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=(addressCount-addressThreshold)*100/addressCount,
+        Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]

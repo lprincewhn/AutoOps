@@ -2,22 +2,13 @@ import os
 import json
 import boto3
 import logging
+import common
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
-
-def getThreshold(tags, metric, default):
-    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
-    threshold = default
-    try:
-        threshold = json.loads(thresholds[0].get("Value"))[metric]
-        logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
-    except:
-        logger.info(f"Set threshold of {metric} with default value: {threshold}")
-    return threshold
 
 def createCPUUtilizationAlarm(instance, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
@@ -57,7 +48,7 @@ def createCPUUtilizationAlarm(instance, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(instance.get('Tags', []), 'CPUUtilization', 80),
+        Threshold=common.getThreshold(instance.get('Tags', []), 'CPUUtilization', 80),
         ComparisonOperator='GreaterThanThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -199,7 +190,7 @@ def createCPUCreditBalanceAlarm(instance, alarmNames):
         ],
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=vcpus*getThreshold(instance.get('Tags', []), 'CreditSupportMinute', 30),
+        Threshold=vcpus*common.getThreshold(instance.get('Tags', []), 'CreditSupportMinute', 30),
         ComparisonOperator='LessThanThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -222,7 +213,7 @@ def createInstanceEBSIOPSAlarm(instance, instanceTypes, alarmNames):
         return alarmName, False
     base_iops=ebsOptimizedInfo["BaselineIops"]
     max_iops=ebsOptimizedInfo["MaximumIops"]
-    threshold = getThreshold(instance.get('Tags', []), 'MaxIOPS', 0.8)*max_iops if max_iops==base_iops else getThreshold(instance.get('Tags', []), 'BaseIOPS', 1)*base_iops
+    threshold = common.getThreshold(instance.get('Tags', []), 'MaxIOPS', 0.8)*max_iops if max_iops==base_iops else common.getThreshold(instance.get('Tags', []), 'BaseIOPS', 1)*base_iops
     logger.info(f'EBS Base IOPS: ${base_iops}, Max IOPS: {max_iops}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -300,7 +291,7 @@ def createInstanceEBSThroughputlarm(instance, instanceTypes, alarmNames):
         return alarmName, False
     base_throughput=ebsOptimizedInfo["BaselineThroughputInMBps"]*1000*1000/8
     max_throughput=ebsOptimizedInfo["MaximumBandwidthInMbps"]*1000*1000/8
-    threshold = getThreshold(instance.get('Tags', []), 'MaxThroughput', 0.8)*max_throughput if max_throughput==base_throughput else getThreshold(instance.get('Tags', []), 'BaseThroughput', 1)*base_throughput
+    threshold = common.getThreshold(instance.get('Tags', []), 'MaxThroughput', 0.8)*max_throughput if max_throughput==base_throughput else common.getThreshold(instance.get('Tags', []), 'BaseThroughput', 1)*base_throughput
     logger.info(f'EBS Base Throughput: ${base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -379,7 +370,7 @@ def createInstanceNetworkBandwidthlarm(instance, instanceTypes, alarmNames):
         return alarmName, False
     base_throughput=baselineBandwidthInGbps*1000*1000*1000/8
     max_throughput=maxBandwidthInGbps*1000*1000*1000/8
-    threshold = getThreshold(instance.get('Tags', []), 'MaxNetworkBandwidth', 0.8)*max_throughput if max_throughput==base_throughput else getThreshold(instance.get('Tags', []), 'BaseNetworkBandwidth', 1)*base_throughput
+    threshold = common.getThreshold(instance.get('Tags', []), 'MaxNetworkBandwidth', 0.8)*max_throughput if max_throughput==base_throughput else common.getThreshold(instance.get('Tags', []), 'BaseNetworkBandwidth', 1)*base_throughput
     logger.info(f'Network Base Throughput: {base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -442,20 +433,9 @@ def createInstanceNetworkBandwidthlarm(instance, instanceTypes, alarmNames):
     logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
-def getInstanceTypes(): 
-    # 获取所有EC2实例类型
-    client = boto3.client('ec2')
-    paginator = client.get_paginator('describe_instance_types')
-    page_iterator = paginator.paginate()
-    result = {}
-    for page in page_iterator:
-        for r in page["InstanceTypes"]:
-            result[r["InstanceType"]] = r
-    return result
-
 def lambda_handler(event, context):
     logger.info(f'Event In: {json.dumps(event)}')
-    instanceTypeMap = getInstanceTypes()
+    instanceTypeMap = common.getInstanceTypes()
     # 获取所有EC2实例
     client = boto3.client('ec2')
     paginator = client.get_paginator('describe_instances')

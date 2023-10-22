@@ -2,6 +2,7 @@ import os
 import json
 import boto3
 import logging
+import common
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
@@ -9,17 +10,6 @@ ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
 
-def getThreshold(tags, metric, default):
-    print(tags)
-    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
-    threshold = default
-    try:
-        threshold = json.loads(thresholds[0].get("Value"))[metric]
-        logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
-    except:
-        logger.info(f"Set threshold of {metric} with default value: {threshold}")
-    return threshold
-    
 def createCPUUtilizationAlarm(node, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -58,7 +48,7 @@ def createCPUUtilizationAlarm(node, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(node.get("TagList"), "CPUUtilization", 80),
+        Threshold=common.getThreshold(node.get("TagList"), "CPUUtilization", 80),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -104,7 +94,7 @@ def createEngineCPUUtilizationAlarm(node, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(node.get("TagList"), "EngineCPUUtilization", 80),
+        Threshold=common.getThreshold(node.get("TagList"), "EngineCPUUtilization", 80),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -153,7 +143,7 @@ def createCPUCreditBalanceAlarm(node, instanceTypes, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=vcpus*getThreshold(node.get("TagList"), "CreditSupportMinute", 30),
+        Threshold=vcpus*common.getThreshold(node.get("TagList"), "CreditSupportMinute", 30),
         ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -199,7 +189,7 @@ def createDatabaseMemoryUsagePercentageAlarm(node, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(node.get("TagList"), "DatabaseMemoryUsagePercentage", 80),
+        Threshold=common.getThreshold(node.get("TagList"), "DatabaseMemoryUsagePercentage", 80),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -223,7 +213,7 @@ def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
         return alarmName, False
     base_throughput=baselineBandwidthInGbps*1000*1000*1000/8
     max_throughput=maxBandwidthInGbps*1000*1000*1000/8
-    threshold = getThreshold(node.get("TagList"), "MaxNetworkBandwidth", 0.8)*max_throughput if max_throughput==base_throughput else getThreshold(node.get("TagList"), "BaseNetworkBandwidth", 1)*base_throughput
+    threshold = common.getThreshold(node.get("TagList"), "MaxNetworkBandwidth", 0.8)*max_throughput if max_throughput==base_throughput else common.getThreshold(node.get("TagList"), "BaseNetworkBandwidth", 1)*base_throughput
     logger.info(f'Network Base Throughput: {base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -285,21 +275,10 @@ def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
-    
-def getInstanceTypes(): 
-    # 获取所有EC2实例类型
-    client = boto3.client('ec2')
-    paginator = client.get_paginator('describe_instance_types')
-    page_iterator = paginator.paginate()
-    result = {}
-    for page in page_iterator:
-        for r in page["InstanceTypes"]:
-            result[r["InstanceType"]] = r
-    return result
 
 def lambda_handler(event, context):
     logger.info(f'Event In: {json.dumps(event)}')
-    instanceTypeMap = getInstanceTypes()
+    instanceTypeMap = common.getInstanceTypes()
     # 获取所有Cache实例
     client = boto3.client('elasticache')
     paginator = client.get_paginator('describe_cache_clusters')

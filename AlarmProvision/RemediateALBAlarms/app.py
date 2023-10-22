@@ -2,22 +2,13 @@ import os
 import json
 import boto3
 import logging
+import common
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
 ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
-
-def getThreshold(tags, metric, default):
-    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
-    threshold = default
-    try:
-        threshold = json.loads(thresholds[0].get("Value"))[metric]
-        logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
-    except:
-        logger.info(f"Set threshold of {metric} with default value: {threshold}")
-    return threshold
 
 def createUnHealthyHostCountAlarm(tg, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
@@ -62,7 +53,7 @@ def createUnHealthyHostCountAlarm(tg, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(tg.get('Tags', []), 'UnHealthyHostCount', 1),
+        Threshold=common.getThreshold(tg.get('Tags', []), 'UnHealthyHostCount', 1),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -112,7 +103,7 @@ def createTargetResponseTimeAlarm(tg, alarmNames):
         ],
         EvaluationPeriods=1,
         DatapointsToAlarm=1,
-        Threshold=getThreshold(tg.get('Tags', []), 'TargetResponseTime', 0.1),
+        Threshold=common.getThreshold(tg.get('Tags', []), 'TargetResponseTime', 0.1),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -182,7 +173,7 @@ def createHTTPCode_Target_5XX_RateAlarm(lb, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=getThreshold(lb.get('Tags', []), 'Target5XXRate', 1),
+        Threshold=common.getThreshold(lb.get('Tags', []), 'Target5XXRate', 1),
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
