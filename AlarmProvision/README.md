@@ -13,7 +13,7 @@ git clone https://github.com/lprincewhn/AutoOps.git
 cd ~/AutoOps/AlarmProvision
 AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
 AWS_REGION=<region>
-STACK_NAME=AutoOpsAlarmProvision
+STACK_NAME="AutoOps$(basename $(pwd))"
 sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AUTO_OPS_TOPIC --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 

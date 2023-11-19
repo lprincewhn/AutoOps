@@ -10,6 +10,57 @@ ch = logging.StreamHandler()
 ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s'))
 logger.addHandler(ch)
 
+def createStalledIOCheckAlarm(attachment, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    volId = attachment["VolumeId"]
+    instanceId = attachment["InstanceId"]
+    alarmName = f'AWS/EBS-VolumeStalledIOCheck-{volId}-{instanceId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        AlarmDescription='IO阻塞检查失败',
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/EBS',
+                        'MetricName': 'VolumeStalledIOCheck',
+                        'Dimensions': [
+                            {
+                                'Name': 'InstanceId',
+                                'Value': instanceId
+                            },
+                            {
+                                'Name': 'VolumeId',
+                                'Value': volId
+                            },
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Sum',
+                },
+                'Label': volId,
+                'ReturnData': True,
+            }
+        ],
+        EvaluationPeriods=3,
+        DatapointsToAlarm=3,
+        Threshold=0,
+        ComparisonOperator='GreaterThanThreshold',
+        TreatMissingData='breaching',
+        Tags=[]
+    )
+    logger.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+
 def createIopsAlarm(vol, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -202,7 +253,9 @@ def lambda_handler(event, context):
         numOfAlarmsCreated += 1 if created else 0 
         alarmName, created = createThroughputAlarm(vol, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
-            
+        for a in vol["Attachments"]:
+            alarmName, created = createStalledIOCheckAlarm(vol, alarmNames)
+            numOfAlarmsCreated += 1 if created else 0             
     # 删除不再使用的告警
     logger.info(f'Delete orphan alarms: {alarmNames}')
     for x in range(0, len(alarmNames), 100):

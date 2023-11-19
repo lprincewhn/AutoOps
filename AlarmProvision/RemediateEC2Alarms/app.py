@@ -59,17 +59,151 @@ def createCPUUtilizationAlarm(instance, alarmNames):
 def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     region = os.getenv('AWS_REGION')
-    actions_enable = (sns_topic!=None) 
-    actions = [f'arn:aws:automate:{region}:ec2:recover', sns_topic] if sns_topic else [f'arn:aws:automate:{region}:ec2:recover']
+    actions1 = [f'arn:aws:automate:{region}:ec2:recover', sns_topic] if sns_topic else [f'arn:aws:automate:{region}:ec2:recover']
+    actions1_enable = bool(actions) 
+    actions2 = [sns_topic] if sns_topic else []
+    actions2_enable = bool(actions) 
     client = boto3.client('cloudwatch')
     instanceId = instance["InstanceId"]
     alarmName = f'AWS/EC2-StatusCheckFailed_System-{instanceId}'
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
         return alarmName, False
+    monitorMetrics = [
+                {
+                    'Id': 'm1',
+                    'MetricStat': {
+                        'Metric': {
+                            'Namespace': 'AWS/EC2',
+                            'MetricName': 'StatusCheckFailed_System',
+                            'Dimensions': [
+                                {
+                                    'Name': 'InstanceId',
+                                    'Value': instanceId
+                                },
+                            ]
+                        },
+                        'Period': 60,
+                        'Stat': 'Average',
+                    },
+                    'Label': instanceId,
+                    'ReturnData': True,
+                },
+            ]
+    try:
+        response = client.put_metric_alarm(
+            AlarmName=alarmName,
+            AlarmDescription="系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况。",
+            ActionsEnabled=actions1_enable,
+            AlarmActions=actions1,
+            Metrics=monitorMetrics,
+            EvaluationPeriods=2,
+            DatapointsToAlarm=2,
+            Threshold=0,
+            ComparisonOperator='GreaterThanThreshold',
+            TreatMissingData='missing',
+            Tags=[]
+        )
+        logger.debug(f'Response of put_metric_alarm: {response}')
+        return alarmName, True
+    except:
+        response = client.put_metric_alarm(
+            AlarmName=alarmName,
+            AlarmDescription="系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况。",
+            ActionsEnabled=actions2_enable,
+            AlarmActions=actions2,
+            Metrics=monitorMetrics,
+            EvaluationPeriods=2,
+            DatapointsToAlarm=2,
+            Threshold=0,
+            ComparisonOperator='GreaterThanThreshold',
+            TreatMissingData='missing',
+            Tags=[]
+        )
+        logger.debug(f'Response of put_metric_alarm: {response}')
+        return alarmName, True
+
+
+def createStatusCheckFailed_InstanceAlarm(instance, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    region = os.getenv('AWS_REGION')
+    actions1 = [f'arn:aws:automate:{region}:ec2:reboot', sns_topic] if sns_topic else [f'arn:aws:automate:{region}:ec2:reboot']
+    actions1_enable = bool(actions) 
+    actions2 = [sns_topic] if sns_topic else []
+    actions2_enable = bool(actions) 
+    client = boto3.client('cloudwatch')
+    instanceId = instance["InstanceId"]
+    alarmName = f'AWS/EC2-StatusCheckFailed_Instance-{instanceId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    monitorMetrics = [
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/EC2',
+                        'MetricName': 'StatusCheckFailed_Instance',
+                        'Dimensions': [
+                            {
+                                'Name': 'InstanceId',
+                                'Value': instanceId
+                            },
+                        ]
+                    },
+                    'Period': 60,
+                    'Stat': 'Average',
+                },
+                'Label': instanceId,
+                'ReturnData': True,
+            },
+        ]
+    try: 
+        response = client.put_metric_alarm(
+            AlarmName=alarmName,
+            AlarmDescription="实例健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。",
+            ActionsEnabled=actions1_enable,
+            AlarmActions=actions1,
+            Metrics=monitorMetrics,
+            EvaluationPeriods=3,
+            DatapointsToAlarm=3,
+            Threshold=0,
+            ComparisonOperator='GreaterThanThreshold',
+            TreatMissingData='missing',
+            Tags=[]
+        )
+        logger.debug(f'Response of put_metric_alarm: {response}')
+        return alarmName, True
+    except:
+        response = client.put_metric_alarm(
+            AlarmName=alarmName,
+            AlarmDescription="实例健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。",
+            ActionsEnabled=actions2_enable,
+            AlarmActions=actions2,
+            Metrics=monitorMetrics,
+            EvaluationPeriods=3,
+            DatapointsToAlarm=3,
+            Threshold=0,
+            ComparisonOperator='GreaterThanThreshold',
+            TreatMissingData='missing',
+            Tags=[]
+        )
+        logger.debug(f'Response of put_metric_alarm: {response}')
+        return alarmName, True
+
+def createStatusCheckFailed_AttachedEBSAlarm(instance, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions = [sns_topic] if sns_topic else []
+    actions_enable = bool(actions) 
+    client = boto3.client('cloudwatch')
+    instanceId = instance["InstanceId"]
+    alarmName = f'AWS/EC2-StatusCheckFailed_AttachedEBS-{instanceId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription="系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况。",
+        AlarmDescription="实例挂载EBS失败，表示EBS故障，可通过快照创建新的EBS卷并更换解决。如果需要保留数据，需要等待AWS后台恢复，可提工单了解恢复进度",
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         Metrics=[
@@ -78,7 +212,7 @@ def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
                 'MetricStat': {
                     'Metric': {
                         'Namespace': 'AWS/EC2',
-                        'MetricName': 'StatusCheckFailed_System',
+                        'MetricName': 'StatusCheckFailed_AttachedEBS',
                         'Dimensions': [
                             {
                                 'Name': 'InstanceId',
@@ -103,51 +237,6 @@ def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
     logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
-def createStatusCheckFailed_InstanceAlarm(instance, alarmNames):
-    sns_topic = os.getenv('SNSTopicArn')
-    actions_enable = (sns_topic!=None) 
-    actions = [sns_topic] if sns_topic else []
-    client = boto3.client('cloudwatch')
-    instanceId = instance["InstanceId"]
-    alarmName = f'AWS/EC2-StatusCheckFailed_Instance-{instanceId}'
-    if alarmName in alarmNames:
-        alarmNames.remove(alarmName)
-        return alarmName, False
-    response = client.put_metric_alarm(
-        AlarmName=alarmName,
-        AlarmDescription="实例健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。",
-        ActionsEnabled=actions_enable,
-        AlarmActions=actions,
-        Metrics=[
-            {
-                'Id': 'm1',
-                'MetricStat': {
-                    'Metric': {
-                        'Namespace': 'AWS/EC2',
-                        'MetricName': 'StatusCheckFailed_Instance',
-                        'Dimensions': [
-                            {
-                                'Name': 'InstanceId',
-                                'Value': instanceId
-                            },
-                        ]
-                    },
-                    'Period': 60,
-                    'Stat': 'Average',
-                },
-                'Label': instanceId,
-                'ReturnData': True,
-            },
-        ],
-        EvaluationPeriods=3,
-        DatapointsToAlarm=3,
-        Threshold=0,
-        ComparisonOperator='GreaterThanThreshold',
-        TreatMissingData='missing',
-        Tags=[]
-    )
-    logger.debug(f'Response of put_metric_alarm: {response}')
-    return alarmName, True
 
 def createCPUCreditBalanceAlarm(instance, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
@@ -454,6 +543,12 @@ def lambda_handler(event, context):
     # 创建告警
     numOfAlarmsCreated = 0
     for i in instanceList:
+        alarmName, created = createStatusCheckFailed_SystemAlarm(i, alarmNames)
+        numOfAlarmsCreated += 1 if created else 0
+        alarmName, created = createStatusCheckFailed_InstanceAlarm(i, alarmNames)
+        numOfAlarmsCreated += 1 if created else 0 
+        alarmName, created = createStatusCheckFailed_AttachedEBSAlarm(i, alarmNames)
+        numOfAlarmsCreated += 1 if created else 0 
         alarmName, created = createCPUUtilizationAlarm(i, alarmNames)
         numOfAlarmsCreated += 1 if created else 0
         alarmName, created = createInstanceEBSIOPSAlarm(i, instanceTypeMap, alarmNames)
@@ -465,13 +560,6 @@ def lambda_handler(event, context):
         if i["InstanceType"].startswith("t"):
             alarmName, created = createCPUCreditBalanceAlarm(i, alarmNames)
             numOfAlarmsCreated += 1 if created else 0
-        try:
-            alarmName, created = createStatusCheckFailed_SystemAlarm(i, alarmNames)
-            numOfAlarmsCreated += 1 if created else 0
-            alarmName, created = createStatusCheckFailed_InstanceAlarm(i, alarmNames)
-            numOfAlarmsCreated += 1 if created else 0 
-        except Exception as e:
-            logger.warning(f'{e}')
     # 删除不再使用的告警
     logger.info(f'Delete orphan alarms: {alarmNames}')
     for x in range(0, len(alarmNames), 100):
