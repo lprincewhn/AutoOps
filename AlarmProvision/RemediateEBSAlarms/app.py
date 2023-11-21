@@ -23,9 +23,10 @@ def createStalledIOCheckAlarm(attachment, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='IO阻塞检查失败',
+        AlarmDescription=f'EBS卷{volId} IO阻塞检查失败',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -81,11 +82,13 @@ def createIopsAlarm(vol, alarmNames):
         base_iops = max(vol["Iops"], 3000)
     if base_iops==0:
         return alarmName, False
+    threshold = common.getThreshold(vol.get('Tags', []), 'IOPS', 0.8)*base_iops
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='IOPS。EBS类型和性能参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-volume-types.html',
+        AlarmDescription=f'EBS卷{volId} IOPS超过阈值{threshold}。EBS类型和性能参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-volume-types.html',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -134,7 +137,7 @@ def createIopsAlarm(vol, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=common.getThreshold(vol.get('Tags', []), 'IOPS', 0.8)*base_iops,
+        Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -166,11 +169,13 @@ def createThroughputAlarm(vol, alarmNames):
         base_throughput = max(vol["Throughput"]*1024*1024, 125*1024*1024)
     if base_throughput==0:
         return alarmName, False
+    threshold = common.getThreshold(vol.get('Tags', []), 'Throughput', 0.8)*base_throughput
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='吞吐量。EBS类型和性能参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-volume-types.html',
+        AlarmDescription=f'EBS卷{volId}吞吐量超过阈值{threshold}Bytes/sec。EBS类型和性能参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-volume-types.html',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -219,7 +224,7 @@ def createThroughputAlarm(vol, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=common.getThreshold(vol.get('Tags', []), 'Throughput', 0.8)*base_throughput,
+        Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -254,7 +259,7 @@ def lambda_handler(event, context):
         alarmName, created = createThroughputAlarm(vol, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
         for a in vol["Attachments"]:
-            alarmName, created = createStalledIOCheckAlarm(vol, alarmNames)
+            alarmName, created = createStalledIOCheckAlarm(a, alarmNames)
             numOfAlarmsCreated += 1 if created else 0             
     # 删除不再使用的告警
     logger.info(f'Delete orphan alarms: {alarmNames}')
