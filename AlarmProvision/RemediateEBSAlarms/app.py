@@ -23,7 +23,7 @@ def createStalledIOCheckAlarm(attachment, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'EBS卷{volId} IO阻塞检查失败',
+        AlarmDescription=f'EBS卷{volId}(EC实例{instanceId})IO阻塞检查失败',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
