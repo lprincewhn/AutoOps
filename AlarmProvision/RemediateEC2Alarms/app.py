@@ -23,7 +23,7 @@ def createCPUUtilizationAlarm(instance, alarmNames):
     threshold = common.getThreshold(instance.get('Tags', []), 'CPUUtilization', 80)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})CPU利用率超过阈值{threshold}",
+        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})CPU利用率超过阈值{threshold}',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
