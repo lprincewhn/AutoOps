@@ -185,6 +185,7 @@ def lambda_handler(event, context):
         numOfAlarmsCreated += 1 if created else 0
             
     # 删除不再使用的告警
+    client = boto3.client('cloudwatch') 
     logger.info(f'Delete orphan alarms: {alarmNames}')
     for x in range(0, len(alarmNames), 100):
         response = client.delete_alarms(
