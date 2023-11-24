@@ -24,6 +24,7 @@ def createTunnelStateAlarm(connection, alarmNames):
         AlarmName=alarmName,
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',

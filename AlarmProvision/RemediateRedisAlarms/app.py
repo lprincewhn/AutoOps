@@ -306,7 +306,6 @@ def lambda_handler(event, context):
     alarmNames = []
     for page in page_iterator:
         alarmNames += list(map(lambda x:x.get('AlarmName'), page['MetricAlarms']))
-
     # 创建告警
     numOfAlarmsCreated = 0
     for node in cacheNodeList:

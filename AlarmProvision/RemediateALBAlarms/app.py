@@ -26,6 +26,7 @@ def createUnHealthyHostCountAlarm(tg, alarmNames):
         AlarmDescription='未正常运行的目标数量',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -76,6 +77,7 @@ def createTargetResponseTimeAlarm(tg, alarmNames):
         AlarmDescription='请求离开负载均衡器直至收到来自目标的响应所用的时间（以秒为单位）。这与访问日志中的 target_processing_time 字段是等效的。',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -125,6 +127,7 @@ def createHTTPCode_Target_5XX_RateAlarm(lb, alarmNames):
         AlarmDescription='目标生成的HTTP响应代码的数量占已转发给目标请求数的比例。它不包括负载均衡器生成的任何响应代码。',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -200,7 +203,6 @@ def lambda_handler(event, context):
     client = boto3.client('cloudwatch')
     paginator = client.get_paginator('describe_alarms')
     page_iterator = paginator.paginate(AlarmNamePrefix=f'AWS/ALB-')
-    logger.debug(f'Response of describe_alarms: {page_iterator}')
     alarmNames = []
     for page in page_iterator:
         alarmNames += list(map(lambda x:x.get('AlarmName'), page['MetricAlarms']))

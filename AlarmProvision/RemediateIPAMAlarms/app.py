@@ -28,6 +28,7 @@ def createSubnetIPUsageAlarm(cidr, alarmNames):
         AlarmDescription=f'子网剩余IP数量不足{addressThreshold}个或{addressPercentageThreshold}%',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
