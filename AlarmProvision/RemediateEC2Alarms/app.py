@@ -548,10 +548,11 @@ def lambda_handler(event, context):
                 instanceList.append(i)
     # 获取已创建的告警
     client = boto3.client('cloudwatch')
-    response = client.describe_alarms(
-        AlarmNamePrefix=f'AWS/EC2-'
-    )
-    alarmNames = list(map(lambda x:x.get('AlarmName'), response['MetricAlarms']))
+    paginator = client.get_paginator('describe_alarms')
+    page_iterator = paginator.paginate(AlarmNamePrefix=f'AWS/EC2-')
+    alarmNames = []
+    for page in page_iterator:
+        alarmNames += list(map(lambda x:x.get('AlarmName'), page['MetricAlarms']))
     # 创建告警
     numOfAlarmsCreated = 0
     for i in instanceList:

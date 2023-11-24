@@ -23,9 +23,10 @@ def createUnHealthyHostCountAlarm(tg, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='未正常运行的目标数量',
+        AlarmDescription=f'负载均衡器{lbName}目标组{tgName}存在健康检查失败的目标',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -71,11 +72,13 @@ def createTCP_Target_Reset_RateAlarm(lb, alarmNames):
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
         return alarmName, False
+    threshold = common.getThreshold(lb.get('Tags', []), 'Target5XXRate', 1)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='从目标发送至客户端的重置(RST)数据包的数量占新增连接数比例。这些重置由目标生成，然后由负载均衡器转发。',
+        AlarmDescription=f'负载均衡器{lbName}从目标发送至客户端的重置(RST)数据包的数量占新增连接数比例超过阈值{threshold}%。这些RST数据包由目标生成，然后由负载均衡器转发。',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -124,7 +127,7 @@ def createTCP_Target_Reset_RateAlarm(lb, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=common.getThreshold(lb.get('Tags', []), 'Target5XXRate', 1),
+        Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]

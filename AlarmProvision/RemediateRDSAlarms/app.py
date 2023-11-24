@@ -20,11 +20,13 @@ def createCPUUtilizationAlarm(db, alarmNames):
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
         return alarmName, False
+    threshold = common.getThreshold(db.get("TagList"), "CPUUtilization", 80)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='CPU利用率',
+        AlarmDescription=f'RDS实例{dbId}CPU利用率超出阈值{threshold}',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -48,7 +50,7 @@ def createCPUUtilizationAlarm(db, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=common.getThreshold(db.get("TagList"), "CPUUtilization", 80),
+        Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -69,11 +71,13 @@ def createCPUCreditBalanceAlarm(db, instanceTypes, alarmNames):
     vcpus = instanceTypes[db["DBInstanceClass"].strip('db.')]["VCpuInfo"]["DefaultVCpus"]
     if not vcpus:
         return alarmName, False
+    threshold = vcpus*common.getThreshold(db.get("TagList", []), "CreditSupportMinute", 80)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='CPU积分余额',
+        AlarmDescription=f'RDS实例{dbId}CPU积分低于阈值{threshold} (1个CPU积分=1个vCPU*100%利用率*1分钟)。请参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html#key-concepts',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -97,7 +101,7 @@ def createCPUCreditBalanceAlarm(db, instanceTypes, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=vcpus*common.getThreshold(db.get("TagList", []), "CreditSupportMinute", 80),
+        Threshold=threshold,
         ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -115,11 +119,13 @@ def createFreeStorageSpaceAlarm(db, alarmNames):
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
         return alarmName, False
+    threshold = common.getThreshold(db.get("TagList", []), "FreeStorageSpaceGB", 50)*1024*1024*1024
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='磁盘空间不足',
+        AlarmDescription=f'RDS实例{dbId}剩余磁盘空间低于{threshold/1024/1024/1024}GB',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -143,7 +149,7 @@ def createFreeStorageSpaceAlarm(db, alarmNames):
         ],
         EvaluationPeriods=5,
         DatapointsToAlarm=5,
-        Threshold=common.getThreshold(db.get("TagList", []), "FreeStorageSpaceGB", 50)*1024*1024*1024,
+        Threshold=threshold,
         ComparisonOperator='LessThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -174,11 +180,13 @@ def createIopsAlarm(db, alarmNames):
             base_iops = 3000
     if base_iops==0:
         return alarmName, False
+    threshold = common.getThreshold(db.get("TagList", []), "IOPS", 0.8)*base_iops
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='IOPS。EBS类型和性能参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-volume-types.html',
+        AlarmDescription=f'RDS实例{dbId} IOPS超过阈值{threshold}',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -227,7 +235,7 @@ def createIopsAlarm(db, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=common.getThreshold(db.get("TagList", []), "IOPS", 0.8)*base_iops,
+        Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -262,11 +270,13 @@ def createThroughputAlarm(db, alarmNames):
             base_throughput = 125*1024*1024
     if base_throughput==0:
         return alarmName, False
+    threshold = common.getThreshold(db.get("TagList", []), "Throughput", 0.8)*base_throughput
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='吞吐量。EBS类型和性能参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-volume-types.html',
+        AlarmDescription=f'RDS实例{dbId} IO吞吐量超过阈值{threshold}',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
@@ -315,7 +325,7 @@ def createThroughputAlarm(db, alarmNames):
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=common.getThreshold(db.get("TagList", []), "Throughput", 0.8)*base_throughput,
+        Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
         TreatMissingData='breaching',
         Tags=[]
@@ -343,9 +353,10 @@ def createInstanceNetworkBandwidthlarm(db, instanceTypes, alarmNames):
     logger.info(f'Network Base Throughput: {base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription='实例网络带宽限制。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/instance-types.html#instance-type-summary-table。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 通常，有 16 个或更少 vCPU 的实例（大小为 4xlarge 或更小）被记录为具有“高达”的指定带宽；例如，“高达 10 Gbps”。这些实例具备基准带宽。为满足其他需求，可以使用网络 I/O 积分机制，以突增超出其基准带宽。实例可以在有限时间内使用突增带宽，通常为5到60分钟，具体取决于实例的大小。），告警阈值为基线性能',
+        AlarmDescription=f'RDS实例{dbId}网络带宽超出阈值{threshold} Bytes/sec。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/instance-types.html#instance-type-summary-table。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 通常，有 16 个或更少 vCPU 的实例（大小为 4xlarge 或更小）被记录为具有“高达”的指定带宽；例如，“高达 10 Gbps”。这些实例具备基准带宽。为满足其他需求，可以使用网络 I/O 积分机制，以突增超出其基准带宽。实例可以在有限时间内使用突增带宽，通常为5到60分钟，具体取决于实例的大小。），告警阈值为基线性能',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
+        OKActions=actions,
         Metrics=[
             {
                 'Id': 'm1',
