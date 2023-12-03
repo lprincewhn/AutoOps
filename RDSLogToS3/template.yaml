@@ -10,7 +10,11 @@ Metadata:
     SpdxLicenseId: Apache-2.0
     ReadmeUrl: README.md
     SemanticVersion: 0.0.1
-
+Parameters:
+  MetricNamespace:
+    Type: String
+    Default: RDSLog
+    Description : CloudWatch metric namespace to store metric "copied_file_count"
 Resources:
   RDSLogToS3Function:
     Type: 'AWS::Serverless::Function'
@@ -20,12 +24,15 @@ Resources:
       Description: ''
       MemorySize: 512 
       Timeout: 300 
+      Environment:
+        Variables:
+          METRIC_NAMESPACE: !Ref MetricNamespace
       Policies: 
       - Version: '2012-10-17'
         Statement:
         - Effect: Allow
           Action:
-          - rds:DownloadDBLogFilePortion
+          - rds:DownloadCompleteDBLogFile
           - rds:DescribeDBLogFiles
           - s3:ListBucket
           - s3:GetObject

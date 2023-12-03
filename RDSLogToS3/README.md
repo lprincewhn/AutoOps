@@ -14,8 +14,9 @@ STACK_NAME="AutoOps$(basename $(pwd))"
 sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 
-**Note: A samble EventBridge rule "demodb_audit_log_to_s3" will be deployed. Please refer it to add the rules for your RDS instances.**
+**Note: A samble EventBridge rule "demodb_audit_log_to_s3" will be deployed. Please refer it to add rules for your RDS instances.**
 
 ## Uninsatll
 ``` bash
 aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager
+```

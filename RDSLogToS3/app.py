@@ -1,6 +1,8 @@
 import re
+import os
+import sys
+import json
 import argparse
-import datetime
 import hashlib
 import hmac
 from datetime import datetime
@@ -124,6 +126,27 @@ def copy_logs_from_rds_to_s3(rds_instance_name, s3_bucket_name, region, log_pref
         print(f"Wrote new config to {config_file_name} in S3 bucket {s3_bucket_name} with timestamp {last_written_this_run}")
 
     print("Log file export complete")
+    emfdata = {
+        'rds_instance_name': rds_instance_name,
+        'region': region,
+        'log_prefix':log_prefix,
+        '_aws': {
+            'Timestamp': backup_start_time.timestamp()*1000,
+            'CloudWatchMetrics': [
+                {
+                    'Dimensions': [["log_prefix"],["region", "rds_instance_name", "log_prefix"]],
+                    'Metrics': [
+                        {
+                            'Name': 'copied_file_count'
+                        },
+                    ],
+                    'Namespace': os.getenv('METRIC_NAMESPACE', 'RDSLog')
+                }
+            ]
+        },
+        'copied_file_count': copied_file_count
+    }
+    print(json.dumps(emfdata))
 
 
 def get_log_file_via_rest(http, filename, db_instance_identifier, region):
