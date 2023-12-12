@@ -95,7 +95,7 @@ def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
     try:
         response = client.put_metric_alarm(
             AlarmName=alarmName,
-            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况。',
+            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况',
             ActionsEnabled=actions1_enable,
             AlarmActions=actions1,
             OKActions=actions2,
@@ -165,7 +165,7 @@ def createStatusCheckFailed_InstanceAlarm(instance, alarmNames):
     try: 
         response = client.put_metric_alarm(
             AlarmName=alarmName,
-            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。',
+            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。如果是修改配置文件导致的故障，自动重启不能解决问题，将出现循环重启。需要使用快照替换根卷或将根卷挂载到其他实例进行修复',
             ActionsEnabled=actions1_enable,
             AlarmActions=actions1,
             OKActions=actions2,
@@ -182,7 +182,7 @@ def createStatusCheckFailed_InstanceAlarm(instance, alarmNames):
     except:
         response = client.put_metric_alarm(
             AlarmName=alarmName,
-            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})实例健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。',
+            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})实例健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。如果是修改配置文件导致的故障，自动重启不能解决问题，将出现循环重启。需要使用快照替换根卷或将根卷挂载到其他实例进行修复。',
             ActionsEnabled=actions2_enable,
             AlarmActions=actions2,
             OKActions=actions2,
@@ -579,7 +579,6 @@ def lambda_handler(event, context):
         response = client.delete_alarms(
             AlarmNames=alarmNames[x:x+100]
         )
-    logger.debug(f'Response of delete_alarms: {response}')
 
     event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmNames

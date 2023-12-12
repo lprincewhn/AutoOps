@@ -71,7 +71,7 @@ def createEngineCPUUtilizationAlarm(node, alarmNames):
     threshold = common.getThreshold(node.get("TagList"), "EngineCPUUtilization", 80)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Redis实例{nodeId} Redis引擎线程所在CPU利用率超出阈值{threshold}。由于Redis是单线程的，您可以使用该指标来分析Redis进程本身的负载。EngineCPUUtilization 指标更精确地呈现了 Redis 流程。您可以将其与 CPUUtilization 指标配合使用。CPUUtilization 公开服务器实例整体的 CPU 使用率，包括其他操作系统和管理流程。对于有四个或更多 vCPU 的较大节点类型，可使用 EngineCPUUtilization 指标来监控和设置扩展阈值。注意：在 ElastiCache 主机上，后台进程将监控主机以提供托管式数据库体验。这些后台进程可能会占用很大一部分 CPU 工作负载。这在具有两个以上 vCPU 的大型主机上影响不大，但在 vCPU 个数不超过 2 个的小型主机上影响较大。如果仅监控 EngineCPUUtilization 指标，您将无法发现因 Redis 或后台监控进程的 CPU 使用率过高而导致主机过载情况。因此，我们建议对于具有不超过两个 vCPU 的主机，还需要监控 CPUUtilization 指标。',
+        AlarmDescription=f'Redis实例{nodeId} Redis引擎线程所在CPU利用率超出阈值{threshold}。由于Redis是单线程的，您可以使用该指标来分析Redis进程本身的负载。EngineCPUUtilization 指标更精确地呈现了 Redis 流程。您可以将其与 CPUUtilization 指标配合使用。CPUUtilization 公开服务器实例整体的 CPU 使用率，包括其他操作系统和管理流程。对于有四个或更多 vCPU 的较大节点类型，可使用 EngineCPUUtilization 指标来监控和设置扩展阈值。注意：在 ElastiCache 主机上，后台进程将监控主机以提供托管式数据库体验。这些后台进程可能会占用很大一部分 CPU 工作负载。这在具有两个以上 vCPU 的大型主机上影响不大，但在 vCPU 个数不超过 2 个的小型主机上影响较大。如果仅监控 EngineCPUUtilization 指标，您将无法发现因 Redis 或后台监控进程的 CPU 使用率过高而导致主机过载情况。因此，我们建议对于具有不超过两个 vCPU 的主机，还需要监控 CPUUtilization 指标',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -170,7 +170,7 @@ def createDatabaseMemoryUsagePercentageAlarm(node, alarmNames):
     threshold = common.getThreshold(node.get("TagList"), "DatabaseMemoryUsagePercentage", 80)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Redis实例{nodeId}内存使用率大于阈值{threshold}。这是使用 used_memory/maxmemory 从 Redis INFO 计算得来的。',
+        AlarmDescription=f'Redis实例{nodeId}内存使用率大于阈值{threshold}。这是使用used_memory/maxmemory从Redis INFO命令计算得来，maxmemory已经排除通过reserved-memory参数预留出来的内存',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,

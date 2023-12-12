@@ -99,7 +99,7 @@ def copy_logs_from_rds_to_s3(rds_instance_name, s3_bucket_name, region, log_pref
             print(f"Compressed log file size: {compressed_size} bytes ({pct_difference}% difference)")
 
             # Upload the log file to S3
-            object_name = f"{rds_instance_name}/backup_{backup_start_time.isoformat()}/{filename}.gz"
+            object_name = f"{backup_start_time.date().isoformat()}/{rds_instance_name}/backup_{backup_start_time.isoformat()}/{filename}.gz"
             try:
                 s3_client.put_object(Bucket=s3_bucket_name, Key=object_name, Body=log_file_data)
                 copied_file_count += 1
