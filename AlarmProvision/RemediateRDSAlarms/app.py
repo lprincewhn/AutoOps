@@ -223,7 +223,7 @@ def createIopsAlarm(db, instanceTypes, alarmNames):
         instance_base_iops=ebsOptimizedInfo["BaselineIops"]
         instance_max_iops=ebsOptimizedInfo["MaximumIops"]
         instance_threshold = common.getThreshold(db.get('TagList', []), 'MaxIOPS', 0.8)*instance_max_iops if instance_max_iops==instance_base_iops else common.getThreshold(db.get('TagList', []), 'BaseIOPS', 1)*instance_base_iops
-        logger.info(f'Instance Base IOPS: ${instance_base_iops}, Max IOPS: {instance_max_iops}, Threshold={instance_threshold}')   
+        logger.info(f'Instance Base IOPS: {instance_base_iops}, Max IOPS: {instance_max_iops}, Threshold={instance_threshold}')   
 
     #存储侧限制, Aurora和DocumentDB无此限制
     ebs_base_iops = ebs_max_iops = ebs_threshold = 10000000000000
@@ -240,7 +240,7 @@ def createIopsAlarm(db, instanceTypes, alarmNames):
             else:
                 ebs_base_iops = ebs_max_iops = max(db["Iops"], 3000)
         ebs_threshold = common.getThreshold(db.get('TagList', []), 'MaxIOPS', 0.8)*ebs_max_iops if ebs_max_iops==ebs_base_iops else common.getThreshold(db.get('TagList', []), 'BaseIOPS', 1)*ebs_base_iops
-        logger.info(f'EBS Base IOPS: ${ebs_base_iops}, Max IOPS: {ebs_max_iops}, Threshold: {ebs_threshold}')  
+        logger.info(f'EBS Base IOPS: {ebs_base_iops}, Max IOPS: {ebs_max_iops}, Threshold: {ebs_threshold}')  
 
     threshold = min(instance_threshold, ebs_threshold)   
     if threshold==0:
@@ -325,7 +325,7 @@ def createThroughputAlarm(db, instanceTypes, alarmNames):
         instance_base_throughput=ebsOptimizedInfo["BaselineThroughputInMBps"]*1000*1000/8
         instance_max_throughput=ebsOptimizedInfo["MaximumBandwidthInMbps"]*1000*1000/8
         instance_threshold = common.getThreshold(db.get('TagList', []), 'MaxThroughput', 0.8)*instance_max_throughput if instance_max_throughput==instance_base_throughput else common.getThreshold(db.get('TagList', []), 'BaseThroughput', 1)*instance_base_throughput
-        logger.info(f'Instance Base Throughput: ${instance_base_throughput}, Max Throughput: {instance_max_throughput}, Threshold={instance_threshold}')   
+        logger.info(f'Instance Base Throughput: {instance_base_throughput}, Max Throughput: {instance_max_throughput}, Threshold={instance_threshold}')   
 
     #存储侧限制, Aurora和DocumentDB无此限制
     ebs_base_throughput = ebs_max_throughput = ebs_threshold = 100000*1024*1024
@@ -346,7 +346,7 @@ def createThroughputAlarm(db, instanceTypes, alarmNames):
             else:
                 ebs_max_throughput = ebs_base_throughput = max(db.get("StorageThroughput", 0)*1024*1024, 125*1024*1024) 
             ebs_threshold = common.getThreshold(db.get('TagList', []), 'MaxThroughput', 0.8)*ebs_max_throughput if ebs_max_throughput==ebs_base_throughput else common.getThreshold(db.get('TagList', []), 'BaseThroughput', 1)*ebs_base_throughput
-            logger.info(f'EBS Base Throughput: ${ebs_base_throughput}, Max Throughput: {ebs_max_throughput}, Threshold={ebs_threshold}') 
+            logger.info(f'EBS Base Throughput: {ebs_base_throughput}, Max Throughput: {ebs_max_throughput}, Threshold={ebs_threshold}') 
     
     threshold = min(instance_threshold, ebs_threshold)   
     if threshold==0:

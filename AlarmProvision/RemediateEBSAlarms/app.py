@@ -164,7 +164,7 @@ def createThroughputAlarm(vol, alarmNames):
             base_throughput = 128*1024*1024
     elif vol["VolumeType"] == 'io1':
         # 预置了最高 32000 IOPS 的 Provisioned IOPS SSD 卷支持 256 KiB 的最大 I/O 大小，可以达到最高 500 MiB/s 的吞吐量。当 I/O 大小达到最大时，吞吐量也将达到峰值 2000 IOPS。预置超过 32,000 IOPS（最高可达 64,000 IOPS）的卷以每预置 IOPS 16 KiB 的速率线性增加吞吐量。例如，预置了 48,000 IOPS 的卷可以支持高达 750 MiB/s 的吞吐量（每个预置 IOPS 16 KiB x 48,000 个预置 IOPS = 750 Mib/s）。要实现 1,000 MiB/s 的最大吞吐量，必须为卷预置 64,000 IOPS（每个预置 IOPS 16 KiB x 64,000 个预置 IOPS = 1,000 Mib/s）。https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/provisioned-iops.html
-        base_throughput = max(vol["Iops"]*16*1024, 32000)
+        base_throughput = max(vol["Iops"]*16*1024, 1000*1024*1024)
     elif vol["VolumeType"] == 'gp3':
         base_throughput = max(vol["Throughput"]*1024*1024, 125*1024*1024)
     if base_throughput==0:
