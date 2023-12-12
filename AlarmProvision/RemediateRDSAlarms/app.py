@@ -119,7 +119,7 @@ def createSwapUsageAlarm(db, alarmNames):
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
         return alarmName, False
-    threshold = common.getThreshold(db.get("TagList"), "SwapUsage", 50)*1024*1024
+    threshold = common.getThreshold(db.get("TagList"), "SwapUsageMB", 50)*1024*1024
     response = client.put_metric_alarm(
         AlarmName=alarmName,
         AlarmDescription=f'RDS实例{dbId}Swap空间使用量超出阈值{threshold}',

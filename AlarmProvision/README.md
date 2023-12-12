@@ -102,10 +102,14 @@ Parameter|Default Value|Details
 CPUUtilization|80|It is the threshold of CPUUtilization.
 CreditSupportMinute|30|The left minutes the instances can run with 100% CPUUtilization. Adjustment is needed after the instance type changed because it depends on the number of vcpu. It will determine the threshold of CPUCreditBalance.
 FreeStorageSpaceGB|50|It will determine the threshold of FreeStorageSpace.
-IOPS|0.8|It will determine the threshold of (ReadIOPS+WriteIOPS). Adjustment is needed after the volume type or performance changed.
-Throughput|0.8|It will determine the threshold of ReadThroughput+WriteThroughput. Adjustment is needed after the volume type or performance changed.
+SwapUsageMB|50|It will determine the threshold of SwapUsage.
+BaseIOPS|0.8|Only for instance with burst IO performacne. It will determine the threshold of (ReadIOPS+WriteIOPS). Adjustment is needed after the instance/volume type or its provisioned IOPS changed.
+MaxIOPS|1|Only for instance with consistant IO performacne. It will determine the threshold of (ReadIOPS+WriteIOPS). Adjustment is needed after the instance/volume type or provisioned IOPS changed.
+BaseThroughput|0.8|Only for instance with burst IO performacne. It will determine the threshold of ReadThroughput+WriteThroughput. Adjustment is needed after the instance/volume type or its provisioned Throughput changed.
+MaxThroughput|1|Only for instance with consistant IO performacne. It will determine the threshold of ReadThroughput+WriteThroughput. Adjustment is needed after the instance/volume type or its provisioned Throughput changed.
 BaseNetworkBandwidth|1|Only for instance with burst IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
 MaxNetworkBandwidth|0.8|Only for instance with consistant IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
+DatabaseConnections|0.9*(InstanceMemoryInMB-500)*1024*1024/12582880|It will determine the threshold of DatabaseConnections.
 
 ### ElastiCache for Redis Instance
 Parameter|Default Value|Details
