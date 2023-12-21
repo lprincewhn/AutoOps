@@ -118,5 +118,7 @@ CPUUtilization|80|It is the threshold of CPUUtilization.
 EngineCPUUtilization|80|It is the threshold of EngineCPUUtilization.
 CreditSupportMinute|30|The left minutes the instances can run with 100% CPUUtilization. Adjustment is needed after the instance type changed because it depends on the number of vcpu. It will determine the threshold of CPUCreditBalance.
 DatabaseMemoryUsagePercentage|80|It is the threshold of DatabaseMemoryUsagePercentage.
+SwapUsageMB|50|It will determine the threshold of SwapUsage.
 BaseNetworkBandwidth|1|Only for instance with burst IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
 MaxNetworkBandwidth|0.8|Only for instance with consistant IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
+CurrConnections|60000|It will determine the threshold of CurrConnections.

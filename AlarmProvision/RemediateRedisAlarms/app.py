@@ -205,6 +205,54 @@ def createDatabaseMemoryUsagePercentageAlarm(node, alarmNames):
     logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
+def createSwapUsageAlarm(node, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    nodeId = node["CacheClusterId"]
+    alarmName = f'AWS/ElastiCache-SwapUsage-{nodeId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    threshold = common.getThreshold(node.get("TagList"), "SwapUsageMB", 50)*1024*1024
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        AlarmDescription=f'Redis实例{nodeId}Swap空间使用量超出阈值{threshold}, 开始使用SWAP空间通常表示内存不足',
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        OKActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/ElastiCache',
+                        'MetricName': 'SwapUsage',
+                        'Dimensions': [
+                            {
+                                'Name': 'CacheClusterId',
+                                'Value': nodeId
+                            }
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Average',
+                },
+                'Label': nodeId,
+                'ReturnData': True,
+            },
+        ],
+        EvaluationPeriods=3,
+        DatapointsToAlarm=3,
+        Threshold=threshold,
+        ComparisonOperator='GreaterThanOrEqualToThreshold',
+        TreatMissingData='breaching',
+        Tags=[]
+    )
+    logger.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+    
 def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -285,6 +333,54 @@ def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
     logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
+def createCurrConnectionsAlarm(node, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    nodeId = node["CacheClusterId"]
+    alarmName = f'AWS/ElastiCache-CurrConnections-{nodeId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    threshold = common.getThreshold(node.get("TagList"), "CurrConnections", 60000)
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        AlarmDescription=f'Redis实例{nodeId}并发连接数超出阈值{threshold}，每个Redis节点有65000并发连接上限的硬限制',
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        OKActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/ElastiCache',
+                        'MetricName': 'CurrConnections',
+                        'Dimensions': [
+                            {
+                                'Name': 'CacheClusterId',
+                                'Value': nodeId
+                            }
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Average',
+                },
+                'Label': nodeId,
+                'ReturnData': True,
+            },
+        ],
+        EvaluationPeriods=3,
+        DatapointsToAlarm=3,
+        Threshold=threshold,
+        ComparisonOperator='GreaterThanOrEqualToThreshold',
+        TreatMissingData='breaching',
+        Tags=[]
+    )
+    logger.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+    
 def lambda_handler(event, context):
     logger.info(f'Event In: {json.dumps(event)}')
     instanceTypeMap = common.getInstanceTypes()
@@ -317,8 +413,12 @@ def lambda_handler(event, context):
         alarmName, created = createEngineCPUUtilizationAlarm(node, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
         alarmName, created = createDatabaseMemoryUsagePercentageAlarm(node, alarmNames)
-        numOfAlarmsCreated += 1 if created else 0         
+        numOfAlarmsCreated += 1 if created else 0    
+        alarmName, created = createSwapUsageAlarm(node, alarmNames)
+        numOfAlarmsCreated += 1 if created else 0    
         alarmName, created = createInstanceNetworkBandwidthlarm(node, instanceTypeMap, alarmNames)
+        numOfAlarmsCreated += 1 if created else 0
+        alarmName, created = createCurrConnectionsAlarm(node, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 
             
     # 删除不再使用的告警

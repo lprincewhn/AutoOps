@@ -122,7 +122,7 @@ def createSwapUsageAlarm(db, alarmNames):
     threshold = common.getThreshold(db.get("TagList"), "SwapUsageMB", 50)*1024*1024
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'RDS实例{dbId}Swap空间使用量超出阈值{threshold}',
+        AlarmDescription=f'RDS实例{dbId}Swap空间使用量超出阈值{threshold}, 开始使用SWAP空间通常表示内存不足',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
