@@ -35,6 +35,18 @@ States:
     Resource: '${RemediateRedisAlarmsFunctionArn}'
     InputPath: $
     ResultPath: $
+    Next: RemediateESAlarms
+  RemediateESAlarms:
+    Type: Task
+    Resource: '${RemediateESAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateS3Alarms
+  RemediateS3Alarms:
+    Type: Task
+    Resource: '${RemediateS3AlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
     Next: RemediateIPAMAlarms
   RemediateIPAMAlarms:
     Type: Task

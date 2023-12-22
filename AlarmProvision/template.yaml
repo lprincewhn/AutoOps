@@ -23,6 +23,8 @@ Resources:
         RemediateEBSAlarmsFunctionArn: !GetAtt RemediateEBSAlarmsFunction.Arn
         RemediateRDSAlarmsFunctionArn: !GetAtt RemediateRDSAlarmsFunction.Arn
         RemediateRedisAlarmsFunctionArn: !GetAtt RemediateRedisAlarmsFunction.Arn
+        RemediateESAlarmsFunctionArn: !GetAtt RemediateESAlarmsFunction.Arn
+        RemediateS3AlarmsFunctionArn: !GetAtt RemediateS3AlarmsFunction.Arn
         RemediateALBAlarmsFunctionArn: !GetAtt RemediateALBAlarmsFunction.Arn
         RemediateNLBAlarmsFunctionArn: !GetAtt RemediateNLBAlarmsFunction.Arn
         RemediateVPNAlarmsFunctionArn: !GetAtt RemediateVPNAlarmsFunction.Arn
@@ -43,6 +45,10 @@ Resources:
             FunctionName: !Ref RemediateRDSAlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref RemediateRedisAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateESAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateS3AlarmsFunction
         - LambdaInvokePolicy:
             FunctionName: !Ref RemediateALBAlarmsFunction
         - LambdaInvokePolicy:
@@ -174,6 +180,61 @@ Resources:
           - elasticache:DescribeCacheClusters
           - ec2:DescribeInstanceTypes
           - elasticache:ListTagsForResource
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+  RemediateESAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateESAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - es:ListDomainNames
+          - es:DescribeElasticsearchDomain
+          - es:ListTags
+          - ec2:DescribeInstanceTypes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+  RemediateS3AlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateS3Alarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - s3:ListAllMyBuckets
+          - s3:GetBucketLocation
+          - s3:GetMetricsConfiguration
+          - s3:GetBucketTagging
+          - ec2:DescribeInstanceTypes
           - cloudwatch:DescribeAlarms
           - cloudwatch:DeleteAlarms
           - cloudwatch:PutMetricAlarm

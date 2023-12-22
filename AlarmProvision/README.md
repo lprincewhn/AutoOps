@@ -122,3 +122,25 @@ SwapUsageMB|50|It will determine the threshold of SwapUsage.
 BaseNetworkBandwidth|1|Only for instance with burst IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
 MaxNetworkBandwidth|0.8|Only for instance with consistant IO performacne. It will determine the threshold of max(NetworkReceiveThroughput,NetworkTransmitThroughput). Adjustment is needed after the instance type changed.
 CurrConnections|60000|It will determine the threshold of CurrConnections.
+
+### ElasticSearch/OpenSearch Domain
+Parameter|Default Value|Details
+:----|----:|:----
+CPUUtilization|80|It is the threshold of CPUUtilization.
+CreditSupportMinute|30|The left minutes the instances can run with 100% CPUUtilization. Adjustment is needed after the instance type changed because it depends on the number of vcpu. It will determine the threshold of CPUCreditBalance.
+FreeStorageSpaceGB|20|It will determine the threshold of FreeStorageSpace.
+JVMMemoryPressure|20|It is the threshold of JVMMemoryPressure.
+BaseIOPS|0.8|Only for instance with burst IO performacne. It will determine the threshold of (ReadIOPSMicroBursting+WriteIOPSMicroBursting). Adjustment is needed after the instance/volume type or its provisioned IOPS changed.
+MaxIOPS|1|Only for instance with consistant IO performacne. It will determine the threshold of (ReadIOPSMicroBursting+WriteIOPSMicroBursting). Adjustment is needed after the instance/volume type or provisioned IOPS changed.
+BaseThroughput|0.8|Only for instance with burst IO performacne. It will determine the threshold of ReadThroughputMicroBursting+WriteThroughputMicroBursting. Adjustment is needed after the instance/volume type or its provisioned Throughput changed.
+MaxThroughput|1|Only for instance with consistant IO performacne. It will determine the threshold of ReadThroughputMicroBursting+WriteThroughputMicroBursting. Adjustment is needed after the instance/volume type or its provisioned Throughput changed.
+ActiveShards|30000|It is the threshold of ActiveShards.
+ThreadpoolWriteQueue|100|It is the threshold of ThreadpoolWriteQueue.
+AvgThreadpoolSearchQueue|500|It is the threshold of average value of ThreadpoolSearchQueue on all nodes.
+MaxThreadpoolSearchQueue|5000|It is the threshold of maximum value of ThreadpoolSearchQueue on all nodes.
+5XXRate|10|It is the threshold of 5xx/(OpenSearchRequests+ElasticsearchRequests)*100.
+
+### S3 Bucket
+Parameter|Default Value|Details
+:----|----:|:----
+5XXRate|1|It is the threshold of 5xxErrors/(AllRequests)*100.
