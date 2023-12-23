@@ -77,7 +77,7 @@ def createIopsAlarm(vol, alarmNames):
         # 在最小 100 IOPS（33.33GiB 及以下）和最大 16,000 IOPS（5334GiB 及以上）之间，基准性能以每 GiB 卷大小 3 IOPS 的速度线性扩展。
         base_iops = max(min(vol["Size"]*3, 16000), 100)
     elif vol["VolumeType"] == 'io1':
-        base_iop1 = vol["Iops"]
+        base_iops = vol["Iops"]
     elif vol["VolumeType"] == 'gp3':
         base_iops = max(vol["Iops"], 3000)
     if base_iops==0:

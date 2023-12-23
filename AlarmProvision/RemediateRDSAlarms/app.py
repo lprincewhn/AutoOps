@@ -231,7 +231,7 @@ def createIopsAlarm(db, instanceTypes, alarmNames):
         if db["StorageType"] == 'gp2':
             # 在最小 100 IOPS（33.33GiB 及以下）和最大 16,000 IOPS（5334GiB 及以上）之间，基准性能以每 GiB 卷大小 3 IOPS 的速度线性扩展。
             ebs_base_iops = max(min(db["storage_size"]*3, 16000), 100)
-            ebs_max_iops = 3000
+            ebs_max_iops = max(3000, ebs_base_iops)
         elif db["StorageType"] == 'io1':
             ebs_base_iops = ebs_max_iops = db["Iops"]
         elif db["StorageType"] == 'gp3':
@@ -334,6 +334,9 @@ def createThroughputAlarm(db, instanceTypes, alarmNames):
             # 吞吐量限制介于 128 MiB/s 和 250 MiB/s 之间，具体取决于卷大小。小于或等于 170 GiB 的卷提供最大 128 MiB/s 的吞吐量。如果有突增积分可用，大于 170 GiB 但小于 334 GiB 的卷将提供 250 的最大吞吐量。无论突增点数是多少，大于或等于 334 GiB 的卷均可提供 250 MiB/s。https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/general-purpose.html
             if db["AllocatedStorage"] >= 334:
                 ebs_base_throughput = ebs_max_throughput = 250*1024*1024
+            elif db["AllocatedStorage"] >= 170:
+                ebs_max_throughput = 250*1024*1024       
+                ebs_base_throughput = 0.2 * ebs_max_throughput
             else:
                 ebs_max_throughput = 128*1024*1024
                 ebs_base_throughput = 0.2 * ebs_max_throughput

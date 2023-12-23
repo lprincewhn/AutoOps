@@ -12,10 +12,6 @@ logger.addHandler(ch)
 
 
 def create5xxRateAlarm(bucketMetricCfg, alarmNames):
-    sns_topic = os.getenv('SNSTopicArn')
-    actions_enable = (sns_topic!=None) 
-    actions = [sns_topic] if sns_topic else []
-    client = boto3.client('cloudwatch')
     bucketName = bucketMetricCfg["BucketName"]
     metricCfgId = bucketMetricCfg["Id"]
     alarmName = f'AWS/S3-5xxRate-{bucketName}-{metricCfgId}'
@@ -23,6 +19,17 @@ def create5xxRateAlarm(bucketMetricCfg, alarmNames):
         alarmNames.remove(alarmName)
         return alarmName, False
     threshold = common.getThreshold(bucketMetricCfg.get('TagList', []), '5xxRate', 1)
+
+    actions = []
+    if os.getenv('SNSTopicArn'):
+        actions.append(os.getenv('SNSTopicArn'))
+    response_plan = common.getResponseplan(bucketMetricCfg.get('TagList', []), os.getenv('DefaultResponsePlanArn'))
+    if response_plan:
+        actions.append(response_plan)
+        # arn:aws:ssm:region:account-id:opsitem:severity#CATEGORY=category-name
+    actions_enable = bool(actions) 
+
+    client = boto3.client('cloudwatch')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
         AlarmDescription=f'S3桶{bucketName}, 统计范围{metricCfgId}, 5xx错误率超过阈值{threshold}',
@@ -87,7 +94,6 @@ def create5xxRateAlarm(bucketMetricCfg, alarmNames):
         DatapointsToAlarm=3,
         Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
-        TreatMissingData='breaching',
         Tags=[]
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
@@ -127,7 +133,6 @@ def lambda_handler(event, context):
         for metricCfg in metriCfgList:
             metricCfg['BucketName'] = bucket['Name']
             metricCfg['TagList'] = bucket['TagSet']
-            print(metricCfg)
             alarmName, created = create5xxRateAlarm(metricCfg, alarmNames)
             numOfAlarmsCreated += 1 if created else 0
 

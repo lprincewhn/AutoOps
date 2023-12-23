@@ -10,14 +10,25 @@ ch.setFormatter(logging.Formatter('%(asctime)s %(filename)s[line:%(lineno)d] %(l
 logger.addHandler(ch)
 
 def getThreshold(tags, metric, default):
-    thresholds = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))
     threshold = default
     try:
+        thresholdJson = list(filter(lambda x:x.get("Key")=='AlarmThreshold', tags))[0].get("Value") if type(tags)==list else tags.get('AlarmThreshold')
         threshold = json.loads(thresholds[0].get("Value"))[metric]
         logger.info(f"Set threshold of {metric} according 'AlarmThreshold' tag: {threshold}")
     except:
         logger.info(f"Set threshold of {metric} with default value: {threshold}")
     return threshold
+    
+def getResponseplan(tags, default):
+    responseplans = list(filter(lambda x:x.get("Key")=='AlarmResponsePlan', tags))
+    if responseplans:
+        logger.info(f"Set dedicate response plan from resource tag")
+        return responseplans[0].get("Value")
+    if default:
+        logger.info(f"Set default response plan from lambda environment")
+        return default
+    logger.info(f"No response plan set")
+    return None
 
 def getInstanceTypes(): 
     # 获取所有EC2实例类型

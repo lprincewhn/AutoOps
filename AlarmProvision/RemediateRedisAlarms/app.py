@@ -333,6 +333,116 @@ def createInstanceNetworkBandwidthlarm(node, instanceTypes, alarmNames):
     logger.debug(f'Response of put_metric_alarm: {response}')
     return alarmName, True
 
+def createInstanceNetworkAllowanceExceededlarm(node, alarmNames):
+    sns_topic = os.getenv('SNSTopicArn')
+    actions_enable = (sns_topic!=None) 
+    actions = [sns_topic] if sns_topic else []
+    client = boto3.client('cloudwatch')
+    nodeId = node["CacheClusterId"]
+    alarmName = f'AWS/ElastiCache-NetworkAllowanceExceeded-{nodeId}'
+    if alarmName in alarmNames:
+        alarmNames.remove(alarmName)
+        return alarmName, False
+    response = client.put_metric_alarm(
+        AlarmName=alarmName,
+        AlarmDescription=f'Redis实例{nodeId}网络超限，出现丢包。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/monitoring-network-performance-ena.html',
+        ActionsEnabled=actions_enable,
+        AlarmActions=actions,
+        OKActions=actions,
+        Metrics=[
+            {
+                'Id': 'm1',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/ElastiCache',
+                        'MetricName': 'NetworkBandwidthInAllowanceExceeded',
+                        'Dimensions': [
+                            {
+                                'Name': 'CacheClusterId',
+                                'Value': nodeId
+                            },
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Sum',
+                },
+                'Label': 'NetworkBandwidthInAllowanceExceeded',
+                'ReturnData': False,
+            },
+            {
+                'Id': 'm2',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/ElastiCache',
+                        'MetricName': 'NetworkBandwidthOutAllowanceExceeded',
+                        'Dimensions': [
+                            {
+                                'Name': 'CacheClusterId',
+                                'Value': nodeId
+                            },
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Sum',
+                },
+                'Label': 'NetworkBandwidthOutAllowanceExceeded',
+                'ReturnData': False,
+            },
+            {
+                'Id': 'm3',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/ElastiCache',
+                        'MetricName': 'NetworkConntrackAllowanceExceeded',
+                        'Dimensions': [
+                            {
+                                'Name': 'CacheClusterId',
+                                'Value': nodeId
+                            },
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Sum',
+                },
+                'Label': 'NetworkConntrackAllowanceExceeded',
+                'ReturnData': False,
+            },
+            {
+                'Id': 'm4',
+                'MetricStat': {
+                    'Metric': {
+                        'Namespace': 'AWS/ElastiCache',
+                        'MetricName': 'NetworkPacketsPerSecondAllowanceExceeded',
+                        'Dimensions': [
+                            {
+                                'Name': 'CacheClusterId',
+                                'Value': nodeId
+                            },
+                        ]
+                    },
+                    'Period': 300,
+                    'Stat': 'Sum',
+                },
+                'Label': 'NetworkPacketsPerSecondAllowanceExceeded',
+                'ReturnData': False,
+            },
+            {
+                'Id': 'e1',
+                'Expression': 'm1+m2+m3+m4',
+                'Label': nodeId,
+                'ReturnData': True,
+            },
+        ],
+        EvaluationPeriods=1,
+        DatapointsToAlarm=1,
+        Threshold=0,
+        ComparisonOperator='GreaterThanThreshold',
+        TreatMissingData='breaching',
+        Tags=[]
+    )
+    logger.debug(f'Response of put_metric_alarm: {response}')
+    return alarmName, True
+    
 def createCurrConnectionsAlarm(node, alarmNames):
     sns_topic = os.getenv('SNSTopicArn')
     actions_enable = (sns_topic!=None) 
@@ -417,6 +527,8 @@ def lambda_handler(event, context):
         alarmName, created = createSwapUsageAlarm(node, alarmNames)
         numOfAlarmsCreated += 1 if created else 0    
         alarmName, created = createInstanceNetworkBandwidthlarm(node, instanceTypeMap, alarmNames)
+        numOfAlarmsCreated += 1 if created else 0
+        alarmName, created = createInstanceNetworkAllowanceExceededlarm(node, alarmNames)
         numOfAlarmsCreated += 1 if created else 0
         alarmName, created = createCurrConnectionsAlarm(node, alarmNames)
         numOfAlarmsCreated += 1 if created else 0 

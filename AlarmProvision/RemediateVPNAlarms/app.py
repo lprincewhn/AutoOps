@@ -22,6 +22,7 @@ def createTunnelStateAlarm(connection, alarmNames):
     client = boto3.client('cloudwatch')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
+        AlarmDescription='VPN隧道中断(平均值1表示连接总的两个隧道都健康，0.5表示只有一个隧道健康，0表示两个隧道的已经中断)',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
