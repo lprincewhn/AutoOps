@@ -120,7 +120,7 @@ def createTCP_Target_Reset_RateAlarm(lb, alarmNames):
             },
             {
                 'Id': 'm3',
-                'Expression': 'm1/m2*100',
+                'Expression': 'm1/(m1+m2)*100',
                 'Label': lbName,
                 'ReturnData': True,
             },

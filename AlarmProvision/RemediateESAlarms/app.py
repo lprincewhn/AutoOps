@@ -821,7 +821,7 @@ def createActiveShardsAlarm(domain, alarmNames):
     threshold = common.getThreshold(domain.get('TagList', []), 'ActiveShards', 30000)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'ElastiSearch集群{domainName}活动主分区和副本分区的总数大于 30000。轮换索引的频率可能过于频繁。请考虑使用 ISM 在索引达到特定使用期限之后将其移除。',
+        AlarmDescription=f'ElastiSearch集群{domainName}活动主分区和副本分区的总数大于{threshold}。轮换索引的频率可能过于频繁。请考虑使用 ISM 在索引达到特定使用期限之后将其移除。',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -979,7 +979,7 @@ def createAvgThreadpoolSearchQueueAlarm(domain, alarmNames):
     threshold = common.getThreshold(domain.get('TagList', []), 'AvgThreadpoolSearchQueue', 500)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'ElastiSearch集群{domainName}个节点平均搜索队列长度大于阈值{threshold}。表示正在经历高搜索并发。请考虑扩展集群。您也可以增加搜索队列大小，但过度增加搜索队列大小可能会导致出现内存不足错误。源',
+        AlarmDescription=f'ElastiSearch集群{domainName}个节点平均搜索队列长度大于阈值{threshold}。表示正在经历高搜索并发。请考虑扩展集群。您也可以增加搜索队列大小，但过度增加搜索队列大小可能会导致出现内存不足错误',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -1032,7 +1032,7 @@ def createMaxThreadpoolSearchQueueAlarm(domain, alarmNames):
     threshold = common.getThreshold(domain.get('TagList', []), 'MaxThreadpoolSearchQueue', 5000)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'ElastiSearch集群{domainName}最大节点的搜索队列长度超出阈值{threshold}。表示正在经历高搜索并发。请考虑扩展集群。您也可以增加搜索队列大小，但过度增加搜索队列大小可能会导致出现内存不足错误。源',
+        AlarmDescription=f'ElastiSearch集群{domainName}最大节点的搜索队列长度超出阈值{threshold}。表示正在经历高搜索并发。请考虑扩展集群。您也可以增加搜索队列大小，但过度增加搜索队列大小可能会导致出现内存不足错误',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -1142,7 +1142,7 @@ def createThreadpoolWriteRejectedAlarm(domain, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'OpenSearch集群{domainName} 索引队列已满导致搜索请求被拒绝',
+        AlarmDescription=f'OpenSearch集群{domainName} 索引队列已满导致写入索引请求被拒绝',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -1201,7 +1201,7 @@ def create5xxRateAlarm(domain, alarmNames):
     threshold = common.getThreshold(domain.get('TagList', []), '5xxRate', 10)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'OpenSearch集群{domainName} 5xx错误率超过阈值{threshold}。',
+        AlarmDescription=f'OpenSearch集群{domainName} 5xx错误率超过阈值{threshold}',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -1226,7 +1226,7 @@ def create5xxRateAlarm(domain, alarmNames):
                     'Period': 60,
                     'Stat': 'Sum',
                 },
-                'Label': 'ReadThroughputMicroBursting',
+                'Label': '5xx',
                 'ReturnData': False,
             },
             {
@@ -1249,7 +1249,7 @@ def create5xxRateAlarm(domain, alarmNames):
                     'Period': 60,
                     'Stat': 'Sum',
                 },
-                'Label': 'ReadThroughputMicroBursting',
+                'Label': 'OpenSearchRequests',
                 'ReturnData': False,
             },
             {
@@ -1272,7 +1272,7 @@ def create5xxRateAlarm(domain, alarmNames):
                     'Period': 60,
                     'Stat': 'Sum',
                 },
-                'Label': 'ReadThroughputMicroBursting',
+                'Label': 'ElasticsearchRequests',
                 'ReturnData': False,
             },
             {

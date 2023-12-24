@@ -25,7 +25,7 @@ def createCPUUtilizationAlarm(node, alarmNames):
     threshold = common.getThreshold(node.get('TagList', []), 'CPUUtilization', 60)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Kafda集群{clusterName}代理节点{brokerId} CPU利用率超过阈值{threshold}。Amazon MSK 强烈建议您将代理的总 CPU 使用率（定义为 CPU User + CPU System）保持在 60% 以下。当集群的总 CPU 可用率至少达到 40% 时，Apache Kafka 可以在必要时在集群中的代理之间重新分配 CPU 负载。例如，当 Amazon MSK 检测到代理故障并从中恢复时，就有必要这样做；在这种情况下，Amazon MSK 会执行自动维护，如进行修补。另一个例子是当用户请求更改代理类型或升级版本时；在这两种情况下，Amazon MSK 会部署滚动工作流程，一次让一个代理离线。当具有领导分区的代理离线时，Apache Kafka 会重新分配分区领导权，以将工作重新分配给集群中的其他代理。通过遵循此最佳实践，您可以确保集群中有足够的 CPU 余量来容忍此类操作事件',
+        AlarmDescription=f'Kafka集群{clusterName}代理节点{brokerId} CPU利用率超过阈值{threshold}。Amazon MSK 强烈建议您将代理的总 CPU 使用率（定义为 CPU User + CPU System）保持在 60% 以下。当集群的总 CPU 可用率至少达到 40% 时，Apache Kafka 可以在必要时在集群中的代理之间重新分配 CPU 负载。例如，当 Amazon MSK 检测到代理故障并从中恢复时，就有必要这样做；在这种情况下，Amazon MSK 会执行自动维护，如进行修补。另一个例子是当用户请求更改代理类型或升级版本时；在这两种情况下，Amazon MSK 会部署滚动工作流程，一次让一个代理离线。当具有领导分区的代理离线时，Apache Kafka 会重新分配分区领导权，以将工作重新分配给集群中的其他代理。通过遵循此最佳实践，您可以确保集群中有足够的 CPU 余量来容忍此类操作事件',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -108,7 +108,7 @@ def createCPUCreditBalanceAlarm(node, instanceTypes, alarmNames):
     threshold = vcpus*common.getThreshold(node.get('Tags', []), 'CreditSupportMinute', 30)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Kafda集群{clusterName}代理节点{brokerId} CPU积分低于阈值{threshold} (1个CPU积分=1个vCPU*100%利用率*1分钟)。请参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html#key-concepts',
+        AlarmDescription=f'Kafka集群{clusterName}代理节点{brokerId} CPU积分低于阈值{threshold} (1个CPU积分=1个vCPU*100%利用率*1分钟)。请参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html#key-concepts',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -158,11 +158,10 @@ def createKafkaDataLogsDiskUsedAlarm(node, instanceTypes, alarmNames):
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
         return alarmName, False
-    vcpus = instanceTypes[node["InstanceType"]]["VCpuInfo"]["DefaultVCpus"]
-    threshold = vcpus*common.getThreshold(node.get('Tags', []), 'KafkaDataLogsDiskUsed', 85)
+    threshold = common.getThreshold(node.get('Tags', []), 'KafkaDataLogsDiskUsed', 85)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Kafda集群{clusterName}代理节点{brokerId} 存储空间使用率{threshold}',
+        AlarmDescription=f'Kafka集群{clusterName}代理节点{brokerId} 存储空间使用率{threshold}。要避免出现因磁盘空间不足而无法保存消息的情况，您可以创建一个 CloudWatch 警报器监视KafkaDataLogsDiskUsed指标。当此指标的值达到或超过 85% 时，请执行下列一项或多项操作：1.使用自动扩展。您也可以手动增加代理存储空间，如中所述手动扩展; 2.缩短消息保留期或减小日志大小。有关如何做到这一点的信息，请参阅调整数据保留参数; 3.删除未使用的主题',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -212,11 +211,10 @@ def createHeapMemoryAfterGCAlarm(node, instanceTypes, alarmNames):
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
         return alarmName, False
-    vcpus = instanceTypes[node["InstanceType"]]["VCpuInfo"]["DefaultVCpus"]
-    threshold = vcpus*common.getThreshold(node.get('Tags', []), 'HeapMemoryAfterGC', 60)
+    threshold = common.getThreshold(node.get('Tags', []), 'HeapMemoryAfterGC', 60)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Kafda集群{clusterName}代理节点{brokerId} 内存堆使用率{threshold}',
+        AlarmDescription=f'Kafka集群{clusterName}代理节点{brokerId} 内存堆使用率{threshold}。HeapMemoryAfterGC是垃圾回收后使用中的总堆内存的百分比。建议您创建一个 CloudWatch 警报在以下情况下采取行动HeapMemoryAfterGC增加到 60% 以上。您可以执行的减少内存使用率的步骤各不相同。它们取决于你配置 Apache Kafka 的方式。例如，如果您使用事务性消息传递，则可以减少transactional.id.expiration.ms你的 Apache Kafka 配置中的值来自604800000ms 到86400000毫秒（从 7 天到 1 天）。这减少了每个事务的内存占用',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -288,7 +286,7 @@ def createIopsAlarm(node, instanceTypes, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Kafda集群{clusterName}代理节点{brokerId} IOPS超过阈值{threshold}',
+        AlarmDescription=f'Kafka集群{clusterName}代理节点{brokerId} IOPS超过阈值{threshold}',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -396,7 +394,7 @@ def createThroughputAlarm(node, instanceTypes, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Kafda集群{clusterName}代理节点{brokerId} IOPS超过阈值{threshold}',
+        AlarmDescription=f'Kafka集群{clusterName}代理节点{brokerId} IOPS超过阈值{threshold}',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -478,7 +476,7 @@ def createInstanceNetworkAllowanceExceededlarm(node, alarmNames):
 
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'Kafda集群{clusterName}代理节点{brokerId}网络超限，出现丢包。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/monitoring-network-performance-ena.html',
+        AlarmDescription=f'Kafka集群{clusterName}代理节点{brokerId}网络超限，出现丢包。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/monitoring-network-performance-ena.html',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,

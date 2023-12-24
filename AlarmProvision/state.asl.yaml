@@ -41,6 +41,12 @@ States:
     Resource: '${RemediateESAlarmsFunctionArn}'
     InputPath: $
     ResultPath: $
+    Next: RemediateKafkaAlarms
+  RemediateKafkaAlarms:
+    Type: Task
+    Resource: '${RemediateKafkaAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
     Next: RemediateS3Alarms
   RemediateS3Alarms:
     Type: Task
