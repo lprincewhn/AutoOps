@@ -23,7 +23,7 @@ def createCPUUtilizationAlarm(instance, alarmNames):
     threshold = common.getThreshold(instance.get('Tags', []), 'CPUUtilization', 80)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})CPU利用率超过阈值{threshold}',
+        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})CPU利用率超过阈值{threshold}',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -52,7 +52,6 @@ def createCPUUtilizationAlarm(instance, alarmNames):
         DatapointsToAlarm=3,
         Threshold=threshold,
         ComparisonOperator='GreaterThanThreshold',
-        TreatMissingData='breaching',
         Tags=[]
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
@@ -95,7 +94,7 @@ def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
     try:
         response = client.put_metric_alarm(
             AlarmName=alarmName,
-            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况',
+            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况',
             ActionsEnabled=actions1_enable,
             AlarmActions=actions1,
             OKActions=actions2,
@@ -112,7 +111,7 @@ def createStatusCheckFailed_SystemAlarm(instance, alarmNames):
     except:
         response = client.put_metric_alarm(
             AlarmName=alarmName,
-            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况。',
+            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})系统健康检查失败，表示底层宿主机硬件故障。对于支持“自动恢复“的机型已经触发自动恢复，请检查实例和系统状态。对于不支持“自动恢复”的机型，需要强制停止(Stop)，然后再启动(Start)。上述操作将使实例漂移到健康的宿主机上。系统启动后请登陆系统检查应用情况。',
             ActionsEnabled=actions2_enable,
             AlarmActions=actions2,
             OKActions=actions2,
@@ -165,7 +164,7 @@ def createStatusCheckFailed_InstanceAlarm(instance, alarmNames):
     try: 
         response = client.put_metric_alarm(
             AlarmName=alarmName,
-            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。如果是修改配置文件导致的故障，自动重启不能解决问题，将出现循环重启。需要使用快照替换根卷或将根卷挂载到其他实例进行修复',
+            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。如果是修改配置文件导致的故障，自动重启不能解决问题，将出现循环重启。需要使用快照替换根卷或将根卷挂载到其他实例进行修复',
             ActionsEnabled=actions1_enable,
             AlarmActions=actions1,
             OKActions=actions2,
@@ -182,7 +181,7 @@ def createStatusCheckFailed_InstanceAlarm(instance, alarmNames):
     except:
         response = client.put_metric_alarm(
             AlarmName=alarmName,
-            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})实例健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。如果是修改配置文件导致的故障，自动重启不能解决问题，将出现循环重启。需要使用快照替换根卷或将根卷挂载到其他实例进行修复。',
+            AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})实例健康检查失败，表示实例网络不可用(ARP检测无响应)。可能是操作系统网络进程异常或者重要配置文件出错导致，重启(Restart)可解决网络进程异常问题。如果是修改配置文件导致的故障，自动重启不能解决问题，将出现循环重启。需要使用快照替换根卷或将根卷挂载到其他实例进行修复。',
             ActionsEnabled=actions2_enable,
             AlarmActions=actions2,
             OKActions=actions2,
@@ -209,7 +208,7 @@ def createStatusCheckFailed_AttachedEBSAlarm(instance, alarmNames):
         return alarmName, False
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})挂载EBS失败，表示EBS故障，可通过快照创建新的EBS卷并更换解决。如果需要保留数据，需要等待AWS后台恢复，可提工单了解恢复进度',
+        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})挂载EBS失败，表示EBS故障，可通过快照创建新的EBS卷并更换解决。如果需要保留数据，需要等待AWS后台恢复，可提工单了解恢复进度',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -261,7 +260,7 @@ def createCPUCreditBalanceAlarm(instance, alarmNames):
     threshold = vcpus*common.getThreshold(instance.get('Tags', []), 'CreditSupportMinute', 30)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})CPU积分低于阈值{threshold} (1个CPU积分=1个vCPU*100%利用率*1分钟)。请参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html#key-concepts',
+        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})CPU积分低于阈值{threshold} (1个CPU积分=1个vCPU*100%利用率*1分钟)。请参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/burstable-credits-baseline-concepts.html#key-concepts',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -290,7 +289,6 @@ def createCPUCreditBalanceAlarm(instance, alarmNames):
         DatapointsToAlarm=1,
         Threshold=threshold,
         ComparisonOperator='LessThanThreshold',
-        TreatMissingData='breaching',
         Tags=[]
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
@@ -315,7 +313,7 @@ def createInstanceEBSIOPSAlarm(instance, instanceTypes, alarmNames):
     logger.info(f'EBS Base IOPS: ${base_iops}, Max IOPS: {max_iops}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})IOPS超出阈值{threshold}。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-optimized.html#current-general-purpose。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 每24小时支持一次30分钟的最大性能，之后会恢复到基线性能），告警阈值为基线性能',
+        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})IOPS超出阈值{threshold}。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-optimized.html#current-general-purpose。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 每24小时支持一次30分钟的最大性能，之后会恢复到基线性能），告警阈值为基线性能',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -369,7 +367,6 @@ def createInstanceEBSIOPSAlarm(instance, instanceTypes, alarmNames):
         DatapointsToAlarm=1,
         Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
-        TreatMissingData='breaching',
         Tags=[]
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
@@ -388,13 +385,13 @@ def createInstanceEBSThroughputlarm(instance, instanceTypes, alarmNames):
     ebsOptimizedInfo = instanceTypes[instance["InstanceType"]]["EbsInfo"].get("EbsOptimizedInfo")
     if not ebsOptimizedInfo:
         return alarmName, False
-    base_throughput=ebsOptimizedInfo["BaselineThroughputInMBps"]*1000*1000/8
+    base_throughput=ebsOptimizedInfo["BaselineBandwidthInMbps"]*1000*1000/8
     max_throughput=ebsOptimizedInfo["MaximumBandwidthInMbps"]*1000*1000/8
     threshold = common.getThreshold(instance.get('Tags', []), 'MaxThroughput', 0.8)*max_throughput if max_throughput==base_throughput else common.getThreshold(instance.get('Tags', []), 'BaseThroughput', 1)*base_throughput
     logger.info(f'EBS Base Throughput: ${base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})IO吞吐量超出阈值{threshold}Bytes/sec。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-optimized.html#current-general-purpose。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 每24小时支持一次30分钟的最大性能，之后会恢复到基线性能），告警阈值为基线性能',
+        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})IO吞吐量超出阈值{threshold}Bytes/sec。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/ebs-optimized.html#current-general-purpose。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 每24小时支持一次30分钟的最大性能，之后会恢复到基线性能），告警阈值为基线性能',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -448,7 +445,6 @@ def createInstanceEBSThroughputlarm(instance, instanceTypes, alarmNames):
         DatapointsToAlarm=1,
         Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
-        TreatMissingData='breaching',
         Tags=[]
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
@@ -474,7 +470,7 @@ def createInstanceNetworkBandwidthlarm(instance, instanceTypes, alarmNames):
     logger.info(f'Network Base Throughput: {base_throughput}, Max Throughput: {max_throughput}, Threshold: {threshold}')
     response = client.put_metric_alarm(
         AlarmName=alarmName,
-        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance["PrivateIpAddress"]})网络带宽超出阈值{threshold}Bytes/sec。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/instance-types.html#instance-type-summary-table。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 通常，有 16 个或更少 vCPU 的实例（大小为 4xlarge 或更小）被记录为具有“高达”的指定带宽；例如，“高达 10 Gbps”。这些实例具备基准带宽。为满足其他需求，可以使用网络 I/O 积分机制，以突增超出其基准带宽。实例可以在有限时间内使用突增带宽，通常为5到60分钟，具体取决于实例的大小。），告警阈值为基线性能',
+        AlarmDescription=f'EC2实例{instanceId}({instance["InstanceType"]}, {instance.get("PrivateIpAddress", "IP not found")})网络带宽超出阈值{threshold}Bytes/sec。参考：https://docs.aws.amazon.com/zh_cn/AWSEC2/latest/UserGuide/instance-types.html#instance-type-summary-table。对于不可突增实例（基线性能等于最大性能），告警阈值为限制的的80%，对于可突增实例（基准性能低于最大性能, 通常，有 16 个或更少 vCPU 的实例（大小为 4xlarge 或更小）被记录为具有“高达”的指定带宽；例如，“高达 10 Gbps”。这些实例具备基准带宽。为满足其他需求，可以使用网络 I/O 积分机制，以突增超出其基准带宽。实例可以在有限时间内使用突增带宽，通常为5到60分钟，具体取决于实例的大小。），告警阈值为基线性能',
         ActionsEnabled=actions_enable,
         AlarmActions=actions,
         OKActions=actions,
@@ -528,7 +524,6 @@ def createInstanceNetworkBandwidthlarm(instance, instanceTypes, alarmNames):
         DatapointsToAlarm=1,
         Threshold=threshold,
         ComparisonOperator='GreaterThanOrEqualToThreshold',
-        TreatMissingData='breaching',
         Tags=[]
     )
     logger.debug(f'Response of put_metric_alarm: {response}')

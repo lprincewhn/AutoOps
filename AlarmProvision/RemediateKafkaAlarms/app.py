@@ -370,7 +370,7 @@ def createThroughputAlarm(node, instanceTypes, alarmNames):
     instance_base_throughput =  instance_max_throughput = instance_threshold = 0   
     ebsOptimizedInfo = instanceTypes[node["InstanceType"]]["EbsInfo"].get("EbsOptimizedInfo")
     if ebsOptimizedInfo:
-        instance_base_throughput=ebsOptimizedInfo["BaselineThroughputInMBps"]*1000*1000/8
+        instance_base_throughput=ebsOptimizedInfo["BaselineBandwidthInMbps"]*1000*1000/8
         instance_max_throughput=ebsOptimizedInfo["MaximumBandwidthInMbps"]*1000*1000/8
         instance_threshold = common.getThreshold(node.get('Tags', []), 'MaxThroughput', 0.8)*instance_max_throughput if instance_max_throughput==instance_base_throughput else common.getThreshold(node.get('Tags', []), 'BaseThroughput', 1)*instance_base_throughput
         logger.info(f'Instance Base Throughput: {instance_base_throughput}, Max Throughput: {instance_max_throughput}, Threshold={instance_threshold}')   

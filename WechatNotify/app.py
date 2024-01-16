@@ -2,8 +2,6 @@ import requests
 import json
 import boto3
 
-tokenUrl = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
-
 def get_secret():
     client = boto3.client('secretsmanager')
     response = client.get_secret_value(
@@ -15,24 +13,33 @@ def get_secret():
     return None
 
 def send_msg(msg):
-    secret = get_secret() 
-    req = requests.post(tokenUrl, params=secret)
-    token = json.loads(req.text)
-    url = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=" + token["access_token"] 
+    # 入参msg有可能是字符串也有可能是对象，对象时需要将其转换成字符串发送
+    secret = get_secret()
+    req = requests.post("https://qyapi.weixin.qq.com/cgi-bin/gettoken", params=secret)
+    print(req.text)
+    result = json.loads(req.text)
+    url = "https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token=" + result["access_token"] 
     print(url)
-    body = """{"touser" : "@all" ,
-      "msgtype":"text",
-      "agentid":"%s",
-      "text":{
-        "content": "%s"
-      },
-      "safe":"0"
-      }""" % (secret["agentid"], msg)
-    return requests.post(url, body.encode('utf-8'))
+    body = {
+        "touser" : "@all",
+        "msgtype": "text",
+        "agentid": secret["agentid"],
+        "text":{
+            "content": msg if type(msg)==str else json.dumps(msg, indent=2, ensure_ascii=False)
+        },
+        "safe":"0"
+    }
+    req = requests.post(url, json.dumps(body).encode('utf-8'))
+    print(req.text)
+    return json.loads(req.text)
 
 def lambda_handler(event, context):
     print(f'Event In: {event}')
     message = event["Records"][0]["Sns"]["Message"]
+    # EventBridge中的Input Transformer会将对象转成字符串进行传输，因此message可能是字符串，有可能是对象，如果是字符串的换，尝试恢复成对象。
+    try:
+        message = json.loads(message)
+    except:
+        pass
     res = send_msg(message)
-    print(f'Response: {res}')
-    return json.loads(res.text)
+    print(f'Result: {res}')

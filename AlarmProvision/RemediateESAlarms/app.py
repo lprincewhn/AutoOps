@@ -231,7 +231,11 @@ def createNodesAlarm(domain, alarmNames):
     if alarmName in alarmNames:
         alarmNames.remove(alarmName)
         return alarmName, False
-    threshold=domain['ElasticsearchClusterConfig']['InstanceCount']+domain['ElasticsearchClusterConfig'].get('DedicatedMasterCount', 0)+domain['ElasticsearchClusterConfig'].get('WarmCount', 0)
+    threshold=domain['ElasticsearchClusterConfig']['InstanceCount']
+    if domain['ElasticsearchClusterConfig']['DedicatedMasterEnabled']:
+        threshold+=domain['ElasticsearchClusterConfig'].get('DedicatedMasterCount', 0)
+    if domain['ElasticsearchClusterConfig']['WarmEnabled']:
+        threshold+=domain['ElasticsearchClusterConfig'].get('WarmCount', 0)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
         AlarmDescription=f'OpenSearch集群{domainName}中的健康节点数量(包括专用主节点和UltraWarm节点)低于配置数量。此警报表示您的群集中至少有一个节点无法访问的时间已达到一天',
@@ -636,7 +640,7 @@ def createIopsAlarm(domain, instanceTypes, alarmNames):
                 'MetricStat': {
                     'Metric': {
                         'Namespace': 'AWS/ES',
-                        'MetricName': 'ReadIOPSMicroBursting',
+                        'MetricName': 'ReadIOPS',
                         'Dimensions': [
                             {
                                 'Name': 'ClientId',
@@ -651,7 +655,7 @@ def createIopsAlarm(domain, instanceTypes, alarmNames):
                     'Period': 300,
                     'Stat': 'Maximum',
                 },
-                'Label': 'ReadIOPSMicroBursting',
+                'Label': 'ReadIOPS',
                 'ReturnData': False,
             },
             {
@@ -659,7 +663,7 @@ def createIopsAlarm(domain, instanceTypes, alarmNames):
                 'MetricStat': {
                     'Metric': {
                         'Namespace': 'AWS/ES',
-                        'MetricName': 'WriteIOPSMicroBursting',
+                        'MetricName': 'WriteIOPS',
                         'Dimensions': [
                             {
                                 'Name': 'ClientId',
@@ -674,7 +678,7 @@ def createIopsAlarm(domain, instanceTypes, alarmNames):
                     'Period': 300,
                     'Stat': 'Maximum',
                 },
-                'Label': 'WriteIOPSMicroBursting',
+                'Label': 'WriteIOPS',
                 'ReturnData': False,
             },
             {
@@ -710,7 +714,7 @@ def createThroughputAlarm(domain, instanceTypes, alarmNames):
     instance_base_throughput =  instance_max_throughput = instance_threshold = 0   
     ebsOptimizedInfo = instanceTypes[domain["ElasticsearchClusterConfig"]["InstanceType"][:-14]]["EbsInfo"].get("EbsOptimizedInfo")
     if ebsOptimizedInfo:
-        instance_base_throughput=ebsOptimizedInfo["BaselineThroughputInMBps"]*1000*1000/8
+        instance_base_throughput=ebsOptimizedInfo["BaselineBandwidthInMbps"]*1000*1000/8
         instance_max_throughput=ebsOptimizedInfo["MaximumBandwidthInMbps"]*1000*1000/8
         instance_threshold = common.getThreshold(domain.get('TagList', []), 'MaxThroughput', 0.8)*instance_max_throughput if instance_max_throughput==instance_base_throughput else common.getThreshold(domain.get('TagList', []), 'BaseThroughput', 1)*instance_base_throughput
         logger.info(f'Instance Base Throughput: {instance_base_throughput}, Max Throughput: {instance_max_throughput}, Threshold={instance_threshold}')   
@@ -749,7 +753,7 @@ def createThroughputAlarm(domain, instanceTypes, alarmNames):
                 'MetricStat': {
                     'Metric': {
                         'Namespace': 'AWS/ES',
-                        'MetricName': 'ReadThroughputMicroBursting',
+                        'MetricName': 'ReadThroughput',
                         'Dimensions': [
                             {
                                 'Name': 'ClientId',
@@ -764,7 +768,7 @@ def createThroughputAlarm(domain, instanceTypes, alarmNames):
                     'Period': 300,
                     'Stat': 'Maximum',
                 },
-                'Label': 'ReadThroughputMicroBursting',
+                'Label': 'ReadThroughput',
                 'ReturnData': False,
             },
             {
@@ -772,7 +776,7 @@ def createThroughputAlarm(domain, instanceTypes, alarmNames):
                 'MetricStat': {
                     'Metric': {
                         'Namespace': 'AWS/ES',
-                        'MetricName': 'WriteThroughputMicroBursting',
+                        'MetricName': 'WriteThroughput',
                         'Dimensions': [
                             {
                                 'Name': 'ClientId',
@@ -787,7 +791,7 @@ def createThroughputAlarm(domain, instanceTypes, alarmNames):
                     'Period': 300,
                     'Stat': 'Maximum',
                 },
-                'Label': 'WriteThroughputMicroBursting',
+                'Label': 'WriteThroughput',
                 'ReturnData': False,
             },
             {
@@ -1354,9 +1358,9 @@ def lambda_handler(event, context):
         alarmName, created = create5xxRateAlarm(domainStatus, alarmNames)   
         numOfAlarmsCreated += 1 if created else 0
         
-        if domainStatus["ElasticsearchClusterConfig"]["InstanceType"].startswith('t'):
-            alarmName, created = createCPUCreditBalanceAlarm(domainStatus, instanceTypeMap, alarmNames)   
-            numOfAlarmsCreated += 1 if created else 0
+        # if domainStatus["ElasticsearchClusterConfig"]["InstanceType"].startswith('t'):
+        #     alarmName, created = createCPUCreditBalanceAlarm(domainStatus, instanceTypeMap, alarmNames)   
+        #     numOfAlarmsCreated += 1 if created else 0
         if domainStatus["EncryptionAtRestOptions"]["Enabled"]:
             alarmName, created = createKMSKeyErrorAlarm(domainStatus, alarmNames)
             numOfAlarmsCreated += 1 if created else 0

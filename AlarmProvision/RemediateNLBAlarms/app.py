@@ -96,7 +96,7 @@ def createTCP_Target_Reset_RateAlarm(lb, alarmNames):
                     'Period': 60,
                     'Stat': 'Sum',
                 },
-                'Label': lbName,
+                'Label': 'TCP_Target_Reset_Count',
                 'ReturnData': False,
             },
             {
@@ -115,7 +115,7 @@ def createTCP_Target_Reset_RateAlarm(lb, alarmNames):
                     'Period': 60,
                     'Stat': 'Sum',
                 },
-                'Label': lbName,
+                'Label': 'NewFlowCount',
                 'ReturnData': False,
             },
             {
