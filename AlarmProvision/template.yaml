@@ -34,7 +34,7 @@ Resources:
         ScheduleEvent:
           Type: Schedule
           Properties:
-            Schedule: "cron(0 2 * * ? *)"
+            Schedule: "rate(12 hours)"
       Policies:
         - LambdaInvokePolicy:
             FunctionName: !Ref RemediateIPAMAlarmsFunction

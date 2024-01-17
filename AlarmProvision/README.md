@@ -6,7 +6,7 @@
 
 ## Deploy option #1: w/o CloudWatch alarm notification of raw format
 
-**Note: Should be used if [AlarmProcessor](https://github.com/lprincewhn/AutoOps/tree/master/AlarmProcessor) is deployed**
+**Note: Should be used if [AlarmProcessor](https://github.com/lprincewhn/AutoOps/tree/master/AlarmProcessor) or customized processor is deployed**
 
 ``` bash
 git clone https://github.com/lprincewhn/AutoOps.git
@@ -19,7 +19,7 @@ sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --paramete
 
 ## Deploy option #2: w/i CloudWatch alarm notification of raw format
 
-**Note: Should be used if AlarmProcessor is not deployed**
+**Note: Should be used if no processor is deployed**
 
 ``` bash
 git clone https://github.com/lprincewhn/AutoOps.git
