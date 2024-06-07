@@ -1,0 +1,202 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Send SNS message to wechat.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: WechatOps
+    Description: This is a Wechat/WeCom Bot leveraging AWS Bedrock and other service capabilities to support OPS engineer.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: ARN of SNS topic to send message to WeChat/WeCom.
+  DomainName:
+    Type: String
+    Description: The domainname to receive WeChat/WeCom message.
+  DomainCertificateArn:
+    Type: String
+    Description: ARN of ACM certificate for the domainname.
+  AllowedIPList:
+    Type: CommaDelimitedList
+    Description: The WeChat/WeCom server IP list seperated by comma.
+Resources:
+
+  WechatSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Wechat secret to send notification
+      Name: wechat_secret
+      SecretString:
+        "{\"corpid\":\"\",\"corpsecret\":\"\",\"agentid\":\"\",\"bottoken\":\"\",\"botaeskey\":\"\"}"
+        
+  SNSForwardFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: SNSForward
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref WechatSecret 
+      Events:
+        SNSTopic:
+          Type: 'SNS'
+          Properties: 
+            Topic: !Ref SnsTopicArn 
+  
+  BotApiGatewayDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      DomainName: !Ref DomainName
+      EndpointConfiguration: 
+        Types: 
+          - EDGE
+      CertificateArn: !Ref DomainCertificateArn
+    
+  BotApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: Wechat Bot Gateway
+      StageName: Prod
+      Auth:
+        ResourcePolicy:
+          IpRangeWhitelist: !Ref AllowedIPList
+
+                
+  BotApiGatewayMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref BotApiGatewayDomainName
+      RestApiId: !Ref BotApiGateway
+      Stage: Prod
+        
+  
+  BotValidateFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: BotValidate
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref WechatSecret
+      Events:
+        ApiRequestEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BotApiGateway
+            Path: /
+            Method: GET
+
+                
+  ForwardBedrockFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: ForwardBedrock
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref WechatSecret
+        - DynamoDBCrudPolicy:
+            TableName: wechat-bedrock
+      Events:
+        ApiRequestEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref BotApiGateway
+            Path: /
+            Method: POST
+                
+  MediaBucket:
+    Type: AWS::S3::Bucket
+      
+  BedrockTable:          
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      AttributeDefinitions: 
+        - AttributeName: "MsgId"
+          AttributeType: "S"
+        - AttributeName: "FromUserName"
+          AttributeType: "S"
+        - AttributeName: "SessionId"
+          AttributeType: "S"
+      KeySchema: 
+        - AttributeName: "MsgId"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: FromUserName-SessionId
+          KeySchema: 
+            - AttributeName: "FromUserName"
+              KeyType: "HASH"
+            - AttributeName: "SessionId"
+              KeyType: "RANGE"
+          Projection: 
+            ProjectionType: ALL
+          ProvisionedThroughput: 
+            ReadCapacityUnits: "5"
+            WriteCapacityUnits: "5"
+      ProvisionedThroughput: 
+        ReadCapacityUnits: "5"
+        WriteCapacityUnits: "5"
+      TableName: wechat-bedrock
+      StreamSpecification: 
+        StreamViewType: NEW_IMAGE
+
+        
+  CallBedrockFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 60
+      CodeUri: CallBedrock
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref WechatSecret
+        - AmazonBedrockFullAccess
+        - DynamoDBCrudPolicy:
+            TableName: wechat-bedrock
+        - S3FullAccessPolicy:
+            BucketName: !Ref MediaBucket
+        - AmazonTranscribeFullAccess
+      Environment:
+        Variables:
+          MEDIA_BUCKET: !Ref MediaBucket
+      Events:
+        DDBEvent:
+          Type: DynamoDB
+          Properties:
+            Enabled: true
+            Stream: 
+              !GetAtt BedrockTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 10
+            Enabled: false
+      
+Outputs:
+  UpdateSecretCmd:
+    Description: "You need to set your wechat variable with this comand"
+    Value: !Join [ ' ', [ "aws secretsmanager put-secret-value --region", !Ref AWS::Region, "--secret-id", !Ref WechatSecret, "--secret-string", "'{\"corpid\":\"<corpid>\",\"corpsecret\":\"<corpsecret>\",\"agentid\":\"<agentid>\",\"bottoken\":\"<bottoken>\",\"botaeskey\":\"<botaeskey>\"}'" ] ]
+  EnableCallBedrockFunctionEventSourceCmd:
+    Description: "You need to enalbe the DynamoDB trigger with this command" 
+    Value: !Join [ ' ', [ "aws lambda update-event-source-mapping --region", !Ref AWS::Region, "--function-name", !Ref CallBedrockFunction, "--uuid", !Ref CallBedrockFunctionDDBEvent, "--enabled" ] ]
+  BotApiGatewayEndpoint:
+    Description: "You need to update your DNS records with this domainname" 
+    Value: !GetAtt BotApiGatewayDomainName.DistributionDomainName
+    
