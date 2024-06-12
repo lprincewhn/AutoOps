@@ -52,7 +52,6 @@ def send_msg(touser, msg):
     return json.loads(req.text)
 
 def get_media(mediaid):
-    # 入参msg有可能是字符串也有可能是对象，对象时需要将其转换成字符串发送
     secret = get_secret()
     req = requests.post("https://qyapi.weixin.qq.com/cgi-bin/gettoken", params=secret)
     logger.info(f'Token: {req.text}')
