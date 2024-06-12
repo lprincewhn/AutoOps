@@ -1,0 +1,71 @@
+{
+  "Comment": "Format compliance event from AWS Config and send notification.",
+  "StartAt": "LoadComplianceNotifyInput",
+  "States": {
+    "LoadComplianceNotifyInput": {
+      "Type": "Task",
+      "Resource": "${LoadComplianceNotifyInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "WhatResourceType?"
+    },
+    "WhatResourceType?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.configRuleName",
+          "StringMatches": "*-EbsConfigRule-*",
+          "Next": "GetInstanceId"
+        },
+        {
+          "Variable": "$.resourceType",
+          "StringEquals": "AWS::IAM::User",
+          "Next": "FormatIamComplianceEvent"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "FormatIamComplianceEvent": {
+      "Type": "Task",
+      "Resource": "${FormatIamComplianceEventFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "GetInstanceId": {
+      "Type": "Task",
+      "Resource": "${GetInstanceIdFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateEbsTagsFromEc2"
+    },
+    "CreateEbsTagsFromEc2": {
+      "Type": "Task",
+      "Resource": "${CreateEbsTagsFromEc2FunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "NeedNotify?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.message",
+          "IsPresent": true,
+          "Next": "NotifySns"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "NotifySns": {
+      "Type": "Task",
+      "Resource": "${NotifySnsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "NoNeedNotify": {
+      "Type": "Succeed"
+    }
+  }
+}

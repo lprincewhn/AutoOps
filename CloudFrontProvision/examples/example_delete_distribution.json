@@ -1,0 +1,35 @@
+{
+  "version": "0",
+  "detail-type": "AWS API Call via CloudTrail",
+  "source": "aws.cloudfront",
+  "account": "123456789012",
+  "time": "2021-07-25T08:19:56Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "eventVersion": "1.08",
+    "userIdentity": {
+      "type": "IAMUser",
+      "arn": "arn:aws:iam::123456789012:user/admin",
+      "accountId": "123456789012",
+      "userName": "admin",
+      "sessionContext": {
+        "sessionIssuer": {},
+        "webIdFederationData": {},
+        "attributes": {
+          "creationDate": "2021-07-24T23:52:48Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "eventTime": "2021-07-25T08:19:56Z",
+    "eventSource": "cloudfront.amazonaws.com",
+    "eventName": "DeleteDistribution",
+    "awsRegion": "us-east-1",
+    "requestParameters": {
+      "id": "E1487HBHQ8272D",
+      "ifMatch": "E2ZWQNSEHIKVHW"
+    },
+    "responseElements": null,
+  }
+}

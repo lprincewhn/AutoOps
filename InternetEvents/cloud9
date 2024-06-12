@@ -1,0 +1,4 @@
+export REGION=ap-northeast-1
+export STACK_NAME="AutoOps$(basename $(pwd))"
+export BUCKET_NAME="cloudwatch-internet-evnets.597377428377"
+

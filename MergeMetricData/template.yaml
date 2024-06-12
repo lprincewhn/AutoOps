@@ -1,0 +1,75 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This stack will deploy athena federation query to get CloudWatch metrics data and load them into a central bucket.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOps
+    Description: This stack will deploy athena federation query to get CloudWatch metrics data and load them into a central bucket.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  AthenaCatalogName:
+    Description: The name of athena catalog you used to deploy AthenaCloudwatchMetricsConnector. This name must satisfy the pattern ^[a-z0-9-_]{1,64}$
+    Type: String
+    AllowedPattern: ^[a-z0-9-_]{1,64}$
+    Default: cloudwatch-metric
+  MetricBucket:
+    Type: String
+    Description: S3 bucket where you want to save CloudWatch metrics data.
+  AthenaResultBucket:
+    Type: String
+    Description: S3 bucket where store the query result of Athena.
+Resources:
+  MergeMetricDataStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadMergeMetricDataInputFunctionArn: !GetAtt LoadMergeMetricDataInputFunction.Arn
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "cron(0 2 * * ? *)"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadMergeMetricDataInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref AthenaCatalogName 
+        - S3FullAccessPolicy:
+            BucketName: !Ref MetricBucket
+        - S3FullAccessPolicy:
+            BucketName: !Ref AthenaResultBucket 
+        - AmazonAthenaFullAccess
+        - AmazonS3FullAccess
+
+  MetricDataCatalog:
+    Type: AWS::Athena::DataCatalog
+    Properties: 
+      Name: !Ref AthenaCatalogName 
+      Parameters: 
+        function: !Join [ ":" , [ "arn", "aws", "lambda", !Ref AWS::Region, !Ref AWS::AccountId, "function", !Ref AthenaCatalogName ] ] 
+      Type: LAMBDA
+  LoadMergeMetricDataInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadMergeMetricDataInput
+      Environment:
+        Variables:
+          METRIC_DATA_BUCKET: !Ref MetricBucket
+          ATHENA_RESULT_BUCKET: !Ref AthenaResultBucket
+          AthenaDataCatalog: !Ref AthenaCatalogName
+
+Outputs:
+  MergeMetricDataStateMachine:
+    Description: "ARN of MergeMetricDataStateMachine"
+    Value: !Ref MergeMetricDataStateMachine 

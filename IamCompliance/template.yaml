@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Deploy rule of AWS Config to check IAM compliance. 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsIamCompliance
+    Description: Deploy rule of AWS Config to check IAM compliance. 
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  RequiredGroupList:
+    Type: String
+    Description: Name list of IAM groups which users should belong to.
+    Default: "Group1,Group2"
+  ExemptedUserList: 
+    Type: String
+    Description: IAM Users who are exempted for compliance check.
+    Default: "admin,Admin"
+Resources:
+  CheckIamUserComplianceFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CheckIamUserCompliance
+      Policies: [AWSConfigRulesExecutionRole]
+
+  ConfigPermissionToCallLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Fn::GetAtt: 
+          - CheckIamUserComplianceFunction 
+          - Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "config.amazonaws.com"
+
+  IamUserConfigRule: 
+    Type: AWS::Config::ConfigRule
+    Properties: 
+      InputParameters: 
+        requiredGroupList: !Ref RequiredGroupList 
+        exemptedUserList: !Ref ExemptedUserList
+      Scope: 
+        ComplianceResourceTypes: 
+          - "AWS::IAM::User"
+      Source: 
+        Owner: "CUSTOM_LAMBDA"
+        SourceDetails: 
+          - 
+            EventSource: "aws.config"
+            MessageType: "ConfigurationItemChangeNotification"
+          -
+            EventSource: "aws.config"
+            MessageType: "ScheduledNotification"
+            MaximumExecutionFrequency: "TwentyFour_Hours"
+        SourceIdentifier: 
+          Fn::GetAtt: 
+            - CheckIamUserComplianceFunction
+            - Arn
+    DependsOn: ConfigPermissionToCallLambda
+
+Outputs:
+  IamUserConfigRule:
+    Description: "ARN of IamUserConfigRule"
+    Value: !Ref IamUserConfigRule 

@@ -1,0 +1,128 @@
+{
+  "Comment": "Create/Delete CloudFront alarms when an CloudFront distribution was created/deleted.",
+  "StartAt": "LoadCloudFrontProvisionInput",
+  "States": {
+    "LoadCloudFrontProvisionInput": {
+      "Type": "Task",
+      "Resource": "${LoadCloudFrontProvisionInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "IsDeleted?"
+    },
+    "IsDeleted?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.detail.eventName",
+          "StringMatches": "Delete*",
+          "Next": "DeleteDistributionAlarms"
+        }      
+      ],
+      "Default": "ConfigDistribution"      
+    },
+    "ConfigDistribution": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "IsCreate?",
+          "States": {
+            "IsCreate?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.detail.eventName",
+                  "StringMatches": "Create*",
+                  "Next": "CreateDistributionAlarms"
+                }
+              ],
+              "Default": "NoActionNeeded"
+            },
+            "CreateDistributionAlarms": {
+              "Type": "Task",
+              "Resource": "${CreateDistributionAlarmsFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            },
+            "NoActionNeeded": {
+              "Type": "Succeed"
+            }
+          }
+        },
+        {
+          "StartAt": "UpdateDomainNameTag",
+          "States": {
+            "UpdateDomainNameTag": {
+              "Type": "Task",
+              "Resource": "${UpdateDomainNameTagFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "GetDistributionTag",
+          "States": {
+            "GetDistributionTag": {
+              "Type": "Task",
+              "Resource": "${GetDistributionTagFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "Next": "IdentityTypeUserOrRole?"
+            },
+            "IdentityTypeUserOrRole?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.IdentityType",
+                  "StringEquals": "IAMUser",
+                  "Next": "GetUserAttribute"
+                },
+                {
+                  "Variable": "$.IdentityType",
+                  "StringEquals": "IAMRole",
+                  "Next": "GetRoleAttribute"
+                }  
+              ],
+              "Default": "IdentityTypeNotSupport"
+            },
+            "GetUserAttribute": {
+              "Type": "Task",
+              "Resource": "${GetUserAttributeFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "Next": "UpdateDistributionTag"
+            },
+            "GetRoleAttribute": {
+              "Type": "Task",
+              "Resource": "${GetRoleAttributeFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "Next": "UpdateDistributionTag"
+            },
+            "UpdateDistributionTag": {
+              "Type": "Task",
+              "Resource": "${UpdateDistributionTagFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            },    
+            "IdentityTypeNotSupport": {
+              "Type": "Fail",
+              "Cause": "Identity type not supported!"
+            }
+          }
+        }
+      ]
+    },
+    "DeleteDistributionAlarms": {
+      "Type": "Task",
+      "Resource": "${DeleteDistributionAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true 
+    }
+  }
+}

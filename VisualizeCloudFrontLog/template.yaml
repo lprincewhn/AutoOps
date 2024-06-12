@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service. 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCloudFrontLogToES 
+    Description: Transform and deliver CloudFront standard logs in S3 bucket to Amazon ElasticSearch service.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  DestinationESArn:
+    Type: String
+  ESIndexName:
+    Type: String
+    Default: cloudfront-standard-log
+  IndexRotationPeriod:
+    Type: String
+    Default: OneDay
+    AllowedValues: ["NoRotation", "OneDay", "OneHour", "OneMonth", "OneWeek"]
+  S3BackupBucket:
+    Type: String
+  S3BackupMode:
+    Type: String
+    Default: FailedDocumentsOnly
+    AllowedValues: ["AllDocuments", "FailedDocumentsOnly"]
+Resources:
+  SourceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+  CloudFrontLogDeliverStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties: 
+      DeliveryStreamType: DirectPut
+      ElasticsearchDestinationConfiguration: 
+        DomainARN: !Ref DestinationESArn
+        IndexName: !Ref ESIndexName
+        IndexRotationPeriod: !Ref IndexRotationPeriod
+        S3BackupMode: !Ref S3BackupMode
+        RoleARN: !GetAtt [ FirehoseRole, Arn ]
+        S3Configuration: 
+          BucketARN: !Join [ '', [ 'arn:aws:s3:::', !Ref S3BackupBucket ] ] 
+          ErrorOutputPrefix: failed
+          RoleARN: !GetAtt [ FirehoseRole, 'Arn' ]
+        CloudWatchLoggingOptions:
+          Enabled: True
+          LogGroupName: !Ref FirehoseLogGroup
+          LogStreamName: !Ref FirehoseLogStream
+  FirehoseLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      RetentionInDays: 7
+  FirehoseLogStream:
+    Type: AWS::Logs::LogStream
+    Properties: 
+      LogGroupName: !Ref FirehoseLogGroup
+      LogStreamName: ElasticsearchDelivery
+  FirehoseRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Sid: ""
+            Effect: "Allow"   
+            Principal:
+              Service: "firehose.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: 'LogWritePolicy'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement: 
+              - Effect: "Allow"
+                Action: "logs:PutLogEvents"
+                Resource: !GetAtt [ FirehoseLogGroup, 'Arn' ]
+        - PolicyName: 'ESAccessPolicy'
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - Effect: "Allow"   
+                Action: 
+                  - es:*
+                Resource: 
+                  - !Ref DestinationESArn
+                  - !Join [ '', [ !Ref DestinationESArn, '/*' ] ]
+        - PolicyName: 'S3WritePolicy'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement: 
+              - Sid: ""
+                Effect: "Allow"
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:PutObject
+                Resource:
+                  - !Join [ '', [ 'arn:aws:s3:::', !Ref S3BackupBucket ] ]
+                  - !Join [ '', [ 'arn:aws:s3:::', !Ref S3BackupBucket , '/*' ] ]
+                  
+  VisualizeCloudFrontLogStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        DeliverToAESFunctionArn: !GetAtt DeliverToAESFunction.Arn
+        DeliverToCloudWatchFunctionArn: !GetAtt DeliverToCloudWatchFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeliverToAESFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeliverToCloudWatchFunction
+      Events:
+        CWEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - aws.s3
+              detail-type:
+                - "Object Created"
+              detail:
+                bucket:
+                  name:
+                    - !Ref SourceBucket  
+
+  DeliverToAESFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512 
+      Timeout: 900
+      CodeUri: DeliverToAES
+      Policies: 
+        - S3ReadPolicy:
+            BucketName: !Ref SourceBucket
+        - FirehoseWritePolicy:
+            DeliveryStreamName: !Ref CloudFrontLogDeliverStream
+      Environment:
+        Variables:
+          FIREHOSE_STREAM_NAME: !Ref CloudFrontLogDeliverStream
+
+  DeliverToCloudWatchFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512
+      Timeout: 900
+      CodeUri: DeliverToCloudWatch
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref SourceBucket
+      Environment:
+        Variables:
+          CLOUDWATCH_NAMESPACE: 'CloudFrontLogs'
+          CLOUDWATCH_DIMENSIONS: '[],["Host"],["Host", "Country"],["Host", "Country","ResponseCode"]'
+          CLOUDWATCH_PERIOD_SECS: '60'
+
+Outputs:
+  SourceBucket:
+    Description: "Bucket to store CloudFront standard logs."
+    Value: !Ref SourceBucket
+  VisualizeCloudFrontLogStateMachine:
+    Description: "Arn of statemachine of Step Function to transform CloudFront standard log and put them to AES or CloudWatch."
+    Value: !GetAtt [ VisualizeCloudFrontLogStateMachine, Arn ] 
+  FirehoseRole:
+    Description: "Arn of role used by lambda CloudFrontLogDeliverStream."
+    Value: !GetAtt [ FirehoseRole, Arn ] 

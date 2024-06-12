@@ -1,0 +1,38 @@
+  GrowLinuxXfsDoc:
+    Type: AWS::SSM::Document
+    Properties: 
+      DocumentType: Command
+      Content: >
+        {
+          "schemaVersion": "2.2",
+          "description": "Grow xfs filesystem on Linux ater volume size increase",
+          "parameters": {
+            "DeviceName": {
+              "type": "String",
+              "description": "Device Name ",
+              "default": "/dev/xvda"
+            },
+            "PartitionNum": {
+              "type": "String",
+              "description": "Device Number ",
+              "default": "1"
+            },
+            "MountPoint": {
+              "type": "String",
+              "description": "Mount Point ",
+              "default": "/"
+            }
+          },
+          "mainSteps": [
+            {
+              "action": "aws:runShellScript",
+              "name": "GrowLinuxXfsDoc",
+              "inputs": {
+                "runCommand": [
+                  "growpart {{DeviceName}} {{PartitionNum}}",
+                  "xfs_growfs -d {{MountPoint}}"
+                ]
+              }
+            }
+          ]
+        }

@@ -1,0 +1,74 @@
+StartAt: RemediateALBAlarms
+States:
+  RemediateALBAlarms:
+    Type: Task
+    Resource: '${RemediateALBAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateNLBAlarms
+  RemediateNLBAlarms:
+    Type: Task
+    Resource: '${RemediateNLBAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateEC2Alarms
+  RemediateEC2Alarms:
+    Type: Task
+    Resource: '${RemediateEC2AlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateEBSAlarms
+  RemediateEBSAlarms:
+    Type: Task
+    Resource: '${RemediateEBSAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateRDSAlarms
+  RemediateRDSAlarms:
+    Type: Task
+    Resource: '${RemediateRDSAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateRedisAlarms
+  RemediateRedisAlarms:
+    Type: Task
+    Resource: '${RemediateRedisAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateESAlarms
+  RemediateESAlarms:
+    Type: Task
+    Resource: '${RemediateESAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateKafkaAlarms
+  RemediateKafkaAlarms:
+    Type: Task
+    Resource: '${RemediateKafkaAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateS3Alarms
+  RemediateS3Alarms:
+    Type: Task
+    Resource: '${RemediateS3AlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateIPAMAlarms
+  RemediateIPAMAlarms:
+    Type: Task
+    Resource: '${RemediateIPAMAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: RemediateVPNAlarms
+  RemediateVPNAlarms:
+    Type: Task
+    Resource: '${RemediateVPNAlarmsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    Next: NotifySns
+  NotifySns:
+    Type: Task
+    Resource: '${NotifySnsFunctionArn}'
+    InputPath: $
+    ResultPath: $
+    End: true

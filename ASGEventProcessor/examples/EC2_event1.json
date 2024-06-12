@@ -1,0 +1,31 @@
+{
+  "version": "0",
+  "id": "65f33021-0778-fdf5-66ac-92ed1940ca72",
+  "detail-type": "AWS Health Event",
+  "source": "aws.health",
+  "account": "123456789012",
+  "time": "2021-07-11T10:49:29Z",
+  "region": "us-east-1",
+  "resources": [
+    "i-03c54acb9f2e01870"
+  ],
+  "detail": {
+    "eventArn": "arn:aws:health:ap-southeast-1::event/EC2/AWS_EC2_INSTANCE_REBOOT_FLEXIBLE_MAINTENANCE_SCHEDULED/AWS_EC2_INSTANCE_REBOOT_FLEXIBLE_MAINTENANCE_SCHEDULED_e8608d04-6ad4-4110-91be-e24bb0ba4762",
+    "service": "EC2",
+    "eventTypeCode": "AWS_EC2_INSTANCE_REBOOT_FLEXIBLE_MAINTENANCE_SCHEDULED",
+    "eventTypeCategory": "scheduledChange",
+    "startTime": "Mon, 26 Jul 2021 12:00:00 GMT",
+    "endTime": "Mon, 26 Jul 2021 14:00:00 GMT",
+    "eventDescription": [
+      {
+        "language": "en_US",
+        "latestDescription": "One or more of your Amazon EC2 instances are scheduled for maintenance between 2021-07-26 12:00:00 UTC and 2021-07-26 14:00:00 UTC. During this time, the instances associated with this event in the ap-southeast-1 region will be unavailable and rebooted.\\n\\nAt any time before 2021-07-26 12:00:00 UTC, you can reschedule this maintenance or stop and start the instance through the AWS API, AWS CLI, or AWS Management Console. When rescheduling, you can pick any time up to 2021-08-11 10:00:00 UTC, at which EC2 will perform maintenance on the instance. Otherwise, you can wait for EC2 to reboot your instance during the scheduled maintenance window. For more details on how to reschedule this event as well as other alternatives to complete this maintenance see the EC2 user guide https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-instances-status-check_sched.html#reschedule-event\\n\\nYou can find more information about maintenance events scheduled for your EC2 instances in the AWS Management Console https://console.aws.amazon.com/ec2/v2/home?region=ap-southeast-1#Events\\n\\n* What will happen to my instance during this maintenance event?\\n\\nDuring maintenance the instance will be rebooted. The reboot generally takes a few minutes to complete. After the reboot, your instance retains its IP address, DNS name, and any data on local instance-store volumes.\\n\\n* What will happen when I stop and start the instance?\\n\\nYou can stop and start the instance at any time before the scheduled maintenance window. This will migrate the instance to a new host and the instance will not have to undergo the scheduled maintenance. Please note that the data on any local instance-store volumes will not be preserved when you stop and start your instance. For more information about stopping and starting your instance see the EC2 User Guide https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Stop_Start.html.\\n\\n* Why does my instance require maintenance?\\n\\nEC2 routinely performs maintenance on the underlying systems in order to strengthen the security, reliability and operational performance of the EC2 service for our customers. Additional information about maintenance events can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/monitoring-instances-status-check_sched.html.\\n\\n\\n\\nIf you have any questions or concerns, you can contact the AWS Support Team on the community forums and via AWS Premium Support at: https://aws.amazon.com/support."
+      }
+    ],
+    "affectedEntities": [
+      {
+        "entityValue": "i-03c54acb9f2e01870"
+      }
+    ]
+  }
+}

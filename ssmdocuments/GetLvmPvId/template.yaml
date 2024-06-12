@@ -1,0 +1,27 @@
+  GetLvmPvIdDoc:
+    Type: AWS::SSM::Document
+    Properties: 
+      DocumentType: Command
+      Content: >
+        {
+          "schemaVersion": "2.2",
+          "description": "List Disks on Linux Instance",
+          "parameters": {
+            "LVName": {
+              "type": "String",
+              "description": "LVM LV Name ",
+              "default": "mapper/data-lvol0"
+            }
+          },
+          "mainSteps": [
+            {
+              "action": "aws:runShellScript",
+              "name": "GetLinuxVolumes",
+              "inputs": {
+                "runCommand": [
+                  "pvs -S vg_name=`df -l | grep {{LVName}} | awk '{print $1}' | awk -F '[-/]' '{print $4}'` -o pv_name --no-headings"
+                ]
+              }
+            }
+          ]
+        }

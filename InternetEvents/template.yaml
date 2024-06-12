@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Fetch internet events and upload to S3 bucket.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: InternetEvents
+    Description: Fetch internet events and upload to S3 bucket.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of S3 bucket to store internet event data.
+    Default: ""
+    
+Resources:
+        
+  FetchEventsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          BucketName: !Ref BucketName    
+      Policies:
+      - S3WritePolicy:
+          BucketName: !Ref BucketName
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - internetmonitor:ListInternetEvents
+          Resource:
+          - '*'
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "cron(16 * * * ? *)"
+            
+  InternetEventsDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: "internet-events"
+
+  InternetEventsDataCrawlerServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "glue.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+      Policies:
+        - PolicyName: "AWSGlueServiceRole-internet-events-bucket"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject" 
+                Resource: 
+                  - !Join [ '', [ 'arn:aws:s3:::', !Ref BucketName, '*' ] ]
+                  
+  InternetEventsDataCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Role: !GetAtt InternetEventsDataCrawlerServiceRole.Arn
+      DatabaseName: !Ref InternetEventsDatabase 
+      Targets:
+        S3Targets:
+          - Path: !Join [ '/', [ !Ref BucketName, 'events' ] ]
+      SchemaChangePolicy:
+        UpdateBehavior: "UPDATE_IN_DATABASE"
+        DeleteBehavior: "LOG"

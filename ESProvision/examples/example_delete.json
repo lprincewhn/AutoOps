@@ -1,0 +1,24 @@
+{
+  "detail-type": "AWS API Call via CloudTrail",
+  "source": "aws.es",
+  "account": "597377428377",
+  "time": "2021-06-06T14:34:07Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "eventTime": "2021-06-06T14:34:07Z",
+    "eventSource": "es.amazonaws.com",
+    "eventName": "DeleteElasticsearchDomain",
+    "awsRegion": "us-east-1",
+    "responseElements": {
+      "domainStatus": {
+        "created": true,
+        "processing": true,
+        "aRN": "arn:aws:es:us-east-1:597377428377:domain/alarmtest",
+        "domainId": "597377428377/alarmtest",
+        "deleted": true,
+        "domainName": "alarmtest"
+      }
+    }
+  }
+}

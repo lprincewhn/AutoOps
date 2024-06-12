@@ -1,0 +1,63 @@
+{
+  "Comment": "Create/Delete CloudFront alarms when an CloudFront distribution was created/deleted.",
+  "StartAt": "LoadCloudFrontProvisionInput",
+  "States": {
+    "LoadCloudFrontProvisionInput": {
+      "Type": "Task",
+      "Resource": "${LoadCloudFrontProvisionInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "IsDeleted?"
+    },
+    "IsDeleted?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.detail.eventName",
+          "StringMatches": "Delete*",
+          "Next": "DeleteDistributionAlarms"
+        }      
+      ],
+      "Default": "ConfigDistribution"      
+    },
+    "ConfigDistribution": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "IsCreate?",
+          "States": {
+            "IsCreate?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.detail.eventName",
+                  "StringMatches": "Create*",
+                  "Next": "CreateDistributionAlarms"
+                }
+              ],
+              "Default": "NoActionNeed"
+            },
+            "CreateDistributionAlarms": {
+              "Type": "Task",
+              "Resource": "${CreateDistributionAlarmsFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            },
+            "NoActionNeed": {
+              "Type": "Succeed"
+            }
+          }
+        }
+      ]
+    },
+    "DeleteDistributionAlarms": {
+      "Type": "Task",
+      "Resource": "${DeleteDistributionAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true 
+    }
+  }
+}

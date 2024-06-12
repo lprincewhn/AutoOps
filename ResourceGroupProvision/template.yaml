@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsResourceGroupProvision
+Resources:
+  RGProvisionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.yaml
+      DefinitionSubstitutions:
+        CopyTagsToEBSFunctionArn: !GetAtt CopyTagsToEBSFunction.Arn 
+        CopyTagsToRDSInstanceFunctionArn: !GetAtt CopyTagsToRDSInstanceFunction.Arn 
+        CreateResourceGroupFunctionArn: !GetAtt CreateResourceGroupFunction.Arn 
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "cron(0 2 * * ? *)"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CopyTagsToEBSFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CopyTagsToRDSInstanceFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateResourceGroupFunction
+  CopyTagsToEBSFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: CopyTagsToEBS
+      Policies: [AmazonEC2ReadOnlyAccess, ResourceGroupsandTagEditorFullAccess]
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Project'
+  CopyTagsToRDSInstanceFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: CopyTagsToRDSInstance
+      Policies: [AmazonRDSReadOnlyAccess, ResourceGroupsandTagEditorFullAccess]
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Project'
+  CreateResourceGroupFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: CreateResourceGroup
+      Policies: [ResourceGroupsandTagEditorFullAccess]
+      Environment:
+        Variables:
+          TAG_KEYS: 'Project'
+
+Outputs:
+  RGProvisionStateMachine:
+    Description: ARN of RGProvisionStateMachine
+    Value: !Ref RGProvisionStateMachine 

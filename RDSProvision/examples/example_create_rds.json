@@ -1,0 +1,23 @@
+{
+  "version": "0",
+  "id": "48cbdc71-1d3b-dc13-edeb-5ea28977b4a9",
+  "detail-type": "RDS DB Instance Event",
+  "source": "aws.rds",
+  "account": "597377428377",
+  "time": "2021-06-13T03:40:17Z",
+  "region": "us-east-1",
+  "resources": [
+    "arn:aws:rds:us-east-1:597377428377:db:mysql-demo"
+  ],
+  "detail": {
+    "EventCategories": [
+      "creation"
+    ],
+    "SourceType": "DB_INSTANCE",
+    "SourceArn": "arn:aws:rds:us-east-1:597377428377:db:mysql-demo",
+    "Date": "2021-06-13T03:40:17.200Z",
+    "Message": "DB instance created",
+    "SourceIdentifier": "mysql-demo",
+    "EventID": "RDS-EVENT-0005"
+  }
+}

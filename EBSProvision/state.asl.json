@@ -1,0 +1,69 @@
+{
+  "Comment": "Create/Delete alarms and EBS tags for EBS volume when they are attached/detached to/from EC2 instance.",
+  "StartAt": "LoadEBSProvisionInput",
+  "States": {
+    "LoadEBSProvisionInput": {
+      "Type": "Task",
+      "Resource": "${LoadEBSProvisionInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "WhatOperation?"
+    },
+    "WhatOperation?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.operation",
+          "StringEquals": "attach",
+          "Next": "ConfigEBS"
+        },    
+        {
+          "Variable": "$.operation",
+          "StringEquals": "detachlast",
+          "Next": "DeleteEBSAlarms"
+        }
+      ],
+      "Default": "NoActionNeeded"      
+    },
+    "ConfigEBS": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "CreateEBSAlarms",
+          "States": {
+            "CreateEBSAlarms": {
+              "Type": "Task",
+              "Resource": "${CreateEBSAlarmsFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "CreateEbsTagsFromEc2",
+          "States": {
+            "CreateEbsTagsFromEc2": {
+              "Type": "Task",
+              "Resource": "${CreateEbsTagsFromEc2FunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "DeleteEBSAlarms": {
+      "Type": "Task",
+      "Resource": "${DeleteEBSAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "NoActionNeeded": {
+      "Type": "Succeed"
+    }
+  }
+}

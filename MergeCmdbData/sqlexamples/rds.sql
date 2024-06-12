@@ -1,0 +1,2 @@
+
+select instance_id,image_id,instance_type,platform,private_ip_address,public_ip_address,security_groups,security_group_names,subnet_id,vpc_id,key_name, cardinality(network_interfaces) from ec2_instances

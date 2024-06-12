@@ -1,0 +1,153 @@
+{
+  "Comment": "Increase volume and filesystem size when got a disk space alarm.",
+  "StartAt": "LoadEbsAutoScalingInput",
+  "States": {
+    "LoadEbsAutoScalingInput": {
+      "Type": "Task",
+      "Resource": "${LoadEbsAutoScalingInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "WindowsOrLinux?"
+    },
+    "WindowsOrLinux?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.DeviceName",
+          "StringMatches": "/dev/mapper/*",
+          "Next": "GetLvmPvId"
+        },
+        {
+          "Variable": "$.metricName",
+          "StringEquals": "disk_used_percent",
+          "Next": "GetVolumeIdForLinux"
+        },
+        {
+          "Variable": "$.metricName",
+          "StringEquals": "LogicalDisk % Free Space",
+          "Next": "GetVolumeIdForWindows"
+        }        
+      ],
+      "Default": "AlarmNotSupport"
+    },
+    "GetLvmPvId": {
+      "Type": "Task",
+      "Resource": "${GetLvmPvIdFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "GetVolumeIdForLinux"
+    },
+    "GetVolumeIdForLinux": {
+      "Type": "Task",
+      "Resource": "${GetVolumeIdForLinuxFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CaculateCanModifyVolumeSize"
+    },
+    "GetVolumeIdForWindows": {
+      "Type": "Task",
+      "Resource": "${GetVolumeIdForWindowsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CaculateCanModifyVolumeSize"
+    },    
+    "CaculateCanModifyVolumeSize": {
+      "Type": "Task",
+      "Resource": "${GetVolumeDetailsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CanModifyVolumeSize?"
+    },
+    "CanModifyVolumeSize?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.canModifyVolume",
+          "StringEquals": "true",
+          "Next": "ModifyVolumeSize"
+        }
+      ],
+      "Default": "SkipModifyVolumeSize"
+    },
+    "ModifyVolumeSize": {
+      "Type": "Task",
+      "Resource": "${ModifyVolumeSizeFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "Wait20Sec"
+    },
+    "SkipModifyVolumeSize": {
+      "Type": "Fail",
+      "Cause": "Volume has been modified today!"
+    },
+    "Wait20Sec": {
+      "Type": "Wait",
+      "Seconds": 20,
+      "Next": "GetVolumeModificationState"
+    },
+    "GetVolumeModificationState": {
+      "Type": "Task",
+      "Resource": "${GetVolumeDetailsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CanModifyFsSize?"
+    },
+    "CanModifyFsSize?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.ModificationState",
+          "StringEquals": "optimizing",
+          "Next": "FsTypeToModify?"
+        }
+      ],
+      "Default": "Wait20Sec"
+    },
+    "FsTypeToModify?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.DeviceName",
+          "StringMatches": "/dev/mapper/*",
+          "Next": "GrowLvmXfs"
+        },
+        {
+          "Variable": "$.metricName",
+          "StringEquals": "disk_used_percent",
+          "Next": "GrowLinuxXfs"
+        },
+        {
+          "Variable": "$.metricName",
+          "StringEquals": "LogicalDisk % Free Space",
+          "Next": "GrowWindowsNtfs"
+        }  
+      ],
+      "Default": "AlarmNotSupport"
+    },
+    "GrowLvmXfs": {
+      "Type": "Task",
+      "Resource": "${GrowLvmXfsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "GrowLinuxXfs": {
+      "Type": "Task",
+      "Resource": "${GrowLinuxXfsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "GrowWindowsNtfs": {
+      "Type": "Task",
+      "Resource": "${GrowWindowsNtfsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },    
+    "AlarmNotSupport": {
+      "Type": "Fail",
+      "Cause": "Alarm type not supported!"
+    }
+  }
+}

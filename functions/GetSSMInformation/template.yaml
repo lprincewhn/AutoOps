@@ -1,0 +1,13 @@
+  GetSSMInformationFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 120
+      CodeUri: functions/GetSSMInformation
+      Policies: [AmazonSSMFullAccess]       
+      Environment:
+        Variables:
+          FREE_THRESHOLD: 20

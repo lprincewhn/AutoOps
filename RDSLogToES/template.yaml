@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Transform and deliver RDS database logs in Cloudwatch to Amazon ElasticSearch service. 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsRDSLogToES 
+    Description: Transform and deliver RDS database logs in Cloudwatch to Amazon ElasticSearch service.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  GeneralLogFirehoseStreamName:
+    Type: String
+    Description: 'Name of Kinesis Firehose stream Mysql general log be delivered to.'
+  AuditLogFirehoseStreamName:
+    Type: String
+    Description: 'Name of Kinesis Firehose stream Mysql audit log be delivered to.'
+  DatabaseId:
+    Type: String
+    Description: 'Id of RDS mysql database'
+Conditions:
+  GeneralLogEnabled: !Not
+    - !Equals 
+      - !Ref GeneralLogFirehoseStreamName 
+      - '' 
+  AuditLogEnabled: !Not
+    - !Equals
+      - !Ref AuditLogFirehoseStreamName
+      - ''
+Resources:
+  AuditLogToFirehoseFunction:
+    Type: 'AWS::Serverless::Function'
+    Condition: AuditLogEnabled
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512 
+      Timeout: 300 
+      CodeUri: AuditLogToFirehose
+      Policies: 
+        - FirehoseWritePolicy:
+            DeliveryStreamName: !Ref AuditLogFirehoseStreamName
+        - !Ref RDSDownloadLogPolicy
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: 'cron(5 * * * ? *)'
+      Environment:
+        Variables:
+          DBID: !Ref DatabaseId
+          FIREHOSE_STREAM_NAME: !Ref AuditLogFirehoseStreamName
+  GeneralLogToFirehoseFunction:
+    Type: 'AWS::Serverless::Function'
+    Condition: GeneralLogEnabled
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512 
+      Timeout: 300 
+      CodeUri: GeneralLogToFirehose
+      Policies: 
+        - FirehoseWritePolicy:
+            DeliveryStreamName: !Ref GeneralLogFirehoseStreamName
+        - !Ref RDSDownloadLogPolicy
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: 'cron(5 * * * ? *)'
+      Environment:
+        Variables:
+          DBID: !Ref DatabaseId
+          FIREHOSE_STREAM_NAME: !Ref GeneralLogFirehoseStreamName
+  RDSDownloadLogPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument: '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["rds:DownloadDBLogFilePortion", "rds:DescribeDBLogFiles"],"Resource": ["arn:aws:rds:*:*:db:*"]}]}'
+        

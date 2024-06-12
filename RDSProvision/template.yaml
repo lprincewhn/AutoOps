@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Create/Delete alarms for RDS databases when they are created/deleted.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsRDSProvision 
+    Description: Create/Delete alarms for RDS databases when they are created/deleted.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
+Resources:
+  RDSProvisionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadRDSProvisionInputFunctionArn: !GetAtt LoadRDSProvisionInputFunction.Arn
+        GetRDSDetailFunctionArn: !GetAtt GetRDSDetailFunction.Arn
+        CreateRDSAlarmsFunctionArn: !GetAtt CreateRDSAlarmsFunction.Arn
+        DeleteRDSAlarmsFunctionArn: !GetAtt DeleteRDSAlarmsFunction.Arn
+      Events:
+        CloudWatchEvent:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.rds 
+              detail-type:
+                - "RDS DB Instance Event"
+              detail:
+                EventID:
+                  - "RDS-EVENT-0005"   # 数据库实例已创建
+                  - "RDS-EVENT-0043"   # 正在从数据库快照中恢复数据库实例
+                  - "RDS-EVENT-0003"   # 数据库实例已删除
+                  - "RDS-EVENT-0017"   # 已更改此数据库实例的存储设置
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadRDSProvisionInputFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetRDSDetailFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateRDSAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeleteRDSAlarmsFunction
+  GetRDSDetailFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: GetRDSDetail
+      Policies: [AmazonRDSReadOnlyAccess]
+  CreateRDSAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateRDSAlarms
+      Policies: [CloudWatchFullAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn
+          FreeStorageSpace_Threshold: 20480
+          IOPS_Percentage_THreshold: 80
+          Throughput_Percentage_THreshold: 80
+  DeleteRDSAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: DeleteRDSAlarms
+      Policies: [CloudWatchFullAccess]  
+  LoadRDSProvisionInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadRDSProvisionInput
+Outputs:
+  RDSProvisionStateMachine:
+    Description: "ARN of ESAlarmCreatingStateMachine"
+    Value: !Ref RDSProvisionStateMachine 

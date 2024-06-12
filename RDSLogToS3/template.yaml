@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  A Lambda function to download rds log file and put it into S3 bucket.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsRDSLogToS3
+    Description: A Lambda function to download rds log file and put it into S3 bucket.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  MetricNamespace:
+    Type: String
+    Default: RDSLog
+    Description : CloudWatch metric namespace to store metric "copied_file_count"
+Resources:
+  RDSLogToS3Function:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512 
+      Timeout: 300 
+      Environment:
+        Variables:
+          METRIC_NAMESPACE: !Ref MetricNamespace
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - rds:DownloadCompleteDBLogFile
+          - rds:DescribeDBLogFiles
+          - s3:ListBucket
+          - s3:GetObject
+          - s3:PutObject
+          Resource:
+          - '*'
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Name: demodb_audti_log_to_s3
+            Schedule: 'rate(5 minutes)'
+            Input: '{"rds_instance_name":"demodb", "s3_bucket_name":"s3_bucket_name", "aws_region":"ap-northeast-1", "log_prefix":"server_audit", "min_size":1}'

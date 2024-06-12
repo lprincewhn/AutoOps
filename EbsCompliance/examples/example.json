@@ -1,0 +1,35 @@
+{
+    "version": "0",
+    "id": "21e28784-2d85-ac4a-79e8-ae39cdf2af06",
+    "detail-type": "Config Rules Compliance Change",
+    "source": "aws.config",
+    "account": "123456789012",
+    "time": "2021-07-24T15:14:47Z",
+    "region": "us-east-1",
+    "resources": [],
+    "detail": {
+      "resourceId": "AIDXXXXXXXXXXXX",
+      "awsRegion": "us-east-1",
+      "awsAccountId": "123456789012",
+      "configRuleName": "AutoOpsComplianceProcesso-IamUserConfigRule-MAXHQZSV8NW7",
+      "recordVersion": "1.0",
+      "configRuleARN": "arn:aws:config:us-east-1:123456789012:config-rule/config-rule-xhdoh5",
+      "messageType": "ComplianceChangeNotification",
+      "newEvaluationResult": {
+        "evaluationResultIdentifier": {
+          "evaluationResultQualifier": {
+            "configRuleName": "AutoOpsComplianceProcesso-IamUserConfigRule-MAXHQZSV8NW7",
+            "resourceType": "AWS::IAM::User",
+            "resourceId": "AIDXXXXXXXXXXXX"
+          },
+          "orderingTimestamp": "2021-07-24T15:14:45.000Z"
+        },
+        "complianceType": "NON_COMPLIANT",
+        "resultRecordedTime": "2021-07-24T15:14:46.567Z",
+        "configRuleInvokedTime": "2021-07-24T15:14:45.731Z",
+        "annotation": "test不在test组。"
+      },
+      "notificationCreationTime": "2021-07-24T15:14:47.676Z",
+      "resourceType": "AWS::IAM::User"
+    }
+  }

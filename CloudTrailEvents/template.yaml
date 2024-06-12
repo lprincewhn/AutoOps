@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This stack will deploy lambda function to monitor CloudTrail log. 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCloudTrailEvents
+    Description: This stack will deploy lambda function to monitor CloudTrail log.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  EventBusName:
+    Type: String
+    Description: SQL query to check CloudTrail log.
+  CloudTrailBucket:
+    Type: String
+    Description: S3 bucket where store the query result of Athena. 
+Resources:
+
+  CheckFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 300
+      Events:
+        CWEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - aws.s3
+              detail-type:
+                - "Object Created"
+              detail:
+                bucket:
+                  name:
+                    - !Ref CloudTrailBucket
+      Environment:
+        Variables:
+          EVENT_BUS_NAME: !Ref EventBusName 
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref CloudTrailBucket
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref EventBusName
+
+Outputs:
+  CheckFunction:
+    Description: "ARN of CheckFunction"
+    Value: !Ref CheckFunction

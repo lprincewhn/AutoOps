@@ -1,0 +1,66 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsEventRules
+Parameters:
+  HomeDefaultBusArn:
+    Type: String
+Resources:
+  PutEventToHomeDefaultBusRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - events.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /service-role/
+      Policies:
+        - PolicyName: PutEventToHomeDefaultBus
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 'events:PutEvents'
+                Resource: !Ref HomeDefaultBusArn
+  CloudWatchAlarmRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.cloudwatch
+        detail-type:
+          - CloudWatch Alarm State Change
+      Targets: 
+        - Arn: !Ref HomeDefaultBusArn
+          Id: 1
+          RoleArn: !GetAtt PutEventToHomeDefaultBusRole.Arn
+  EC2InstanceStateRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
+      Targets: 
+        - Arn: !Ref HomeDefaultBusArn
+          Id: 1
+          RoleArn: !GetAtt PutEventToHomeDefaultBusRole.Arn
+  HealthEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.health
+        detail-type:
+          - AWS Health Event
+      Targets: 
+        - Arn: !Ref HomeDefaultBusArn
+          Id: 1
+          RoleArn: !GetAtt PutEventToHomeDefaultBusRole.Arn

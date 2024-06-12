@@ -1,0 +1,13 @@
+  CreateEc2AlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: functions/CreateEc2Alarms
+      Policies: [CloudWatchFullAccess]
+      Environment:
+        Variables:
+          USAGE_THRESHOLD: 80

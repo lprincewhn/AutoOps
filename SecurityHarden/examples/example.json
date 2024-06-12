@@ -1,0 +1,116 @@
+{
+  "version": "0",
+  "id": "c14cf982-b4c4-ebb2-a36d-4d57474e0d59",
+  "detail-type": "GuardDuty Finding",
+  "source": "aws.guardduty",
+  "account": "597377428377",
+  "time": "2021-06-08T07:10:05Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "schemaVersion": "2.0",
+    "accountId": "597377428377",
+    "region": "us-east-1",
+    "partition": "aws",
+    "id": "90bcf538b732be3c07676fe4aade1f60",
+    "arn": "arn:aws:guardduty:us-east-1:597377428377:detector/90b6f924f05701988315e43ec01614c5/finding/90bcf538b732be3c07676fe4aade1f60",
+    "type": "Backdoor:EC2/C&CActivity.B!DNS",
+    "resource": {
+      "resourceType": "Instance",
+      "instanceDetails": {
+        "instanceId": "i-0d377989f7392a20a",
+        "instanceType": "t3.micro",
+        "launchTime": "2021-05-27T09:00:39Z",
+        "platform": null,
+        "productCodes": [],
+        "iamInstanceProfile": {
+          "arn": "arn:aws:iam::597377428377:instance-profile/ec2assume",
+          "id": "AIPAYWFTYFOM6A3ZNF6O7"
+        },
+        "networkInterfaces": [
+          {
+            "ipv6Addresses": [],
+            "networkInterfaceId": "eni-09e37450a12b8c501",
+            "privateDnsName": "ip-172-31-103-142.ec2.internal",
+            "privateIpAddress": "172.31.103.142",
+            "privateIpAddresses": [
+              {
+                "privateDnsName": "ip-172-31-103-142.ec2.internal",
+                "privateIpAddress": "172.31.103.142"
+              }
+            ],
+            "subnetId": "subnet-04d727fd27e8e8b4e",
+            "vpcId": "vpc-0f085c75",
+            "securityGroups": [
+              {
+                "groupName": "HTTP(S) inbound",
+                "groupId": "sg-020848d89d8d4e969"
+              },
+              {
+                "groupName": "SSH inbound",
+                "groupId": "sg-035dbcff05e1e8ca2"
+              }
+            ]
+          }
+        ],
+        "outpostArn": null,
+        "tags": [
+          {
+            "key": "aws:autoscaling:groupName",
+            "value": "tools-asg"
+          },
+          {
+            "key": "aws:ec2launchtemplate:version",
+            "value": "2"
+          },
+          {
+            "key": "aws:ec2launchtemplate:id",
+            "value": "lt-0fc5798df7cda9c65"
+          },
+          {
+            "key": "Name",
+            "value": "tools"
+          }
+        ],
+        "instanceState": "running",
+        "availabilityZone": "us-east-1a",
+        "imageId": "ami-0463a04be164e88ed",
+        "imageDescription": ""
+      }
+    },
+    "service": {
+      "serviceName": "guardduty",
+      "detectorId": "90b6f924f05701988315e43ec01614c5",
+      "action": {
+        "actionType": "DNS_REQUEST",
+        "dnsRequestAction": {
+          "domain": "guarddutyc2activityb.com",
+          "protocol": "UDP",
+          "blocked": false
+        }
+      },
+      "resourceRole": "TARGET",
+      "additionalInfo": {
+        "threatListName": "TestDomain"
+      },
+      "evidence": {
+        "threatIntelligenceDetails": [
+          {
+            "threatListName": "TestDomain",
+            "threatNames": []
+          }
+        ]
+      },
+      "eventFirstSeen": "2021-06-08T06:42:01Z",
+      "eventLastSeen": "2021-06-08T06:42:01Z",
+      "archived": false,
+      "count": 1
+    },
+    "severity": 8,
+    "createdAt": "2021-06-08T07:06:12.965Z",
+    "updatedAt": "2021-06-08T07:06:12.965Z",
+    "title": "Command and Control server domain name queried by EC2 instance i-0d377989f7392a20a.",
+    "description": "EC2 instance i-0d377989f7392a20a is querying a domain name associated with a known Command & Control server."
+  }
+}
+

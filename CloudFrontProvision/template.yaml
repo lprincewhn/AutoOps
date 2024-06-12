@@ -1,0 +1,163 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Create/Delete alarms for CloudFront distributions when they are created/deleted.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCloudFrontProvision 
+    Description: Create/Delete alarms for CloudFront distributions when they are created/deleted.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Resources:
+  CloudFrontProvisionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadCloudFrontProvisionInputFunctionArn: !GetAtt LoadCloudFrontProvisionInputFunction.Arn
+        CreateDistributionAlarmsFunctionArn: !GetAtt CreateDistributionAlarmsFunction.Arn
+        DeleteDistributionAlarmsFunctionArn: !GetAtt DeleteDistributionAlarmsFunction.Arn
+        GetDistributionTagFunctionArn: !GetAtt GetDistributionTagFunction.Arn
+        GetUserAttributeFunctionArn: !GetAtt GetUserAttributeFunction.Arn
+        GetRoleAttributeFunctionArn: !GetAtt GetRoleAttributeFunction.Arn  
+        UpdateDistributionTagFunctionArn: !GetAtt UpdateDistributionTagFunction.Arn  
+        UpdateDomainNameTagFunctionArn: !GetAtt UpdateDomainNameTagFunction.Arn  
+      Events:
+        CWEvent:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.cloudfront 
+              detail-type:
+                - "AWS API Call via CloudTrail"
+              detail:
+                eventName: 
+                  - CreateDistribution 
+                  - CreateDistributionWithTags
+                  - UpdateDistribution
+                  - DeleteDistribution 
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadCloudFrontProvisionInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateDistributionAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DeleteDistributionAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetDistributionTagFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetUserAttributeFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetRoleAttributeFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref UpdateDistributionTagFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref UpdateDomainNameTagFunction  
+
+  CreateDistributionAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateDistributionAlarms
+      Policies: [CloudFrontFullAccess,CloudWatchFullAccess]
+
+  DeleteDistributionAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: DeleteDistributionAlarms
+      Policies: [CloudWatchFullAccess]  
+
+  LoadCloudFrontProvisionInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadCloudFrontProvisionInput
+
+  GetDistributionTagFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Team,Project'
+      CodeUri: GetDistributionTag
+      Policies: [CloudFrontReadOnlyAccess]
+
+  GetRoleAttributeFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30  
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Team,Project'
+      CodeUri: GetRoleAttribute
+      Policies: [IAMReadOnlyAccess]
+  
+  UpdateDistributionTagFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: UpdateDistributionTag
+      Policies: [CloudFrontFullAccess]
+
+  UpdateDomainNameTagFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: UpdateDomainNameTag
+      Policies: [CloudFrontFullAccess]
+  
+  GetUserAttributeFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Team,Project'
+      CodeUri: GetUserAttribute
+      Policies: [IAMReadOnlyAccess]
+
+Outputs:
+  CloudFrontProvisionStateMachine:
+    Description: "ARN of CloudFrontProvisionStateMachine"
+    Value: !Ref CloudFrontProvisionStateMachine 
+  StateMachineURL:
+    Description: "You can use this url to view the details fo this workflow"
+    Value: !Join [ '', [ "https://console.aws.amazon.com/states/home?region=", !Ref AWS::Region, "#/statemachines/view/", !Ref CloudFrontProvisionStateMachine ] ] 

@@ -1,0 +1,153 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Format cloudwatch alarms and notify users by SNS topic.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsAlarmProcessor
+    Description: Format cloudwatch alarms and notify users by SNS topic.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
+Resources:
+  AlarmProcessorStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadAlarmProcessorInputFunctionArn: !GetAtt LoadAlarmProcessorInputFunction.Arn
+        FormatCloudFrontAlarmFunctionArn: !GetAtt FormatCloudFrontAlarmFunction.Arn
+        FormatEC2AlarmFunctionArn: !GetAtt FormatEC2AlarmFunction.Arn
+        FormatESAlarmFunctionArn: !GetAtt FormatESAlarmFunction.Arn
+        FormatRDSAlarmFunctionArn: !GetAtt FormatRDSAlarmFunction.Arn
+        FormatLinuxDiskAlarmFunctionArn: !GetAtt FormatLinuxDiskAlarmFunction.Arn
+        NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
+      Events:
+        AlarmStateChanged:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - aws.cloudwatch
+              detail-type:
+                - "CloudWatch Alarm State Change"
+              detail:
+                state:
+                  value:
+                    - ALARM
+                    - OK
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadAlarmProcessorInputFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatCloudFrontAlarmFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatEC2AlarmFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatESAlarmFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatRDSAlarmFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatLinuxDiskAlarmFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifySnsFunction
+
+  LoadAlarmProcessorInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadAlarmProcessorInput
+
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: NotifySns
+      Policies: [AmazonSNSFullAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn    
+
+  FormatCloudFrontAlarmFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatCloudFrontAlarm
+      Policies: [CloudFrontReadOnlyAccess,CloudWatchReadOnlyAccess]
+      Environment:
+        Variables:
+          RECEIVER: 'all'
+  FormatESAlarmFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatESAlarm
+      Policies: []
+      Environment:
+        Variables:
+          RECEIVER: 'all'
+  FormatEC2AlarmFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatEC2Alarm
+      Policies: [AmazonEC2ReadOnlyAccess]
+      Environment:
+        Variables:
+          RECEIVER: 'all'
+  FormatRDSAlarmFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatRDSAlarm
+      Policies: []
+      Environment:
+        Variables:
+          RECEIVER: 'all'
+  FormatLinuxDiskAlarmFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatLinuxDiskAlarm
+      Policies: []
+      Environment:
+        Variables:
+          RECEIVER: 'all'
+Outputs:
+  AlarmProcessorStateMachine:
+    Description: "ARN of AlarmProcessorStateMachine"
+    Value: !Ref AlarmProcessorStateMachine 

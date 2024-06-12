@@ -1,0 +1,122 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Process non-compliant resource in AWS Config and send notifications.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsComplianceProcessor
+    Description: Process non-compliant resource in AWS Config and send notifications.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to.
+    Default: ""
+Resources:
+  ComplianceProcessor:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.json
+      DefinitionSubstitutions:
+        LoadComplianceNotifyInputFunctionArn: !GetAtt LoadComplianceNotifyInputFunction.Arn
+        FormatIamComplianceEventFunctionArn: !GetAtt FormatIamComplianceEventFunction.Arn
+        GetInstanceIdFunctionArn: !GetAtt GetInstanceIdFunction.Arn
+        CreateEbsTagsFromEc2FunctionArn: !GetAtt CreateEbsTagsFromEc2Function.Arn
+        NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
+      Events:
+        CloudWatchEvent:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - aws.config
+              detail-type:
+                - "Config Rules Compliance Change"
+              detail:
+                messageType:
+                  - "ComplianceChangeNotification"
+                newEvaluationResult:
+                  complianceType:
+                    - "NON_COMPLIANT"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadComplianceNotifyInputFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref FormatIamComplianceEventFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetInstanceIdFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CreateEbsTagsFromEc2Function
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifySnsFunction
+
+  LoadComplianceNotifyInputFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadComplianceNotifyInput
+  
+  FormatIamComplianceEventFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: FormatIamComplianceEvent
+      Environment:
+        Variables:
+          RECEIVER: 'all'  
+
+  GetInstanceIdFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: GetInstanceId
+      Policies: [AmazonEC2ReadOnlyAccess]
+
+  CreateEbsTagsFromEc2Function:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: CreateEbsTagsFromEc2
+      Policies: [AmazonEC2FullAccess]
+      Environment:
+        Variables:
+          TAGS_TO_SYNC: 'Name,Project'
+
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: NotifySns
+      Policies: [AmazonSNSFullAccess]
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref SnsTopicArn   
+
+Outputs:
+  ComplianceProcessor:
+    Description: "ARN of ComplianceProcessor"
+    Value: !Ref ComplianceProcessor 

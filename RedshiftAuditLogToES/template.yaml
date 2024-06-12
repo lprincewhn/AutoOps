@@ -1,0 +1,129 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Transform and deliver Redshift audit logs in S3 bucket to Amazon ElasticSearch service. 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsRedshiftAuditLogToES 
+    Description: Transform and deliver Redshift audit logs in S3 bucket to Amazon ElasticSearch service.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SourceBucket:
+    Type: String
+  DestinationESArn:
+    Type: String
+  DestinationBucket:
+    Type: String
+  ESIndexName:
+    Type: String
+    Default: redshift-audit-log
+  IndexRotationPeriod:
+    Type: String
+    Default: OneDay
+    AllowedValues: ["NoRotation", "OneDay", "OneHour", "OneMonth", "OneWeek"]
+  S3BackupMode:
+    Type: String
+    Default: FailedDocumentsOnly
+    AllowedValues: ["AllDocuments", "FailedDocumentsOnly"]
+Resources:
+  RedshiftAuditLogDeliverStream:
+    Type: AWS::KinesisFirehose::DeliveryStream
+    Properties: 
+      DeliveryStreamType: DirectPut
+      ElasticsearchDestinationConfiguration: 
+        DomainARN: !Ref DestinationESArn
+        IndexName: !Ref ESIndexName
+        IndexRotationPeriod: !Ref IndexRotationPeriod
+        S3BackupMode: !Ref S3BackupMode
+        RoleARN: !GetAtt [ FirehoseRole, Arn ]
+        S3Configuration: 
+          BucketARN: !Join [ '', [ 'arn:aws:s3:::', !Ref DestinationBucket ] ] 
+          ErrorOutputPrefix: failed
+          RoleARN: !GetAtt [ FirehoseRole, 'Arn' ]
+        CloudWatchLoggingOptions:
+          Enabled: True
+          LogGroupName: !Ref FirehoseLogGroup
+          LogStreamName: !Ref FirehoseLogStream
+  FirehoseLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties: 
+      LogGroupName: /aws/kinesisfirehose/RedshiftAuditLogDeliverStream
+      RetentionInDays: 7
+  FirehoseLogStream:
+    Type: AWS::Logs::LogStream
+    Properties: 
+      LogGroupName: !Ref FirehoseLogGroup
+      LogStreamName: ElasticsearchDelivery
+  FirehoseRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - Sid: ""
+            Effect: "Allow"   
+            Principal:
+              Service: "firehose.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: 'LogWritePolicy'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement: 
+              - Effect: "Allow"
+                Action: "logs:PutLogEvents"
+                Resource: !GetAtt [ FirehoseLogGroup, 'Arn' ]
+        - PolicyName: 'ESAccessPolicy'
+          PolicyDocument: 
+            Version: "2012-10-17"
+            Statement: 
+              - Effect: "Allow"   
+                Action: 
+                  - es:*
+                Resource: 
+                  - !Ref DestinationESArn
+                  - !Join [ '', [ !Ref DestinationESArn, '/*' ] ]
+        - PolicyName: 'S3WritePolicy'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement: 
+              - Sid: ""
+                Effect: "Allow"
+                Action:
+                  - s3:AbortMultipartUpload
+                  - s3:GetBucketLocation
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:ListBucketMultipartUploads
+                  - s3:PutObject
+                Resource:
+                  - !Join [ '', [ 'arn:aws:s3:::', !Ref DestinationBucket ] ]
+                  - !Join [ '', [ 'arn:aws:s3:::', !Ref DestinationBucket , '/*' ] ]
+
+  RedshiftAuditLogTransformFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512 
+      Timeout: 300 
+      Policies: 
+        - S3ReadPolicy:
+            BucketName: !Ref SourceBucket
+        - FirehoseWritePolicy:
+            DeliveryStreamName: !Ref RedshiftAuditLogDeliverStream
+      Environment:
+        Variables:
+          FIREHOSE_STREAM_NAME: !Ref RedshiftAuditLogDeliverStream
+
+Outputs:
+  RedshiftAuditLogTransformFunction:
+    Description: "Arn of Lambda to transform Redshift audit log and put them to AES."
+    Value: !GetAtt [ RedshiftAuditLogTransformFunction, Arn ] 
+  FirehoseRole:
+    Description: "Arn of role used by lambda RedshiftAuditLogDeliverStream."
+    Value: !GetAtt [ FirehoseRole, Arn ] 

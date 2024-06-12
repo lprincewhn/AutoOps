@@ -1,0 +1,60 @@
+{
+  "Comment": "Create/Delete AWS RDS alarms when an RDS db instance was created/updated/deleted.",
+  "StartAt": "LoadRDSProvisionInput",
+  "States": {
+    "LoadRDSProvisionInput": {
+      "Type": "Task",
+      "Resource": "${LoadRDSProvisionInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "WhatOperation?"
+    },
+    "WhatOperation?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.operation",
+          "StringEquals": "created",
+          "Next": "GetRDSDetail"
+        }, {
+          "Variable": "$.operation",
+          "StringEquals": "restored",
+          "Next": "GetRDSDetail"
+        }, {
+          "Variable": "$.operation",
+          "StringEquals": "storage_changed",
+          "Next": "GetRDSDetail"
+        }, {
+          "Variable": "$.operation",
+          "StringEquals": "deleted",
+          "Next": "DeleteRDSAlarms"
+        }      
+      ],
+      "Default": "NoActionNeeded"      
+    },
+    "GetRDSDetail": {
+      "Type": "Task",
+      "Resource": "${GetRDSDetailFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateRDSAlarms"
+    },
+    "CreateRDSAlarms": {
+      "Type": "Task",
+      "Resource": "${CreateRDSAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "DeleteRDSAlarms": {
+      "Type": "Task",
+      "Resource": "${DeleteRDSAlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true 
+    },
+    "NoActionNeeded": {
+      "Type": "Succeed"
+    }
+  }
+}

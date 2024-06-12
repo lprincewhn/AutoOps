@@ -1,0 +1,397 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsAlarmProvision 
+Parameters:
+  AutoOpsTopicArn:
+    Type: String
+    Description: Enter SNS topic arn which notifications will send to. This SNS topic should be in the same region as this stack deployed.
+    Default: ""
+  TargetRegions:
+    Type: String
+  RawAlarmTopicArn:
+    Type: String
+    Description: Additional SNS topic receive Cloudwatch alarm notification. Messages of this topic will be sent by CloudWatch alarm directly, so it must in the same region as this SAM appliction
+    Default: ""
+Resources:
+  AlarmProvisionStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: state.asl.yaml
+      DefinitionSubstitutions:
+        RemediateIPAMAlarmsFunctionArn: !GetAtt RemediateIPAMAlarmsFunction.Arn
+        RemediateEC2AlarmsFunctionArn: !GetAtt RemediateEC2AlarmsFunction.Arn
+        RemediateEBSAlarmsFunctionArn: !GetAtt RemediateEBSAlarmsFunction.Arn
+        RemediateRDSAlarmsFunctionArn: !GetAtt RemediateRDSAlarmsFunction.Arn
+        RemediateRedisAlarmsFunctionArn: !GetAtt RemediateRedisAlarmsFunction.Arn
+        RemediateESAlarmsFunctionArn: !GetAtt RemediateESAlarmsFunction.Arn
+        RemediateKafkaAlarmsFunctionArn: !GetAtt RemediateKafkaAlarmsFunction.Arn
+        RemediateS3AlarmsFunctionArn: !GetAtt RemediateS3AlarmsFunction.Arn
+        RemediateALBAlarmsFunctionArn: !GetAtt RemediateALBAlarmsFunction.Arn
+        RemediateNLBAlarmsFunctionArn: !GetAtt RemediateNLBAlarmsFunction.Arn
+        RemediateVPNAlarmsFunctionArn: !GetAtt RemediateVPNAlarmsFunction.Arn
+        NotifySnsFunctionArn: !GetAtt NotifySnsFunction.Arn
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "rate(12 hours)"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateIPAMAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateEC2AlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateEBSAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateRDSAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateRedisAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateESAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateKafkaAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateS3AlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateALBAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateNLBAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref RemediateVPNAlarmsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref NotifySnsFunction 
+  CommonLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: Layers/common.zip
+      CompatibleRuntimes:
+        - python3.8
+  RemediateIPAMAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateIPAMAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ec2:DescribeIpamScopes
+          - ec2:GetIpamResourceCidrs
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateEC2AlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateEC2Alarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ec2:DescribeInstances
+          - ec2:DescribeInstanceTypes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateEBSAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateEBSAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ec2:DescribeVolumes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateRDSAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateRDSAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - rds:DescribeDbInstances
+          - ec2:DescribeInstanceTypes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateRedisAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateRedisAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - elasticache:DescribeCacheClusters
+          - ec2:DescribeInstanceTypes
+          - elasticache:ListTagsForResource
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateESAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateESAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - es:ListDomainNames
+          - es:DescribeElasticsearchDomain
+          - es:ListTags
+          - ec2:DescribeInstanceTypes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateKafkaAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateKafkaAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - kafka:ListClusters*
+          - kafka:ListNodes
+          - ec2:DescribeInstanceTypes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateS3AlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateS3Alarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - s3:ListAllMyBuckets
+          - s3:GetBucketLocation
+          - s3:GetMetricsConfiguration
+          - s3:GetBucketTagging
+          - s3:GetReplicationConfiguration
+          - ec2:DescribeInstanceTypes
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateALBAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateALBAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - elasticloadbalancing:DescribeTargetGroups
+          - elasticloadbalancing:DescribeTags
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateNLBAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateNLBAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - elasticloadbalancing:DescribeTargetGroups
+          - elasticloadbalancing:DescribeTags
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  RemediateVPNAlarmsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: RemediateVPNAlarms
+      Layers:
+      - !Ref CommonLayer
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ec2:DescribeVpnConnections
+          - cloudwatch:DescribeAlarms
+          - cloudwatch:DeleteAlarms
+          - cloudwatch:PutMetricAlarm
+          Resource:
+          - '*'
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref RawAlarmTopicArn
+          TargetRegions: !Ref TargetRegions
+          AWSAccountId: !Ref AWS::AccountId
+  NotifySnsFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: NotifySns
+      Policies:
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - sns:Publish
+          Resource:
+          - !Ref AutoOpsTopicArn
+      Environment:
+        Variables:
+          SNSTopicArn: !Ref AutoOpsTopicArn
+          
+Outputs:
+  AlarmProvisionStateMachine:
+    Description: "StateMachine ARN"
+    Value: !Ref AlarmProvisionStateMachine 

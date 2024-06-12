@@ -1,0 +1,117 @@
+{
+  "Comment": "Format CloudWatch alarms and send notification.",
+  "StartAt": "LoadAlarmProcessorInput",
+  "States": {
+    "LoadAlarmProcessorInput": {
+      "Type": "Task",
+      "Resource": "${LoadAlarmProcessorInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "WhatAlarm?"
+    },
+    "WhatAlarm?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.alarmName",
+          "StringEquals": "CloudFront-E34CSZY7SGJT2-Low-RequestsChangeRate-Alarm",
+          "Next": "WhatTime?"
+        },
+        {
+          "Variable": "$.alarmName",
+          "StringEquals": "CloudFront-E2IHAJ3CA6E7RH-Low-RequestsChangeRate-Alarm",
+          "Next": "WhatTime?"
+        },
+        {
+          "Variable": "$.service",
+          "StringEquals": "CloudFront",
+          "Next": "FormatCloudFrontAlarm"
+        },
+        {
+          "Variable": "$.alarmName",
+          "StringMatches": "ElasticSearch-*",
+          "Next": "FormatESAlarm"
+        },
+        {
+          "Variable": "$.alarmName",
+          "StringMatches": "RDS-*",
+          "Next": "FormatRDSAlarm"
+        },
+        {
+          "Variable": "$.objectType",
+          "StringEquals": "EC2",
+          "Next": "FormatEC2Alarm"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "WhatTime?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "And" : [
+            {
+              "Variable": "$.time",
+              "StringGreaterThanEquals": "08:00"
+            },
+            {
+              "Variable": "$.time",
+              "StringLessThan": "23:00"
+            }
+          ],
+          "Next": "FormatCloudFrontAlarm"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "FormatCloudFrontAlarm": {
+      "Type": "Task",
+      "Resource": "${FormatCloudFrontAlarmFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "FormatESAlarm": {
+      "Type": "Task",
+      "Resource": "${FormatESAlarmFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "FormatRDSAlarm": {
+      "Type": "Task",
+      "Resource": "${FormatRDSAlarmFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "FormatEC2Alarm": {
+      "Type": "Task",
+      "Resource":"${FormatEC2AlarmFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "NeedNotify?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.message",
+          "IsPresent": true,
+          "Next": "NotifySns"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "NotifySns": {
+      "Type": "Task",
+      "Resource": "${NotifySnsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "NoNeedNotify": {
+      "Type": "Succeed"
+    }
+  }
+}

@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AutoOps contains useful operational processes represented as a state machines with AWS StepFunctions.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCommon
+    Description: A toolkit for auto ops in AWS.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  SnsTopicDisplayName:
+    Type: String
+    Description: Display name of SNS topic notification will send to.
+    Default: "【AWS自动运维通知】"
+Resources:
+  AutoOpsSnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: AutoOps
+      DisplayName: !Ref SnsTopicDisplayName
+  AutoOpsTrailsBucket:
+    Type: AWS::S3::Bucket
+  AutoOpsTrailsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    DependsOn: AutoOpsTrailsBucket
+    Properties:
+      Bucket: !Ref AutoOpsTrailsBucket 
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetBucketAcl'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref AutoOpsTrailsBucket 
+            Principal: 
+              Service: 'cloudtrail.amazonaws.com'
+          - Action:
+              - 's3:PutObject'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref AutoOpsTrailsBucket
+                - /*
+            Principal:
+              Service: 'cloudtrail.amazonaws.com'
+            Condition:
+              StringEquals:
+                's3:x-amz-acl': 'bucket-owner-full-control'
+          - Action:
+              - 's3:*'
+            Effect: Deny
+            Resource: 
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref AutoOpsTrailsBucket
+              - !Join
+                - ''
+                - - 'arn:aws:s3:::'
+                  - !Ref AutoOpsTrailsBucket
+                  - /*
+            Principal:
+              Service: 'cloudtrail.amazonaws.com'
+            Condition:
+              Bool:
+                'aws:SecureTransport': 'false' 
+  AutoOpsTrail:
+    Type: AWS::CloudTrail::Trail
+    DependsOn: AutoOpsTrailsBucketPolicy
+    Properties:
+      S3BucketName: !Ref AutoOpsTrailsBucket 
+      S3KeyPrefix: "all-region-management-events"
+      IsLogging: true
+      EnableLogFileValidation: true
+      IncludeGlobalServiceEvents: true
+      IsMultiRegionTrail: true
+      EventSelectors:
+        - IncludeManagementEvents: true
+          ReadWriteType: All
+Outputs:
+  SNSTopic:
+    Description: "Notifications will be sent to this topic"
+    Value: !Ref AutoOpsSnsTopic 
+  S3Bucket: 
+    Description: "This bucket will store CloudTrail events"
+    Value: !Ref AutoOpsTrailsBucket
+  CloudTrail:
+    Description: "A cloudtrail to monitor management events from all regions"
+    Value: !Ref AutoOpsTrail

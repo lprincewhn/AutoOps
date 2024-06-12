@@ -1,0 +1,33 @@
+  GrowLvmXfsDoc:
+    Type: AWS::SSM::Document
+    Properties: 
+      DocumentType: Command
+      Content: >
+        {
+          "schemaVersion": "2.2",
+          "description": "Grow xfs filesystem on Linux LVM after volume size increase",
+          "parameters": {
+            "PVName": {
+              "type": "String",
+              "description": "LVM PV Name ",
+              "default": "/dev/xvda"
+            },
+            "LVName": {
+              "type": "String",
+              "description": "LVM LV Name ",
+              "default": "/dev/mapper/data-lvol0"
+            }
+          },
+          "mainSteps": [
+            {
+              "action": "aws:runShellScript",
+              "name": "GrowLvmXfsDoc",
+              "inputs": {
+                "runCommand": [
+                  "pvresize {{PVName}}",
+                  "lvresize --resizefs {{LVName}} {{PVName}}"
+                ]
+              }
+            }
+          ]
+        }

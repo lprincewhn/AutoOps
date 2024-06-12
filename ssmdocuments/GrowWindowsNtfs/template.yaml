@@ -1,0 +1,27 @@
+  GrowWindowsNtfsDoc:
+    Type: AWS::SSM::Document
+    Properties: 
+      DocumentType: Command
+      Content: >
+        {
+          "schemaVersion": "2.2",
+          "description": "Command Document Example JSON Template",
+          "parameters": {
+            "DriveLetter": {
+              "type": "String",
+              "description": "Drive letter to grow",
+              "default": "d"
+            }
+          },
+          "mainSteps": [
+            {
+              "action": "aws:runPowerShellScript",
+              "name": "GrowWindowsNtfsDoc",
+              "inputs": {
+                "runCommand": [
+                  "Resize-Partition -DriveLetter {{DriveLetter}} -Size (Get-PartitionSupportedSize -DriveLetter {{DriveLetter}}).sizemax"
+                ]
+              }
+            }
+          ]
+        }

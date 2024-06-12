@@ -1,0 +1,59 @@
+{
+  "Comment": "Format PHD events and send notification.",
+  "StartAt": "LoadPhdEventProcessorInput",
+  "States": {
+    "LoadPhdEventProcessorInput": {
+      "Type": "Task",
+      "Resource": "${LoadPhdEventProcessorInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "WhatEvent?"
+    },
+    "WhatEvent?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.service",
+          "StringEquals": "EC2",
+          "Next": "FormatEC2MaintenanceEvent"
+        }
+      ],
+      "Default": "FormatGeneralEvent"
+    },
+    "FormatEC2MaintenanceEvent": {
+      "Type": "Task",
+      "Resource":"${FormatEC2MaintenanceEventFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "FormatGeneralEvent": {
+      "Type": "Task",
+      "Resource":"${FormatGeneralEventFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "NeedNotify?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.message",
+          "IsPresent": true,
+          "Next": "NotifySns"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "NotifySns": {
+      "Type": "Task",
+      "Resource": "${NotifySnsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "NoNeedNotify": {
+      "Type": "Succeed"
+    }
+  }
+}

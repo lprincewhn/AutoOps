@@ -1,0 +1,42 @@
+  CheckIamUserComplianceFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: functions/CheckIamUserCompliance
+      Policies: [AWSConfigRulesExecutionRole]
+  ConfigPermissionToCallLambda: 
+    Type: AWS::Lambda::Permission
+    Properties: 
+      FunctionName: 
+        Fn::GetAtt: 
+          - CheckIamUserComplianceFunction 
+          - Arn
+      Action: "lambda:InvokeFunction"
+      Principal: "config.amazonaws.com"
+  IamComplianceConfigRule: 
+    Type: AWS::Config::ConfigRule
+    Properties: 
+      InputParameters: {"requiredGroupList":"Group1,Group2", "exludedUserList":"admin,Admin"} 
+      Scope: 
+        ComplianceResourceTypes: 
+          - "AWS::IAM::User"
+      Source: 
+        Owner: "CUSTOM_LAMBDA"
+        SourceDetails: 
+          - 
+            EventSource: "aws.config"
+            MessageType: "ConfigurationItemChangeNotification"
+          -
+            EventSource: "aws.config"
+            MessageType: "ScheduledNotification"
+            MaximumExecutionFrequency: "TwentyFour_Hours"
+        SourceIdentifier: 
+          Fn::GetAtt: 
+            - CheckIamUserComplianceFunction
+            - Arn
+    DependsOn: ConfigPermissionToCallLambda
+

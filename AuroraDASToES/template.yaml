@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Transform and deliver Aurora database activity stream to Amazon ElasticSearch service. 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsAuroraDASToES 
+    Description: Transform and deliver Aurora database activity stream to Amazon ElasticSearch service.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  KinesisDataStreamArn:
+    Type: String
+    Description: Arn of Kinesis data stream sending aurora database activities.
+  KMSKeyId:
+    Type: String
+    Description: KMS Key id to encrypt/decrypt data.
+  ESRegion:
+    Type: String
+    Description: 'Enter SNS topic arn which notifications will send to. (Example: us-east-1)'
+  ESEndpoint:
+    Type: String
+    Description: 'Enter SNS topic arn which notifications will send to. (EXample: https://es.example.com)'
+Resources:
+  AuroraDASTransformFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512 
+      Timeout: 300 
+      Policies: 
+        - KMSDecryptPolicy:
+            KeyId: !Ref KMSKeyId 
+        - KinesisStreamReadPolicy:
+            StreamName: !Select [ 1, !Split [ '/', !Ref KinesisDataStreamArn ] ]
+        - !Ref ESPostPolicy
+      Events:
+        KinesisDataEvent:
+          Type: Kinesis
+          Properties:
+            StartingPosition: TRIM_HORIZON
+            Stream: !Ref KinesisDataStreamArn
+      Environment:
+        Variables:
+          ESRegion: !Ref ESRegion
+          ESEndpoint: !Ref ESEndpoint
+  ESPostPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      PolicyDocument: '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Action": ["es:ESHttpGet"],"Resource": ["arn:aws:es:*:*:domain/*/","arn:aws:es:*:*:domain/*/_cluster/settings","arn:aws:es:*:*:domain/*/_cat/indices"]},{"Effect": "Allow","Action": "es:ListDomainNames","Resource": "*"},{"Effect": "Allow","Action": ["es:DescribeElasticsearchDomain"],"Resource": ["arn:aws:es:*:*:domain/*"]},{"Effect": "Allow","Action": ["es:ESHttpPost","es:ESHttpGet"],"Resource": ["arn:aws:es:*:*:domain/*/_opendistro/_sql"]}]}' 
+Outputs:
+  LambdaExecuteRole:
+    Description: "Arn of role used by lambda AuroraDASTransformFunctionRole."
+    Value: 
+      !Sub
+        - arn:aws:iam::${AWS::AccountId}:role/${RoleName}
+        - RoleName: !Ref AuroraDASTransformFunctionRole
+
+

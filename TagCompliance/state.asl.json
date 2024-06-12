@@ -1,0 +1,34 @@
+{
+  "Comment": "Update EBS tag when staring an EC2 instance.",
+  "StartAt": "TagCheck",
+  "States": {
+    "TagCheck": {
+      "Type": "Task",
+      "Resource": "${TagCheckFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NeedNotify?"
+    },
+    "NeedNotify?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.message",
+          "IsPresent": true,
+          "Next": "NotifySns"
+        }
+      ],
+      "Default": "NoNeedNotify"
+    },
+    "NotifySns": {
+      "Type": "Task",
+      "Resource": "${NotifySnsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    },
+    "NoNeedNotify": {
+      "Type": "Succeed"
+    }
+  }
+}

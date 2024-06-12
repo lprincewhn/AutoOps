@@ -1,0 +1,170 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This stack will deploy athena federation query to get CMDB data and load them into a central bucket.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsRegionCmdbData
+    Description: This stack will deploy athena federation query to get AWS cm data and load them into a central bucket.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  AthenaCatalogName:
+    Description: The name of athena catalog you used to deploy AthenaAwsCmdbConnector. This name must satisfy the pattern ^[a-z0-9-_]{1,64}$
+    Type: String
+    AllowedPattern: ^[a-z0-9-_]{1,64}$
+    Default: aws-cmdb 
+  CmdbBucket:
+    Type: String
+    Description: S3 bucket where you want to save CMDB data.
+  AthenaResultBucketPrefix:
+    Type: String
+    Description: Prefix of S3 bucket where store the query result of Athena. The bucket name is <prefix>.<region>.<accountId>
+    Default: athena-result.cmdb.autoops 
+Resources:
+
+  AthenaResultBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Join [ '.', [ !Ref AthenaResultBucketPrefix, !Ref AWS::Region, !Ref AWS::AccountId ] ]
+
+  CmdbDataCatalog:
+    Type: AWS::Athena::DataCatalog
+    Properties:
+      Name: !Ref AthenaCatalogName
+      Parameters:
+        function: !Join [ ":" , [ "arn", "aws", "lambda", !Ref AWS::Region, !Ref AWS::AccountId, "function", !Ref AthenaCatalogName ] ]
+      Type: LAMBDA
+
+  LoadEc2InvStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: ec2.state.asl.json
+      DefinitionSubstitutions:
+        LoadEc2InvSqlFunctionArn: !GetAtt LoadEc2InvSqlFunction.Arn
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "cron(5 0 * * ? *)"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadEc2InvSqlFunction 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref AthenaCatalogName 
+        - S3FullAccessPolicy:
+            BucketName: !Ref CmdbBucket
+        - S3FullAccessPolicy:
+            BucketName: !Ref AthenaResultBucket 
+        - AmazonAthenaFullAccess
+
+  LoadEc2InvSqlFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadEc2InvSql
+      Environment:
+        Variables:
+          CMDB_DATA_BUCKET: !Ref CmdbBucket
+          ATHENA_RESULT_BUCKET: !Ref AthenaResultBucket
+          AthenaDataCatalog: !Ref AthenaCatalogName
+          EC2_INV_SQL: !Sub
+            - "select i.instance_id, detail.project, image_id, instance_type, platform, vpc_id, v.name as vpc_name, subnet_id, s.name as subnet_name, s.availability_zone, s.cidr_block, private_ip_address, public_ip_address, security_groups, security_group_names,key_name,cardinality(network_interfaces) as eni_count from \"${ATHENA_CATALOG_NAME}\".ec2.ec2_instances i left join (select instance_id,t.tag.value as project from \"${ATHENA_CATALOG_NAME}\".ec2.ec2_instances i CROSS JOIN UNNEST(i.tags) as t(tag) where t.tag.key='Project') detail on i.instance_id=detail.instance_id left join (select v.id, detail.name from \"${ATHENA_CATALOG_NAME}\".ec2.vpcs v left join (select id,substring(t.tag,6) as name from \"${ATHENA_CATALOG_NAME}\".ec2.vpcs v CROSS JOIN UNNEST(v.tags) as t(tag) where t.tag like 'Name:%') detail on v.id=detail.id) v on i.vpc_id=v.id left join (select s.id, detail.name, detail.cidr_block, detail.availability_zone from \"${ATHENA_CATALOG_NAME}\".ec2.subnets s left join (select id,cidr_block,availability_zone,substring(t.tag,6) as name from \"${ATHENA_CATALOG_NAME}\".ec2.subnets s CROSS JOIN UNNEST(s.tags) as t(tag) where t.tag like 'Name:%') detail on s.id=detail.id) s on i.subnet_id=s.id"
+            - {ATHENA_CATALOG_NAME: !Ref AthenaCatalogName}
+
+  LoadRdsInvStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: rds.state.asl.json
+      DefinitionSubstitutions:
+        LoadRdsInvSqlFunctionArn: !GetAtt LoadRdsInvSqlFunction.Arn
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "cron(5 0 * * ? *)"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadRdsInvSqlFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref AthenaCatalogName
+        - S3FullAccessPolicy:
+            BucketName: !Ref CmdbBucket
+        - S3FullAccessPolicy:
+            BucketName: !Ref AthenaResultBucket
+        - AmazonAthenaFullAccess
+
+  LoadRdsInvSqlFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadRdsInvSql
+      Environment:
+        Variables:
+          CMDB_DATA_BUCKET: !Ref CmdbBucket
+          ATHENA_RESULT_BUCKET: !Ref AthenaResultBucket
+          AthenaDataCatalog: !Ref AthenaCatalogName
+          RDS_INV_SQL: !Sub
+            - "select i.instance_id, n.project, instance_class, engine, engine_version, is_multi_az, primary_az, secondary_az, read_replica_source_id, endpoint.address, endpoint.port, subnet_group.name as subnet_group_name, subnet_group.vpc, v.name as vpc_name, create_time from \"${ATHENA_CATALOG_NAME}\".rds.rds_instances i left join (select instance_id,t.tag.value as project from \"${ATHENA_CATALOG_NAME}\".rds.rds_instances i CROSS JOIN UNNEST(i.tags) as t(tag) where t.tag.key='Project') n on i.instance_id=n.instance_id left join (select v.id, detail.name from \"${ATHENA_CATALOG_NAME}\".ec2.vpcs v left join (select id,substring(t.tag,6) as name from \"${ATHENA_CATALOG_NAME}\".ec2.vpcs v CROSS JOIN UNNEST(v.tags) as t(tag) where t.tag like 'Name:%') detail on v.id=detail.id) v on i.subnet_group.vpc=v.id" 
+            - {ATHENA_CATALOG_NAME: !Ref AthenaCatalogName}
+
+  LoadSubnetInvStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: subnet.state.asl.json
+      DefinitionSubstitutions:
+        LoadSubnetInvSqlFunctionArn: !GetAtt LoadSubnetInvSqlFunction.Arn
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "cron(5 0 * * ? *)"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadSubnetInvSqlFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref AthenaCatalogName
+        - S3FullAccessPolicy:
+            BucketName: !Ref CmdbBucket
+        - S3FullAccessPolicy:
+            BucketName: !Ref AthenaResultBucket
+        - AmazonAthenaFullAccess
+
+  LoadSubnetInvSqlFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: LoadSubnetInvSql
+      Environment:
+        Variables:
+          CMDB_DATA_BUCKET: !Ref CmdbBucket
+          ATHENA_RESULT_BUCKET: !Ref AthenaResultBucket
+          AthenaDataCatalog: !Ref AthenaCatalogName
+          SUBNET_INV_SQL: !Sub
+            - "select id, subnet_name, availability_zone, available_ip_count, cidr_block, map_public_ip, vpc, route_table_id, route_table_name from (select sr.*, detail.subnet_name, rdetail.route_table_name, rank() over (partition by sr.id order by sr.subnet_id desc) as ranks from (select s.*,a.route_table_id,a.subnet_id from \"${ATHENA_CATALOG_NAME}\".ec2.subnets s left join (select distinct route_table_id, substring(s.association, 1, index(s.association, ':')-1) as subnet_id, vpc as vpc_id from \"${ATHENA_CATALOG_NAME}\".ec2.routing_tables r CROSS JOIN UNNEST(r.associations) as s(association)) a on (s.id=a.subnet_id or (vpc=a.vpc_id and a.subnet_id='null')) ) sr left join (select s.id, vpc, substring(t.tag,6) as subnet_name from \"${ATHENA_CATALOG_NAME}\".ec2.subnets s CROSS JOIN UNNEST(s.tags) as t(tag) where t.tag like 'Name:%') detail on sr.id=detail.id and sr.vpc=detail.vpc left join (select distinct r.route_table_id,r.vpc, substring(t.tag,6) as route_table_name from \"${ATHENA_CATALOG_NAME}\".ec2.routing_tables r CROSS JOIN UNNEST(r.tags) as t(tag) where t.tag like 'Name:%') rdetail on sr.route_table_id=rdetail.route_table_id and sr.vpc=rdetail.vpc) r where r.ranks=1"
+            - {ATHENA_CATALOG_NAME: !Ref AthenaCatalogName} 
+
+Outputs:
+  LoadEc2InvStateMachine:
+    Description: "ARN of LoadEc2InvStateMachine"
+    Value: !Ref LoadEc2InvStateMachine 
+  LoadRdsInvStateMachine:
+    Description: "ARN of LoadRdsInvStateMachine"
+    Value: !Ref LoadRdsInvStateMachine
+  LoadSubnetInvStateMachine:
+    Description: "ARN of LoadSubnetInvStateMachine"
+    Value: !Ref LoadSubnetInvStateMachine

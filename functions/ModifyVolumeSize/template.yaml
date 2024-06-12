@@ -1,0 +1,13 @@
+  ModifyVolumeSizeFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 128
+      Timeout: 30
+      CodeUri: functions/ModifyVolumeSize
+      Policies: [AmazonEC2FullAccess]
+      Environment:
+        Variables:
+          SCALING_SIZE: 10

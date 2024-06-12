@@ -1,0 +1,103 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  This stack will deploy athena federation query to get CMDB data and load them into a central bucket.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCentricCmdbData
+    Description: This stack will deploy athena federation query to get AWS cm data and load them into a central bucket.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+
+Parameters:
+  CmdbBucket:
+    Type: String
+    Description: S3 bucket where you want to save CMDB data.
+
+Resources:
+
+  CentricCmdbDataCrawlerServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "glue.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+      Policies:
+        - PolicyName: "AWSGlueServiceRole-cmdb"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:GetObject"
+                  - "s3:PutObject" 
+                Resource: 
+                  - !Join [ '', [ 'arn:aws:s3:::', !Ref CmdbBucket, '*' ] ]
+
+  CentricCmdbDatabase:
+    Type: AWS::Glue::Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      DatabaseInput:
+        Name: "centric-cmdb"
+
+  CmdbEc2DataCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Role: !GetAtt CentricCmdbDataCrawlerServiceRole.Arn
+      DatabaseName: !Ref CentricCmdbDatabase 
+      Targets:
+        S3Targets:
+          - Path: !Join [ '/', [ !Ref CmdbBucket, 'ec2' ] ] 
+      SchemaChangePolicy:
+        UpdateBehavior: "UPDATE_IN_DATABASE"
+        DeleteBehavior: "LOG"
+      Schedule:
+        ScheduleExpression: "cron(20 0 ? * * *)"
+
+  CmdbRdsDataCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Role: !GetAtt CentricCmdbDataCrawlerServiceRole.Arn
+      DatabaseName: !Ref CentricCmdbDatabase
+      Targets:
+        S3Targets:
+          - Path: !Join [ '/', [ !Ref CmdbBucket, 'rds' ] ]
+      SchemaChangePolicy:
+        UpdateBehavior: "UPDATE_IN_DATABASE"
+        DeleteBehavior: "LOG"
+      Schedule:
+        ScheduleExpression: "cron(20 0 ? * * *)"
+
+  CmdbSubnetDataCrawler:
+    Type: AWS::Glue::Crawler
+    Properties:
+      Role: !GetAtt CentricCmdbDataCrawlerServiceRole.Arn
+      DatabaseName: !Ref CentricCmdbDatabase
+      Targets:
+        S3Targets:
+          - Path: !Join [ '/', [ !Ref CmdbBucket, 'subnet' ] ]
+      SchemaChangePolicy:
+        UpdateBehavior: "UPDATE_IN_DATABASE"
+        DeleteBehavior: "LOG"
+      Schedule:
+        ScheduleExpression: "cron(20 0 ? * * *)"
+
+Outputs:
+  CentricCmdbDatabase:
+    Description: "ARN of CentricCmdbDatabase"
+    Value: !Ref CentricCmdbDatabase 

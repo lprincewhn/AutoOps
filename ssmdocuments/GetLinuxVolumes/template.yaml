@@ -1,0 +1,21 @@
+  GetLinuxVolumesDoc:
+    Type: AWS::SSM::Document
+    Properties: 
+      DocumentType: Command
+      Content: >
+        {
+          "schemaVersion": "2.2",
+          "description": "List Disks on Linux Instance",
+          "parameters": {},
+          "mainSteps": [
+            {
+              "action": "aws:runShellScript",
+              "name": "GetLinuxVolumes",
+              "inputs": {
+                "runCommand": [
+                  "df -lT | grep ^/dev/"
+                ]
+              }
+            }
+          ]
+        }

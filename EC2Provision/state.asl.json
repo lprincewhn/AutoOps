@@ -1,0 +1,91 @@
+{
+  "Comment": "Create/Delete EC2 alarms when an EC2 instance starts/terminates.",
+  "StartAt": "LoadEC2ProvisionInput",
+  "States": {
+    "LoadEC2ProvisionInput": {
+      "Type": "Task",
+      "Resource": "${LoadEC2ProvisionInputFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "RunningOrTerminated?"
+    },
+    "RunningOrTerminated?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.State",
+          "StringEquals": "running",
+          "Next": "GetInstanceDetail"
+        }      
+      ],
+      "Default": "DeleteEC2Alarms"      
+    },
+    "GetInstanceDetail": {
+      "Type": "Task",
+      "Resource": "${GetInstanceDetailFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateEC2Alarms"
+    },
+    "CreateEC2Alarms": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "CreateCPUAlarms",
+          "States": {
+            "CreateCPUAlarms": {
+              "Type": "Task",
+              "Resource": "${CreateCPUAlarmsFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "Next": "CreateMemoryAlarms"
+            },
+            "CreateMemoryAlarms": {
+              "Type": "Task",
+              "Resource": "${CreateMemoryAlarmsFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "Next": "CreateNetworkAlarms"
+            },
+            "CreateNetworkAlarms": {
+              "Type": "Task",
+              "Resource": "${CreateNetworkAlarmsFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "Next": "CreateHealthCheckAlarms"
+            },
+            "CreateHealthCheckAlarms": {
+              "Type": "Task",
+              "Resource": "${CreateHealthCheckAlarmsFunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "Next": "CreateEbsTagsFromEc2" 
+            },
+            "CreateEbsTagsFromEc2": {
+              "Type": "Task",
+              "Resource": "${CreateEbsTagsFromEc2FunctionArn}",
+              "InputPath": "$",
+              "ResultPath": "$",
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "DeleteEC2Alarms": {
+      "Type": "Task",
+      "Resource": "${DeleteEC2AlarmsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "NotifySNS"
+    },
+    "NotifySNS": {
+      "Type": "Task",
+      "Resource": "${NotifySnsFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "End": true
+    }
+  }
+}

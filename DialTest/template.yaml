@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Dial a domainname from CloudFront PoPs and get the timing. 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsCloudDialTest
+    Description: Dial a domainname from CloudFront PoPs and get the timing.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  CloudFrontServiceTimingPolicyId:
+    Type: String
+  DialTarget:
+    Type: String
+  DialUri:
+    Type: String
+    Default: '/'
+Resources:
+  DialTestDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties: 
+      DistributionConfig: 
+        DefaultCacheBehavior: 
+          CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+          ResponseHeadersPolicyId: !Ref CloudFrontServiceTimingPolicyId
+          TargetOriginId: "dial_target"
+          ViewerProtocolPolicy: "allow-all"
+        Enabled: True
+        Origins: 
+          - DomainName: !Select [ 2, !Split [ "/", !Ref DialTarget ] ]
+            Id: "dial_target"
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: 
+                !Sub
+                  - ${Scheme}-only
+                  - Scheme: !Select [ 0, !Split [ ":", !Ref DialTarget ] ]
+              
+                
+
+
+  DialTestFunction:
+    Type: 'AWS::Serverless::Function'
+    DependsOn: DialTestDistribution
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Description: ''
+      MemorySize: 512
+      Timeout: 900
+      Policies: [CloudWatchAgentServerPolicy]
+      Environment:
+        Variables:
+          CLOUDWATCH_NAMESPACE: 'DialTest'
+          CLOUDWATCH_DIMENSIONS: '["Target"],["Target","City"]'
+          CLOUDWATCH_PERIOD_SECS: '300'
+          CLOUDFRONT_DOMAINNAME: !GetAtt [ DialTestDistribution, DomainName ]
+          CLOUDFRONT_POPLIST: 'FRA56-C1,NRT51-P2,SIN52-C2'
+          DIAL_DOMAINNAME: !Select [ 2, !Split [ "/", !Ref DialTarget ] ]
+          DIAL_URI: !Ref DialUri
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "rate(5 minutes)"
+
+Outputs:
+  DialTestFunction:
+    Description: "Arn of lambda to perform dialtest."
+    Value: !GetAtt [ DialTestFunction, Arn ] 

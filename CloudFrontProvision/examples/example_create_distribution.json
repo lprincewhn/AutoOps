@@ -1,0 +1,48 @@
+{
+  "version": "0",
+  "detail-type": "AWS API Call via CloudTrail",
+  "source": "aws.cloudfront",
+  "account": "123456789012",
+  "time": "2021-07-25T08:14:31Z",
+  "region": "us-east-1",
+  "resources": [],
+  "detail": {
+    "eventVersion": "1.08",
+    "userIdentity": {
+      "type": "IAMUser",
+      "arn": "arn:aws:iam::597377428377:user/admin",
+      "accountId": "597377428377",
+      "userName": "admin",
+      "sessionContext": {
+        "sessionIssuer": {},
+        "webIdFederationData": {},
+        "attributes": {
+          "creationDate": "2021-07-24T23:52:48Z",
+          "mfaAuthenticated": "false"
+        }
+      }
+    },
+    "eventTime": "2021-07-25T08:14:31Z",
+    "eventSource": "cloudfront.amazonaws.com",
+    "eventName": "CreateDistribution",
+    "awsRegion": "us-east-1",
+    "responseElements": {
+      "distribution": {
+        "aRN": "arn:aws:cloudfront::597377428377:distribution/E1COGCNEHK0EFH",
+        "id": "E1COGCNEHK0EFH",
+        "inProgressInvalidationBatches": 0,
+        "status": "InProgress",
+        "distributionConfig": {
+          "aliases": {
+            "items": [
+              "2.svhw.tech",
+              "1.svhw.tech"
+            ],
+            "quantity": 2
+          }
+        }
+      }
+    },
+    "eventCategory": "Management"
+  }
+}

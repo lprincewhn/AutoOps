@@ -1,0 +1,60 @@
+  EBSScalingStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/EBSScaling/state.asl.json
+      DefinitionSubstitutions:
+        GetLvmPvIdFunctionArn: !GetAtt GetLvmPvIdFunction.Arn
+        GetVolumeDetailsFunctionArn: !GetAtt GetVolumeDetailsFunction.Arn
+        ModifyVolumeSizeFunctionArn: !GetAtt ModifyVolumeSizeFunction.Arn
+        GetVolumeIdForWindowsFunctionArn: !GetAtt GetVolumeIdForWindowsFunction.Arn
+        GetVolumeIdForLinuxFunctionArn: !GetAtt GetVolumeIdForLinuxFunction.Arn
+        LoadEbsAutoScalingInputFunctionArn: !GetAtt LoadEbsAutoScalingInputFunction.Arn
+        GrowLvmXfsFunctionArn: !GetAtt GrowLvmXfsFunction.Arn
+        GrowLinuxXfsFunctionArn: !GetAtt GrowLinuxXfsFunction.Arn
+        GrowWindowsNtfsFunctionArn: !GetAtt GrowWindowsNtfsFunction.Arn
+      Events:
+        EBSSpaceAlarm:
+          Type: CloudWatchEvent 
+          Properties:
+            Pattern:
+              source:
+                - aws.cloudwatch
+              detail-type:
+                - "CloudWatch Alarm State Change"
+              detail:
+                configuration: 
+                  metrics:
+                    metricStat:
+                      metric:
+                        name:
+                          - "disk_used_percent"
+                          - "LogicalDisk % Free Space"
+                state:
+                  value: 
+                    - ALARM
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /ebs_scale
+            Method: POST
+            RestApiId:
+              Ref: AutoOpsApiGateway
+      Policies: 
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetLvmPvIdFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetVolumeDetailsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ModifyVolumeSizeFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetVolumeIdForWindowsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GetVolumeIdForLinuxFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref LoadEbsAutoScalingInputFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GrowLvmXfsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GrowLinuxXfsFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref GrowWindowsNtfsFunction

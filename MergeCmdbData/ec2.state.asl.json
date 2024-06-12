@@ -1,0 +1,43 @@
+{
+  "Comment": "Merge Cloudwatch metric data to a cross-region S3 bucket",
+  "StartAt": "LoadEc2InvSql",
+  "States": {
+    "LoadEc2InvSql": {
+      "Type": "Task",
+      "Resource": "${LoadEc2InvSqlFunctionArn}",
+      "InputPath": "$",
+      "ResultPath": "$",
+      "Next": "CreateTmpTable"
+    },
+    "CreateTmpTable": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+      "ResultPath": "$.CreateTmpTableResult",
+      "Parameters": {
+        "QueryString.$": "$.ec2Create",
+        "WorkGroup": "primary",
+        "ResultConfiguration": {
+           "OutputLocation.$": $.athea_query_result_path
+        }
+      },
+      "Next": "DropTmpTable"
+    },
+    "DropTmpTable": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::athena:startQueryExecution.sync",
+      "ResultPath": "$.DropTmpTableResult",
+      "Parameters": {
+        "QueryExecutionContext": {
+          "Database": "default",
+          "Catalog": "AwsDataCatalog"
+        },        
+        "QueryString.$": "$.ec2Drop",
+        "WorkGroup": "primary",
+        "ResultConfiguration": {
+           "OutputLocation.$": $.athea_query_result_path 
+        }
+      },
+      "End": true
+    }
+  }
+}

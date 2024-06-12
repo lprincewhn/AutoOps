@@ -1,0 +1,59 @@
+{
+    "version": "0",
+    "id": "d4fdc2cc-cdbc-1777-9d2b-817da1a5ee25",
+    "detail-type": "AWS API Call via CloudTrail",
+    "source": "aws.ec2",
+    "account": "597377428377",
+    "time": "2022-04-27T01:32:40Z",
+    "region": "us-east-1",
+    "resources": [],
+    "detail": {
+        "eventVersion": "1.08",
+        "userIdentity": {
+            "type": "IAMUser",
+            "principalId": "AIDAYWFTYFOM3GQRFVM6O",
+            "arn": "arn:aws:iam::597377428377:user/admin",
+            "accountId": "597377428377",
+            "accessKeyId": "ASIAYWFTYFOMZD22V4G7",
+            "userName": "admin",
+            "sessionContext": {
+                "sessionIssuer": {},
+                "webIdFederationData": {},
+                "attributes": {
+                    "creationDate": "2022-04-26T20:26:11Z",
+                    "mfaAuthenticated": "false"
+                }
+            }
+        },
+        "eventTime": "2022-04-27T01:32:40Z",
+        "eventSource": "ec2.amazonaws.com",
+        "eventName": "AttachVolume",
+        "awsRegion": "us-east-1",
+        "sourceIPAddress": "AWS Internal",
+        "userAgent": "AWS Internal",
+        "requestParameters": {
+            "volumeId": "vol-0dc8c27c6730a1f86",
+            "instanceId": "i-012cb9ef616312050",
+            "device": "/dev/sdi",
+            "deleteOnTermination": false
+        },
+        "responseElements": {
+            "requestId": "d6a004ea-7c34-42dc-966f-aa490759b826",
+            "volumeId": "vol-0dc8c27c6730a1f86",
+            "instanceId": "i-012cb9ef616312050",
+            "device": "/dev/sdi",
+            "status": "attaching",
+            "attachTime": 1651023160204,
+            "deleteOnTermination": false
+        },
+        "requestID": "d6a004ea-7c34-42dc-966f-aa490759b826",
+        "eventID": "337c2da2-0645-48ba-97ed-07455017e4cb",
+        "readOnly": false,
+        "eventType": "AwsApiCall",
+        "managementEvent": true,
+        "recipientAccountId": "597377428377",
+        "eventCategory": "Management",
+        "sessionCredentialFromConsole": "true"
+    }
+}
+
