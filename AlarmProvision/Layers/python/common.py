@@ -1,5 +1,6 @@
 import os
 import json
+import yaml
 import boto3
 import logging
 
@@ -22,37 +23,22 @@ def getThreshold(tags, metric, default):
         logger.info(f"Set threshold of {metric} with default value: {threshold}")
     return threshold
     
-def getResponseplan(tags):
-    responseplans = list(filter(lambda x:x.get("Key")=='AlarmResponsePlan', tags))
-    if responseplans:
-        logger.info(f"Set dedicate response plan from resource tag")
-        return responseplans[0].get("Value").strip()
-    logger.info(f"No response plan set")
-    return None
-    
-def getOpsItem(tags):
-    opsitems = list(filter(lambda x:x.get("Key")=='AlarmOpsItem', tags))
-    if opsitems:
-        logger.info(f"Set dedicate opsitem from resource tag")
-        return opsitems[0].get("Value").strip()
-    else:   
-        logger.info(f"Set default opsitem of 4-Low")
-        return "4"
-        
-def getSSMActions(account_id, region, tags):
+def getSSMActions(account_id, region, alarmdef):
     alarm_actions = []
     ok_actions = []
     if os.getenv('SNSTopicArn'):
         alarm_actions.append(os.getenv('SNSTopicArn'))
         ok_actions.append(os.getenv('SNSTopicArn'))
-    response_plan = getResponseplan(tags)
+    response_plan = alarmdef.get('ResponsePlanName')
+    opsitem_sev = alarmdef.get("OpsItemSev")
     if response_plan:
         # arn:aws:ssm-incidents::account-id:response-plan/response-plan-name
         alarm_actions.append(f'arn:aws:ssm-incidents::{account_id}:response-plan/{response_plan}')
-    else:
-        opsitem = getOpsItem(tags)
+    elif opsitem_sev:
         # arn:aws:ssm:region:account-id:opsitem:severity#CATEGORY=category-name
-        alarm_actions.append(f'arn:aws:ssm:{region}:{account_id}:opsitem:{opsitem}')   
+        opsitemarn = f'arn:aws:ssm:{region}:{account_id}:opsitem:{opsitem_sev}'
+        opsitemarn += f'#CATEGORY={alarmdef.get("OpsItemCategory")}' if alarmdef.get("OpsItemCategory") else ''
+        alarm_actions.append(opsitemarn)   
     return alarm_actions, ok_actions
     
 def getInstanceTypes(): 

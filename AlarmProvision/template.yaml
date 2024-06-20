@@ -68,6 +68,8 @@ Resources:
       ContentUri: Layers/common.zip
       CompatibleRuntimes:
         - python3.8
+  AlarmDefinitionBucket:
+    Type: AWS::S3::Bucket
   RemediateIPAMAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -90,11 +92,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateEC2AlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -117,11 +121,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateEBSAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -143,11 +149,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateRDSAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -170,11 +178,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateRedisAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -198,11 +208,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateESAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -227,11 +239,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateKafkaAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -255,11 +269,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateS3AlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -286,11 +302,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateALBAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -313,11 +331,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateNLBAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -340,11 +360,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   RemediateVPNAlarmsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -366,11 +388,13 @@ Resources:
           - cloudwatch:PutMetricAlarm
           Resource:
           - '*'
+      - S3ReadPolicy:
+          BucketName: !Ref AlarmDefinitionBucket
       Environment:
         Variables:
           SNSTopicArn: !Ref RawAlarmTopicArn
           TargetRegions: !Ref TargetRegions
-          AWSAccountId: !Ref AWS::AccountId
+          AlarmDefinitionBucket: !Ref AlarmDefinitionBucket
   NotifySnsFunction:
     Type: 'AWS::Serverless::Function'
     Properties:
@@ -395,3 +419,6 @@ Outputs:
   AlarmProvisionStateMachine:
     Description: "StateMachine ARN"
     Value: !Ref AlarmProvisionStateMachine 
+  AlarmDefinitionBucket:
+    Description: "You need to upload the alarm definition yaml file in this bucket"
+    Value:   !Ref AlarmDefinitionBucket

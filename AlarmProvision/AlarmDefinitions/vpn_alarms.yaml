@@ -1,0 +1,18 @@
+VPNAlarm:
+  Filters:
+  - Key: tag:Name
+    Value: ['vpn_name']
+    5xxRate:
+      Enabled: true
+      Threshold: 1
+      OpsItemSev: 3
+      OpsItemCategory: 
+      ResponsePlanName:
+  Default:
+    TunnelState:
+      Enabled: true
+      Threshold: 1
+      OpsItemSev: 3
+      OpsItemCategory: 
+      ResponsePlanName:
+

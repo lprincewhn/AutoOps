@@ -1,0 +1,43 @@
+S3Alarm:
+  Filters:
+  - Key: BucketName
+    Value: ['example_bucket_name']
+    5xxRate:
+      Enabled: true
+      Threshold: 2
+      OpsItemSev: 3
+      OpsItemCategory: 
+      ResponsePlanName:
+    OperationsFailedReplication:
+      Enabled: true
+      Threshold: 2
+      OpsItemSev: 3
+      OpsItemCategory: 
+      ResponsePlanName:    
+  - Key: tag:Project
+    Value: ['svhw', 'tools']
+    # 5xxRate:
+    #   Enabled: true
+    #   Threshold: 1
+    #   OpsItemSev: 3
+    #   OpsItemCategory: 
+    #   ResponsePlanName:
+    OperationsFailedReplication:
+      Enabled: true
+      Threshold: 2
+      OpsItemSev: 3
+      OpsItemCategory: 
+      ResponsePlanName:  
+  Default:
+    5xxRate:
+      Enabled: true
+      Threshold: 2
+      OpsItemSev: 3
+      OpsItemCategory: 
+      ResponsePlanName:
+    OperationsFailedReplication:
+      Enabled: true
+      Threshold: 2
+      OpsItemSev: 3
+      OpsItemCategory: 
+      ResponsePlanName:  

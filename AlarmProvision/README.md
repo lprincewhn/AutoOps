@@ -9,10 +9,11 @@
 ``` bash
 git clone https://github.com/lprincewhn/AutoOps.git
 cd ~/AutoOps/AlarmProvision
-AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
-TARGET_REGIONS=<regions to deploy, seperated by comma> # If this variable is set, AWS_REGION will be ignored
+AutoOpsTopicArn=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
+AWS_REGION=ap-northeast-1
+TargetRegions=<regions to deploy, seperated by comma> # If this variable is set, AWS_REGION will be ignored
 STACK_NAME="AutoOps$(basename $(pwd))"
-sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AUTO_OPS_TOPIC TargetRegions=$TARGET_REGIONS --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AutoOpsTopicArn TargetRegions=$TargetRegions --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
 ```
 
 ## Deploy option #2: with CloudWatch alarm notification of raw format in the same region
@@ -21,11 +22,18 @@ sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --paramete
 ``` bash
 git clone https://github.com/lprincewhn/AutoOps.git
 cd AutoOps/AlarmProvision
-AUTO_OPS_TOPIC=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
+AutoOpsTopicArn=<SNS topic receive AutoOps notification> # Messages of this topic will be sent by StepFunction or Lambda, should be in the home region
+AWS_REGION=ap-northeast-1
+TargetRegions=<regions to deploy, seperated by comma> # If this variable is set, AWS_REGION will be ignored
 RAW_ALARM_TOPIC=<Additional SNS topic receive Cloudwatch alarm notification> # Must in the same region as this SAM appliction
-TARGET_REGIONS=<regions to deploy, seperated by comma> # If this variable is set, AWS_REGION will be ignored
 STACK_NAME="AutoOps$(basename $(pwd))"
 sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --parameter-overrides AutoOpsTopicArn=$AUTO_OPS_TOPIC TargetRegions=$TARGET_REGIONS RawAlarmTopicArn=$RAW_ALARM_TOPIC --confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+```
+
+## Define Alarms
+``` bash
+export AlarmDefinitionBucket=<AlarmDefinitionBucket output of the stack>
+aws s3 sync ./AlarmDefinitions/ s3://${AlarmDefinitionBucket}/
 ```
 
 ## Start

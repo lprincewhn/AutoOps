@@ -2,7 +2,32 @@
 
 This project contains useful operational processes represented as state machines with AWS StepFunctions. 
 
-![](doc/AutoOps.png)
+
+```mermaid
+flowchart TD
+    CloudWatch["CloudWatch Alarm"] --> OpsItem;
+    OpsItem --> |Manually start|Incident;
+    Incident --> SNS;
+	SNS --> ChatBot;
+	SNS --> Lambda["Notification Lambda"];
+	ChatBot --> Chime/Slack/Teams;
+	Lambda --> Wechat/Wecom/Feishu/Dingding;
+	Incident --> EventBridge;
+	EventBridge --> StepFunction["AutoOps workflow"];
+```
+
+```mermaid
+flowchart TD
+    CloudWatch["CloudWatch Alarm"] --> Incident;
+    Incident --> |Auto create|OpsItem;
+    Incident --> SNS;
+	SNS --> ChatBot;
+	SNS --> Lambda["Notification Lambda"];
+	ChatBot --> Chime/Slack/Teams;
+	Lambda --> Wechat/Wecom/Feishu/Dingding;
+	Incident --> EventBridge;
+	EventBridge --> StepFunction["AutoOps workflow"];
+```
 
 ## How to deploy
 
@@ -47,9 +72,4 @@ You can pickup one region to deploy SNS topic
 ## How to try
 
 The state machines, who represent operational processes, should be triggered by CloudWatch events (for AWS resource). You can use awscli command to start state machines' execution mannully.
-
-## Design Consideration
-Q: Why use identical lambda function in each state machine instead of SNS task in step function directory?
-A: Step function cannot invoke services in other region. 
-
 

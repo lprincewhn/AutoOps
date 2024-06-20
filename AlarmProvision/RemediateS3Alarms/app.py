@@ -1,8 +1,10 @@
 import os
 import json
+import yaml
 import boto3
 import logging
 import common
+import traceback
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG if os.getenv("DEBUG", None) else logging.INFO)
@@ -12,17 +14,40 @@ logger.addHandler(ch)
 sts = boto3.client('sts')
 account_id = sts.get_caller_identity()['Account']
 
-
-def create5xxRateAlarm(region, bucketMetricCfg, alarmNames):
+alarmdef = None
+def populateAlarmDef(alarmObject, tags, metricName):
+    global alarmdef
+    if not alarmdef:
+        alarmdef_bucket = os.getenv('AlarmDefinitionBucket')
+        alarmdef_file = 's3_alarms.yaml'
+        client = boto3.client('s3')
+        response = client.get_object(Bucket=alarmdef_bucket, Key=alarmdef_file)
+        alarmdef = yaml.safe_load(response['Body'].read())
+        
+    for tag in tags:
+        alarmObject[f'tag:{tag["Key"]}'] = tag['Value']
+    matches = list(filter(lambda x:alarmObject.get(x['Key']) and alarmObject[x['Key']] in x['Value'], alarmdef['S3Alarm']['Filters']))
+    logger.info(f'Found {len(matches)} filters matched for metric {metricName}')
+    alarmObject['AlarmDef'] = matches[0][metricName] if matches and matches[0].get(metricName)  else alarmdef['S3Alarm']['Default'][metricName]
+    logger.info(f'{alarmObject["AlarmDef"]}')
+    
+def create5xxRateAlarm(region, bucketMetricCfg, tags, alarmExisting, alarmsCreated):
+    populateAlarmDef(bucketMetricCfg, tags, '5xxRate')
+    if not bucketMetricCfg['AlarmDef']['Enabled']:
+        return
     bucketName = bucketMetricCfg["BucketName"]
     metricCfgId = bucketMetricCfg["Id"]
     alarmName = f'AWS/S3-5xxRate-{bucketName}-{metricCfgId}'
-    if alarmName in alarmNames:
-        alarmNames.remove(alarmName)
+    if alarmName in alarmExisting and bucketMetricCfg['AlarmDef']['Enabled']:
+        # 从现存告警列表中移除表示保留该告警
+        logger.info(f'{alarmName} existed. skip it...')
+        alarmExisting.remove(alarmName)
         return alarmName, False
-    threshold = common.getThreshold(bucketMetricCfg.get('TagList', []), '5xxRate', 1)
-    
-    alarm_actions, ok_actions = common.getSSMActions(account_id, region, bucketMetricCfg.get('TagList', []))
+    threshold = bucketMetricCfg['AlarmDef']['Threshold']
+    logger.info(f'Threshold of {alarmName}: {threshold}')
+    alarm_actions, ok_actions = common.getSSMActions(account_id, region, bucketMetricCfg['AlarmDef'])
+    logger.info(f'AlarmActions of {alarmName}: {alarm_actions}')
+    logger.info(f'OkActions of {alarmName}: {ok_actions}')
     client = boto3.client('cloudwatch', region_name=region)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -91,18 +116,26 @@ def create5xxRateAlarm(region, bucketMetricCfg, alarmNames):
         Tags=[]
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
-    return alarmName, True
+    alarmsCreated.append(alarmName)
     
-def createOperationsFailedReplicationAlarm(region, bucketReliationRule, alarmNames):
+def createOperationsFailedReplicationAlarm(region, bucketReliationRule, tags, alarmsExisting, alarmsCreated):
+    populateAlarmDef(bucketReliationRule, tags, 'OperationsFailedReplication')
+    if not bucketReliationRule['AlarmDef']['Enabled']:
+        return
     sourceBucketName = bucketReliationRule["SourceBucketName"]
     ruleId = bucketReliationRule["ID"]
     destinationBucketName = bucketReliationRule["Destination"]["Bucket"]
     alarmName = f'AWS/S3-OperationsFailedReplication-{sourceBucketName}-{destinationBucketName}-{ruleId}'
-    if alarmName in alarmNames:
-        alarmNames.remove(alarmName)
+    if alarmName in alarmsExisting:
+        # 从现存告警列表中移除表示保留该告警
+        logger.info(f'{alarmName} existed. skip it...')
+        alarmsExisting.remove(alarmName)
         return alarmName, False
-
-    alarm_actions, ok_actions = common.getSSMActions(account_id, region, bucketReliationRule.get('TagList', []))
+    threshold = bucketReliationRule['AlarmDef']['Threshold']
+    logger.info(f'Threshold of {alarmName}: {threshold}')
+    alarm_actions, ok_actions = common.getSSMActions(account_id, region, bucketReliationRule['AlarmDef'])
+    logger.info(f'AlarmActions of {alarmName}: {alarm_actions}')
+    logger.info(f'OkActions of {alarmName}: {ok_actions}')
     client = boto3.client('cloudwatch', region_name=region)
     response = client.put_metric_alarm(
         AlarmName=alarmName,
@@ -141,16 +174,18 @@ def createOperationsFailedReplicationAlarm(region, bucketReliationRule, alarmNam
         ],
         EvaluationPeriods=3,
         DatapointsToAlarm=3,
-        Threshold=0,
+        Threshold=threshold,
         ComparisonOperator='GreaterThanThreshold',
         Tags=[]
     )
     logger.debug(f'Response of put_metric_alarm: {response}')
-    return alarmName, True
+    alarmsCreated.append(alarmName)
     
 def lambda_handler(event, context):
     logger.info(f'Event In: {json.dumps(event)}')
+    
     numOfAlarmsCreated = 0
+    alarmsCreated = []
     alarmsDeleted = []
     for r in os.getenv('TargetRegions', os.getenv('AWS_REGION')).split(','):
         region = r.strip()
@@ -182,14 +217,14 @@ def lambda_handler(event, context):
                 bucket['TagSet'] = response.get('TagSet', [])
             except:
                 bucket['TagSet'] = []
+            logger.info(f'Remediating object: {bucket["Name"]}')
             #请求指标
             response = client.list_bucket_metrics_configurations(Bucket=bucket['Name'])
             metriCfgList = response.get('MetricsConfigurationList', [])
             for metricCfg in metriCfgList:
                 metricCfg['BucketName'] = bucket['Name']
-                metricCfg['TagList'] = bucket['TagSet']
-                alarmName, created = create5xxRateAlarm(region, metricCfg, alarmNames)
-                numOfAlarmsCreated += 1 if created else 0
+                metricCfg['Region'] = region
+                create5xxRateAlarm(region, metricCfg, bucket['TagSet'], alarmNames, alarmsCreated)
             #复制指标
             replicationRules = []
             try:
@@ -199,10 +234,8 @@ def lambda_handler(event, context):
                 pass
             for rule in replicationRules:
                 rule['SourceBucketName'] = bucket['Name']
-                rule['TagList'] = bucket['TagSet']
-                alarmName, created = createOperationsFailedReplicationAlarm(region, rule, alarmNames)
-                numOfAlarmsCreated += 1 if created else 0   
-    
+                rule['Region'] = region
+                createOperationsFailedReplicationAlarm(region, rule, bucket['TagSet'], alarmNames, alarmsCreated)
     
         # 删除不再使用的告警
         logger.info(f'Delete orphan alarms: {alarmNames}')
@@ -213,7 +246,7 @@ def lambda_handler(event, context):
             )
         alarmsDeleted += map(lambda x: f'{region}:{x}', alarmNames)
 
-    event["numOfAlarmsCreated"] = event.get("numOfAlarmsCreated", 0) + numOfAlarmsCreated
+    event["alarmsCreated"] = event.get("alarmsCreated", []) + alarmsCreated
     event["alarmsDeleted"] = event.get("alarmsDeleted", []) + alarmsDeleted
     logger.info(f'Event Out: {json.dumps(event)}')
     return event
