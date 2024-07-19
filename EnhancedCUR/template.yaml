@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  Send SNS message to wechat.
+  These are AWS Glue ETL jobs to process the CUR data.
 Metadata:
   AWS::ServerlessRepo::Application:
-    Name: EnhancedCRU
+    Name: EnhancedCUR
     Description: This is an ETL job to process CUR and related data to help customer to know AWS cost easily.
     Author: whuaning
     SpdxLicenseId: Apache-2.0
