@@ -1,6 +1,6 @@
 # EnhancedCUR
 
-This is a Wechat/WeCom Bot leveraging AWS Bedrock and other service capabilities to support OPS engineer.
+These are AWS Glue ETL jobs to process the CUR data.
 
 
 ## Install
