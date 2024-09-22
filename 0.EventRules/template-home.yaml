@@ -1,0 +1,62 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AutoOpsEventRules
+Parameters:
+  AutoOpsEventTargetArn:
+    Type: String  
+Resources:
+  AutoOpsRetryRunInstanceRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern: {"source": ["AutoOpsRetryRunInstance"]}
+      Targets: 
+        - Arn: !Ref AutoOpsEventTargetArn
+          Id: 1
+          InputTransformer: 
+            InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "instance-id": "$.detail.Instances[0].InstanceId", "instance-type": "$.detail.Instances[0].InstanceType", "private-ip": "$.detail.Instances[0].PrivateIpAddress"}
+            InputTemplate: '"【AutoOps运维事件】<detail-type>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【实例ID】<instance-id>\n【实例类型】<instance-type>\n【私有IP】<private-ip>\n"'
+  AutoOpsElastiCacheEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern: {"source": ["AutoOpsElastiCacheEvent"]}
+      Targets: 
+        - Arn: !Ref AutoOpsEventTargetArn
+          Id: 1
+          InputTransformer: 
+            InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "resources": "$.resources"}
+            InputTemplate: '"【AutoOps运维事件】<detail-type>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【资源】<resources>\n"'
+
+  CloudWatchAlarmRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern: {"source": ["aws.cloudwatch"], "detail-type": ["CloudWatch Alarm State Change"]}
+      Targets: 
+        - Arn: !Ref AutoOpsEventTargetArn
+          Id: 1
+          InputTransformer: 
+            InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "alarmName":"$.detail.alarmName", "description":"$.detail.configuration.description", "state":"$.detail.state.value", "reason":"$.detail.state.reason"}
+            InputTemplate: '"【告警通知】<state>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【名称】<alarmName>\n【描述】<description>\n【原因】<reason>\n"'
+  EC2InstanceStateRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern: {"source": ["aws.ec2"], "detail-type": ["EC2 Instance State-change Notification"]}
+      Targets: 
+        - Arn: !Ref AutoOpsEventTargetArn
+          Id: 1
+          InputTransformer: 
+            InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "instance-id":"$.detail.instance-id", "state":"$.detail.state"}
+            InputTemplate: '"【EC2实例状态变化】<state>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【实例ID】<instance-id>\n"'
+  HealthEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern: {"source": ["aws.health"],"detail-type": ["AWS Health Event"]}
+      Targets: 
+        - Arn: !Ref AutoOpsEventTargetArn
+          Id: 1
+          InputTransformer: 
+            InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "eventScopeCode":"$.detail.eventScopeCode", "eventTypeCategory":"$.detail.eventTypeCategory", "eventTypeCode":"$.detail.eventTypeCode", "eventDescription":"$.detail.eventDescription[0].latestDescription", "resources":"$.resources"}
+            InputTemplate: '"【健康事件通知】<eventTypeCode>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【资源】<resources>\n【范围】<eventScopeCode>\n【描述】<eventDescription>\n"'
+
+

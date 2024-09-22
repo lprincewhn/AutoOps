@@ -1,0 +1,10 @@
+{
+    "Records": [
+        {
+            "Sns": {
+                "Message": "{\"ElastiCache:SnapshotComplete\":\"svhw-redis-cluster-0001-001\"}",
+                "Timestamp": "2024-09-21T17:35:08.345Z"
+            }
+        }
+    ]
+}

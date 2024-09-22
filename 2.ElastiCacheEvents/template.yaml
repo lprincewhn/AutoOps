@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: ElastiCacheEvents
+    Description: This is a lamhba to formate ElastiCache events to structure data and forward to eventbridge.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  EventBusName:
+    Description: EventBusName
+    Type: String
+Resources:
+
+  SNSTopic:
+    Type: 'AWS::SNS::Topic'
+  ForwardFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 60
+      LoggingConfig:
+        LogFormat: JSON
+      Policies: 
+      - EventBridgePutEventsPolicy:
+          EventBusName: !Ref EventBusName
+      Environment:
+        Variables:
+          EventBusName: !Ref EventBusName
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopic
+            
+          
+Outputs:
+  SNSTopic:
+    Description: "SNS Topic to receive raw ElastiCache events."
+    Value: !Ref SNSTopic 
+  ForwardFunction:
+    Description: "Lambda ARN"
+    Value: !Ref ForwardFunction 
+    

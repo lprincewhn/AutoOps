@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: RetryRunInstance
+    Description: This is a lamhba that keep trying create instance backgroud.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  EventBusName:
+    Description: EventBusName
+    Type: String
+  ImageId:
+    Description: ImageId
+    Type: String
+  InstanceType:
+    Description: InstanceType
+    Type: String
+  KeyName:
+    Description: KeyName
+    Type: String
+  SecurityGroupIds:
+    Description: SecurityGroupIds
+    Type: String
+  SubnetId:
+    Description: SubnetId
+    Type: String
+  InstanceCount:
+    Description: InstanceCount
+    Default: 1
+    Type: String
+Resources:
+    
+  RunInstanceFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 60
+      LoggingConfig:
+        LogFormat: JSON
+      Policies: 
+      - Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ec2:RunInstances
+          - ec2:CreateTags
+          - ec2:DescribeInstances
+          Resource:
+          - '*'
+      - EventBridgePutEventsPolicy:
+          EventBusName: !Ref EventBusName
+      Environment:
+        Variables:
+          EventBusName: !Ref EventBusName
+          ImageId: !Ref ImageId
+          InstanceType: !Ref InstanceType
+          KeyName: !Ref KeyName
+          SubnetId: !Ref SubnetId
+          SecurityGroupIds: !Ref SecurityGroupIds
+          InstanceCount: !Ref InstanceCount
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          State: DISABLED
+          Properties:
+            Schedule: "rate(2 minutes)"
+            
+          
+Outputs:
+  RunInstanceFunction:
+    Description: "The lambda to try to start instance"
+    Value: !Ref RunInstanceFunction 
