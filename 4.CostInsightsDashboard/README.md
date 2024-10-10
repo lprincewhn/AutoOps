@@ -6,9 +6,9 @@ This is a QuickSight Dashboard ti provide cost insights by drilling down on AWS 
 ## Install
 
 ```
-export AwsAccountId
-export Region
-export QuickSightUser
+export AwsAccountId=<AWS Account Id>
+export Region=us-east-1
+export QuickSightUser=<QuickSignt User> # IAM User or IAM role + session name
 
 ```
 1. Create Datasource
@@ -82,15 +82,6 @@ cat analysis-definition.json \
 
 AnalysisId=$(aws quicksight create-analysis --region ${Region} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file://./create-analysis.json)
 ```
-
-If you want to
-
-### Template
-aws quicksight create-template --region ${Region} --aws-account-id ${AwsAccountId} --no-cli-pager --template-id cost-insights-template --source-entity '{"SourceAnalysis":{"Arn":"arn:aws:quicksight:us-east-1:597377428377:analysis/2235fb15-9c9e-4626-a14e-8ffb3b794ff9", "DataSetReferences":[{"DataSetPlaceholder":"CUR_SPICE", "DataSetArn":"arn:aws:quicksight:us-east-1:597377428377:dataset/cur_spice1"},{"DataSetPlaceholder":"CUR_DIRECT", "DataSetArn":"arn:aws:quicksight:us-east-1:597377428377:dataset/d61c22fd-cd6c-48bf-9f4e-d17e97e94834"},{"DataSetPlaceholder":"CUR_Dimensions", "DataSetArn":"arn:aws:quicksight:us-east-1:597377428377:dataset/448f1700-4ec8-450a-8d66-d8ddee1ad7fa"}]}}'
-
-aws quicksight update-template-permissions --region ${Region} --aws-account-id ${AwsAccountId} --no-cli-pager --template-id cost-insights-template --grant-permissions file://./template-permissions.json
-
-
 
 
 ### Analysis Caculated Field
