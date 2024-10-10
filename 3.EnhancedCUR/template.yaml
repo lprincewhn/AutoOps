@@ -1,0 +1,174 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  These are AWS Glue ETL jobs to process the CUR data.
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: EnhancedCUR
+    Description: These are AWS Glue ETL jobs to process CUR and related data to help customer to know AWS cost easily.
+    Author: whuaning
+    SpdxLicenseId: Apache-2.0
+    ReadmeUrl: README.md
+    SemanticVersion: 0.0.1
+Parameters:
+  CURBucketName:
+    Description: The name of S3 bucket to store CUR data.
+    Type: String
+  WorkBucketName:
+    Description: The name of S3 bucket to store the etl script and data.
+    Type: String
+  CURDatabase:
+    Type: String
+  CURTable:
+    Type: String
+Resources:
+
+  CUREtlRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Join [ '-', [ !Ref 'AWS::StackName', 'CUREtlRole' ] ]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "glue.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSGlueConsoleFullAccess
+      Policies:
+        - PolicyName: "PassRoleToSession"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "iam:PassRole"
+                Resource: 
+                  # - '*'
+                  - !Sub "arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-CUREtlRole"
+        - PolicyName: "S3ReadWrite"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:*"
+                Resource: 
+                  - !Join [ '', [ 'arn:aws:s3:::', !Ref WorkBucketName, '/*' ] ]
+        - PolicyName: "S3Read"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "s3:Get*"
+                Resource: 
+                  - !Join [ '', [ 'arn:aws:s3:::', !Ref CURBucketName, '/*' ] ]
+        - PolicyName: "CloudWatchLog"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:StartQuery"
+                  - "logs:GetQueryResults"
+                Resource: 
+                  - "*"
+  StandardizeJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !Ref CUREtlRole
+      GlueVersion: 4.0
+      Command:
+        Name: glueetl
+        ScriptLocation: './standardize.py'
+      DefaultArguments:
+        '--year': '2024'
+        '--month': '10'
+        '--cur-database': !Ref CURDatabase
+        '--cur-table': !Ref CURTable
+        '--work-bucket': !Ref WorkBucketName
+        '--enable-glue-datacatalog': 'true'
+        '--verbose': '0'    
+        
+  LoadEKSMetricsJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !Ref CUREtlRole
+      GlueVersion: 4.0
+      Command:
+        Name: glueetl
+        ScriptLocation: './load_eksmetrics.py'
+      DefaultArguments:
+        '--year': '2024'
+        '--month': '10'
+        '--cur-database': !Ref CURDatabase
+        '--work-bucket': !Ref WorkBucketName
+        '--enable-glue-datacatalog': 'true'
+        '--region': 'ap-northeast-1'
+        '--usage-account': !Ref AWS::AccountId
+        '--container-insights-loggroup': '/aws/containerinsights/eksdemo/performance'
+        '--verbose': '0'
+        
+  AllocateEksJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !Ref CUREtlRole
+      GlueVersion: 4.0
+      Command:
+        Name: glueetl
+        ScriptLocation: './allocate-eks.py'
+      DefaultArguments:
+        '--year': '2024'
+        '--month': '10'
+        '--tags-fields': 'name'
+        '--cur-database': !Ref CURDatabase
+        '--work-bucket': !Ref WorkBucketName
+        '--enable-glue-datacatalog': 'true'
+        '--verbose': '1'
+        
+  AllocateUntagJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !Ref CUREtlRole
+      GlueVersion: 4.0
+      Command:
+        Name: glueetl
+        ScriptLocation: './allocate-untag.py'
+      DefaultArguments:
+        '--year': '2024'
+        '--month': '10'
+        '--tags-fields': 'name'
+        '--cur-database': !Ref CURDatabase
+        '--cur-table': !Ref CURTable
+        '--work-bucket': !Ref WorkBucketName
+        '--enable-glue-datacatalog': 'true'
+        '--verbose': '0'
+        
+
+
+Outputs:
+  StandardizeJob:
+    Description: "Glue Job name"
+    Value: !Ref StandardizeJob 
+  LoadEKSMetricsJob:
+    Description: "Glue Job name"
+    Value: !Ref LoadEKSMetricsJob 
+  AllocateEksJob:
+    Description: "Glue Job name"
+    Value: !Ref AllocateEksJob 
+  AllocateUntagJob:
+    Description: "Glue Job name"
+    Value: !Ref AllocateUntagJob 
+

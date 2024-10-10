@@ -1,0 +1,15 @@
+{
+    "AwsAccountId": "{{AwsAccountId}}",
+    "DataSetId": "{{DataSetId}}",
+    "DataSetRefreshProperties": {
+        "RefreshConfiguration": {
+            "IncrementalRefresh": {
+                "LookbackWindow": {
+                    "ColumnName": "usage_date",
+                    "Size": 5,
+                    "SizeUnit": "DAY"
+                }
+            }
+        }
+    }
+}

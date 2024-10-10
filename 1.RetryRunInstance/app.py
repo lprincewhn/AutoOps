@@ -71,7 +71,6 @@ def lambda_handler(event, context):
     )
     eventbridge = boto3.client('events')
     events = [{
-        'Time':datetime.datetime.now(),
         'Source':'AutoOpsRetryRunInstance',
         'DetailType':'Successfully start EC2 instance',
         'Detail':json.dumps(response, sort_keys=True, default=str),

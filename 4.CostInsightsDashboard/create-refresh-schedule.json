@@ -1,0 +1,11 @@
+{
+    "AwsAccountId": "{{AwsAccountId}}",
+    "DataSetId": "{{DataSetId}}",
+    "Schedule": {
+        "ScheduleId": "daily_refresh",
+        "ScheduleFrequency": {
+            "Interval": "DAILY"
+        },
+        "RefreshType": "INCREMENTAL_REFRESH"
+    }
+}

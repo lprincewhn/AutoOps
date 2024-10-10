@@ -1,0 +1,24 @@
+{
+    "AwsAccountId": "{{AwsAccountId}}",
+    "DataSourceId": "athena",
+    "Name": "Athena",
+    "Type": "ATHENA",
+    "DataSourceParameters": {
+        "AthenaParameters": {
+            "WorkGroup": "primary"
+        }
+    },
+    "Permissions": [
+        {
+            "Principal": "arn:aws:quicksight:us-east-1:{{AwsAccountId}}:user/default/{{QuickSightUser}}",
+            "Actions": [
+                "quicksight:UpdateDataSourcePermissions", 
+                "quicksight:DescribeDataSourcePermissions", 
+                "quicksight:PassDataSource", 
+                "quicksight:DescribeDataSource", 
+                "quicksight:DeleteDataSource", 
+                "quicksight:UpdateDataSource"
+            ]
+        }
+    ]
+}

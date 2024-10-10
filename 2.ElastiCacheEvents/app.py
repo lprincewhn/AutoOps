@@ -21,7 +21,6 @@ def lambda_handler(event, context):
                 
         eventbridge = boto3.client('events')
         events.append({
-            'Time':eventtime,
             'Source':'AutoOpsElastiCacheEvent',
             'DetailType': detail_type,
             'Resources': [resounce_name],
