@@ -13,11 +13,11 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 spark.conf.set("spark.sql.sources.partitionOverwriteMode","dynamic")  
 
-args = getResolvedOptions(sys.argv,['year', 'month', 'tags-fields', 'cur-database', 'cur-table','work-bucket', 'verbose'])
+args = getResolvedOptions(sys.argv,['year', 'month', 'tags-fields', 'cur-database','work-bucket', 'verbose'])
 print(f"args: {args}")
 debug = int(args["verbose"])
 cur_database = args['cur_database'].strip()
-cur_table = args['cur_table'].strip()
+cur_table = 'enhanced_cur_allocate_eks'
 work_bucket = args['work_bucket'].strip()
 tags_fields = list(map(lambda x:x.strip(), args['tags_fields'].split(',')))
 
@@ -27,6 +27,7 @@ select
     year,
     month,
     charge_type,
+    billing_entity,
     service, 
     region,
     instance_type,
@@ -46,7 +47,7 @@ select
     sum(billing_cost) as billing_cost
 from {cur_database}.{cur_table}
 where year='{args["year"]}' and month='{args["month"]}' 
-group by {",".join(map(lambda x:str(x), range(1,len(tags_fields)+13)))}
+group by {",".join(map(lambda x:str(x), range(1,len(tags_fields)+14)))}
 '''
 print(sql)
 # Replace null value with blank string "" in the original table

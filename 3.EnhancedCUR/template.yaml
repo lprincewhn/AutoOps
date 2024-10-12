@@ -151,7 +151,6 @@ Resources:
         '--month': '10'
         '--tags-fields': 'name'
         '--cur-database': !Ref CURDatabase
-        '--cur-table': !Ref CURTable
         '--work-bucket': !Ref WorkBucketName
         '--enable-glue-datacatalog': 'true'
         '--verbose': '0'

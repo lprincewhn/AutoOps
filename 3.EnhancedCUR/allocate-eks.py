@@ -57,6 +57,7 @@ select
     year,
     month,
     charge_type,
+    billing_entity,
     service, 
     region,
     instance_type,
@@ -76,7 +77,7 @@ select
     sum(billing_cost) as billing_cost
 from {cur_database}.{standardize_table}
 where year='{args["year"]}' and month='{args["month"]}' 
-group by {",".join(map(lambda x:str(x), range(1,len(tags_fields)+13)))}
+group by {",".join(map(lambda x:str(x), range(1,len(tags_fields)+14)))}
 '''
 print(cost_sql)
 df_cost = (spark.sql(cost_sql).fillna(""))
@@ -103,14 +104,14 @@ sumtable.describe(['sum(cpu_usage)', 'sum(mem_usage)']).show(vertical=True)
 # Join the sumtable and eks cost items to caculate the allocated cost
 df = (df_eks
       .join(sumtable, ["year","month","usage_account","usage_date", "region", "instance"], "left")
-      .join(df_cost_eks_flag.filter(col('eks_flag')==1).withColumn("instance",col("resource_id")).drop("resource_id", "name", "eks_flag"), ["year","month","usage_account","usage_date", "region", "instance"], "left")
+      .join(df_cost_eks_flag.filter(col('eks_flag')==1).withColumn("instance",col("resource_id")).withColumn("cpu_cost_ratio", col("vcpus")*9/(col("vcpus")*9+col("memory_gb"))).drop("resource_id", "name", "eks_flag"), ["year","month","usage_account","usage_date", "region", "instance"], "left")
       .withColumn("vcpus", col("vcpus")*col("cpu_usage")/col("sum(cpu_usage)"))
       .withColumn("memory_gb", col("memory_gb")*col("mem_usage")/col("sum(mem_usage)"))
-      .withColumn("usage_amount", col("usage_amount")*0.9*col("cpu_usage")/col("sum(cpu_usage)")+col("usage_amount")*0.1*col("mem_usage")/col("sum(mem_usage)"))
-      .withColumn("ondemand_cost", col("ondemand_cost")*0.9*col("cpu_usage")/col("sum(cpu_usage)")+col("ondemand_cost")*0.1*col("mem_usage")/col("sum(mem_usage)"))
-      .withColumn("amortized_cost", col("amortized_cost")*0.9*col("cpu_usage")/col("sum(cpu_usage)")+col("amortized_cost")*0.1*col("mem_usage")/col("sum(mem_usage)"))
-      .withColumn("net_amortized_cost", col("net_amortized_cost")*0.9*col("cpu_usage")/col("sum(cpu_usage)")+col("net_amortized_cost")*0.1*col("mem_usage")/col("sum(mem_usage)"))
-      .withColumn("billing_cost", col("billing_cost")*0.9*col("cpu_usage")/col("sum(cpu_usage)")+col("billing_cost")*0.1*col("mem_usage")/col("sum(mem_usage)"))
+      .withColumn("usage_amount", col("usage_amount")*col("cpu_cost_ratio")*col("cpu_usage")/col("sum(cpu_usage)")+col("usage_amount")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("sum(mem_usage)"))
+      .withColumn("ondemand_cost", col("ondemand_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("sum(cpu_usage)")+col("ondemand_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("sum(mem_usage)"))
+      .withColumn("amortized_cost", col("amortized_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("sum(cpu_usage)")+col("amortized_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("sum(mem_usage)"))
+      .withColumn("net_amortized_cost", col("net_amortized_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("sum(cpu_usage)")+col("net_amortized_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("sum(mem_usage)"))
+      .withColumn("billing_cost", col("billing_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("sum(cpu_usage)")+col("billing_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("sum(mem_usage)"))
 )
 
 print(f'eks metric data with allocated cost have {len(df.columns)} columns: {sorted(df.columns)}')
@@ -126,8 +127,8 @@ if debug:
     
 # Clean unused columns and merge back to cost data.
 df = (df
-      .drop("instance","actual_cpu","actual_mem","reserved_cpu","reserved_mem","samples","eks_flag","sum(eks_flag)","cpu_usage","sum(cpu_usage)","mem_usage","sum(mem_usage)")
-      .union(df_cost_eks_flag.filter(col("eks_flag")!=1).drop("sum(eks_flag)","eks_flag"))
+      .drop("instance","actual_cpu","actual_mem","reserved_cpu","reserved_mem","samples","eks_flag","sum(eks_flag)","cpu_usage","sum(cpu_usage)","mem_usage","sum(mem_usage)", "cpu_cost_ratio")
+      .unionByName(df_cost_eks_flag.filter(col("eks_flag")!=1).drop("sum(eks_flag)","eks_flag"))
 )
 print(f'cost data with allocated eks cost have {len(df.columns)} columns: {sorted(df.columns)}')
 df.describe(['vcpus', 'memory_gb', 'ondemand_cost','amortized_cost','net_amortized_cost','billing_cost']).show(vertical=True)

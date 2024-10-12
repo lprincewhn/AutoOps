@@ -10,7 +10,7 @@ AWS_REGION=<region>
 cd ~/AutoOps/3.EnhancedCUR
 STACK_NAME="AutoOpsEnhancedCUR"
 sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --confirm-changeset --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-    --parameter-overrides CURBucketName=${CURBucketName} WorkBucketName=${WorkBucketName} CURDatabase=${CURDatabase} CURTable=${CURTable}\
+    --parameter-overrides CURBucketName=${CURBucketName} WorkBucketName=${WorkBucketName} CURDatabase=${CURDatabase} \
     --s3-bucket ${WorkBucketName} --s3-prefix script
 ```
 

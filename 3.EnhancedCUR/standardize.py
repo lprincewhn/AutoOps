@@ -27,6 +27,7 @@ select
 	year,
 	month,
 	line_item_line_item_type as charge_type,
+	case when bill_billing_entity='AWS' then 'AWS' else line_item_legal_entity end as billing_entity,
 	case when length(product_servicename)>0 then product_servicename else product_product_name end as service, 
 	product_region as region,
 	product_instance_type as instance_type,
@@ -42,8 +43,7 @@ select
 	sum(cast(case when line_item_usage_type not like '%EBSOptimized%' then TRIM(product_vcpu) else '' end as float)*line_item_usage_amount) as vcpus,
 	sum(cast(case when line_item_usage_type not like '%EBSOptimized%' and length(regexp_extract(product_memory, '([\.|0-9]{{1,6}}) GiB', 1))>0 then TRIM(regexp_extract(product_memory, '([\.|0-9]{{1,6}}) GiB', 1)) else TRIM(product_memory_gib) end as float)*line_item_usage_amount) as memory_gb,
 	sum(case
-	    when line_item_line_item_type='PrivateRateDiscount' then 0
-	    when line_item_line_item_type='EdpDiscount' then 0
+	    when line_item_line_item_type like '%Discount' then 0
 	    when line_item_line_item_type='SavingsPlanNegation' then 0
 	    when line_item_line_item_type='SavingsPlanUpfrontFee' then 0
 	    when line_item_line_item_type='Fee' and length(reservation_reservation_a_r_n)>0 then 0
@@ -54,8 +54,7 @@ select
 	    when line_item_line_item_type='SavingsPlanRecurringFee' then savings_plan_amortized_upfront_commitment_for_billing_period+savings_plan_recurring_commitment_for_billing_period-savings_plan_used_commitment
 	    else line_item_unblended_cost end) as ondemand_cost,
 	sum(case
-	    when line_item_line_item_type='PrivateRateDiscount' then 0
-	    when line_item_line_item_type='EdpDiscount' then 0
+	    when line_item_line_item_type like '%Discount' then 0
 	    when line_item_line_item_type='SavingsPlanNegation' then 0
 	    when line_item_line_item_type='SavingsPlanUpfrontFee' then 0
 	    when line_item_line_item_type='Fee' and length(reservation_reservation_a_r_n)>0 then 0
@@ -66,8 +65,7 @@ select
 	    when line_item_line_item_type='SavingsPlanRecurringFee' then savings_plan_amortized_upfront_commitment_for_billing_period+savings_plan_recurring_commitment_for_billing_period-savings_plan_used_commitment
 	    else line_item_unblended_cost end) as amortized_cost,
 	sum(case
-	    when line_item_line_item_type='PrivateRateDiscount' then 0
-	    when line_item_line_item_type='EdpDiscount' then 0
+	    when line_item_line_item_type like '%Discount' then 0
 	    when line_item_line_item_type='SavingsPlanNegation' then 0
 	    when line_item_line_item_type='SavingsPlanUpfrontFee' then 0
 	    when line_item_line_item_type='Fee' and length(reservation_reservation_a_r_n)>0 then 0
@@ -80,14 +78,13 @@ select
 	sum(line_item_unblended_cost) as billing_cost
 from {cur_database}.{cur_table}
 where year='{args["year"]}' and month='{args["month"]}' 
-group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
 '''
 print(sql)
 
 # Replace null value with blank string "" in the original table
 df = spark.sql(sql).fillna("")
-stat = df.agg({"year":"count", "vcpus": "sum", "memory_gb": "sum", "ondemand_cost": "sum", "amortized_cost": "sum", "net_amortized_cost": "sum", "billing_cost": "sum"})
-stat.show(vertical=True)
+df.describe(['vcpus', 'memory_gb', 'ondemand_cost','amortized_cost','net_amortized_cost','billing_cost']).show(vertical=True)
 
 print(f"Writing data to s3://{work_bucket}/data/standardize/res/")
 (df.coalesce(1).write
