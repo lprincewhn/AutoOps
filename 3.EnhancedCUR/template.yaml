@@ -155,6 +155,49 @@ Resources:
         '--enable-glue-datacatalog': 'true'
         '--verbose': '0'
         
+  StepFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "states.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "RunGlueJob"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "glue:StartJobRun"
+                  - "glue:GetJobRun"
+                  - "glue:GetJobRuns"
+                  - "glue:BatchStopJobRun"
+                Resource: 
+                  - '*'
+                  
+  EnhanceCURStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Role: !GetAtt StepFunctionRole.Arn
+      DefinitionUri: state.asl.yaml
+      DefinitionSubstitutions:
+        StandardizeJobName: !Ref StandardizeJob
+        LoadEKSMetricsJob: !Ref LoadEKSMetricsJob
+        AllocateEksJob: !Ref AllocateEksJob
+        AllocateUntagJob: !Ref AllocateUntagJob
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "rate(12 hours)"
 
 
 Outputs:

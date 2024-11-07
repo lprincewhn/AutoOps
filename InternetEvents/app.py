@@ -15,7 +15,7 @@ time_format = '%Y-%m-%d %H:%M:%S.000000000'
 
 def upload_to_s3(bucket, key, data):
     logger.info(f'Upload data to s3://{bucket}/{key}')
-    client = boto3.client('s3', region_name='ap-northeast-1')
+    client = boto3.client('s3')
     response = client.put_object(
         Body = '\n'.join(map(lambda x: json.dumps(x), data)),
         Bucket = bucket,

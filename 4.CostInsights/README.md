@@ -2,25 +2,25 @@
 
 This is a QuickSight Dashboard ti provide cost insights by drilling down on AWS CUR data.
 
-
-## Install
+### Install with AWSCLI
 
 ```
 export AwsAccountId=<AWS Account Id>
-export Region=us-east-1
+export AWS_REGION=us-east-1
 export QuickSightUser=<QuickSignt User> # IAM User or IAM role + session name
 
 ```
 1. Create Datasource
 
 ```bash
-aws quicksight list-data-sources --aws-account-id ${AwsAccountId} --region ${Region}
 
+# DataSource
 DataSourceId=$(cat create-data-source.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${Region}/g" \
+| sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| xargs -0 aws quicksight create-data-source --region ${Region} --no-cli-pager --output text --query 'DataSourceId' --cli-input-json)
+| sed "s/{{DataSourceId}}/$(uuidgen)/g" \
+| xargs -0 aws quicksight create-data-source --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSourceId' --cli-input-json)
 ```
 
 2. Create DataSet
@@ -28,60 +28,135 @@ DataSourceId=$(cat create-data-source.json \
 ```bash
 
 # DataSet (CUR_SPICE)
-CUR_SPICE_DataSetId=$(cat create-data-set.json \
+cat data-set.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${Region}/g" \
+| sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
 | sed "s/{{DataSourceId}}/${DataSourceId}/g" \
 | sed "s/{{CURDatabase}}/${CURDatabase}/g" \
 | sed "s/{{CURTable}}/${CURTable}/g" \
-| xargs -0 aws quicksight create-data-set --region ${Region} --no-cli-pager --output text --query 'DataSetId' --import-mode SPICE --data-set-id cur_spice --name "CUR SPICE" --cli-input-json)
+| sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set.json
+CUR_SPICE_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --import-mode SPICE --name "CUR SPICE" --cli-input-json file:///tmp/create-data-set.json)
 
 cat put-data-set-refresh-properties.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${Region}/g" \
+| sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| xargs -0 aws quicksight put-data-set-refresh-properties --region ${Region} --no-cli-pager --cli-input-json
+| xargs -0 aws quicksight put-data-set-refresh-properties --region ${AWS_REGION} --no-cli-pager --cli-input-json
 
 cat create-refresh-schedule.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${Region}/g" \
+| sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| xargs -0 aws quicksight create-refresh-schedule --region ${Region} --no-cli-pager --cli-input-json
+| xargs -0 aws quicksight create-refresh-schedule --region ${AWS_REGION} --no-cli-pager --cli-input-json
   
 # DataSet  (CUR_DIRECT)
-CUR_SPICE_DataSetId=$(cat create-data-set.json \
+cat data-set.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${Region}/g" \
+| sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
 | sed "s/{{DataSourceId}}/${DataSourceId}/g" \
 | sed "s/{{CURDatabase}}/${CURDatabase}/g" \
 | sed "s/{{CURTable}}/${CURTable}/g" \
-| xargs -0 aws quicksight create-data-set --region ${Region} --no-cli-pager --output text --query 'DataSetId' --import-mode DIRECT_QUERY --data-set-id cur_direct --name "CUR DIRECT" --cli-input-json)
+| sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set.json
+CUR_DIRECT_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --import-mode DIRECT_QUERY --name "CUR DIRECT" --cli-input-json file:///tmp/create-data-set.json)
+rm create-data-set.json 
 
 # DataSet (CUR_Dimensions)
-CUR_Dimensions_DataSetId=$(cat create-data-set-dimensions.json \
+cat data-set-dimemsions.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${Region}/g" \
+| sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
 | sed "s/{{DataSourceId}}/${DataSourceId}/g" \
-| xargs -0 aws quicksight create-data-set --region ${Region} --no-cli-pager --output text --query 'DataSetId' --cli-input-json)
+| sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set-dimensions.json
+
+CUR_Dimensions_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --cli-input-json file:///tmp/create-data-set-dimensions.json)
+rm create-data-set-dimensions.json 
 ```
 
 3. Create Analysis
 
 ```bash
-# Analysis
-cat analysis-definition.json \
+# Analysis (Inter-sheet)
+cat inter-sheet-analysis.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${Region}/g" \
-|  sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
+| sed "s/{{Region}}/${AWS_REGION}/g" \
+| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
 | sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
 | sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
-| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" > create-analysis.json
+| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
+| sed "s/{{AnalysisId}}/$(uuidgen)/g" > /tmp/create-analysis.json
 
-AnalysisId=$(aws quicksight create-analysis --region ${Region} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file://./create-analysis.json)
+InterSheetAnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file:///tmp/create-analysis.json)
+
+aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${InterSheetAnalysisId} --no-cli-pager
+aws quicksight describe-analysis-definition --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${InterSheetAnalysisId} --no-cli-pager 
+
+# Analysis (Intra-sheet)
+cat intra-sheet-analysis.json \
+| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
+| sed "s/{{Region}}/${AWS_REGION}/g" \
+| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
+| sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
+| sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
+| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
+| sed "s/{{AnalysisId}}/$(uuidgen)/g" > /tmp/create-analysis.json
+
+IntraSheetAnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file:///tmp/create-analysis.json)
+
+aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${IntraSheetAnalysisId} --no-cli-pager
+aws quicksight describe-analysis-definition --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${IntraSheetAnalysisId} --no-cli-pager 
+
+rm create-analysis.json
 ```
+
+### Export as CloudFormation Template
+``` bash
+ExportJobId=$(aws quicksight start-asset-bundle-export-job --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --asset-bundle-export-job-id $(uuidgen) \
+	--resource-arns arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:analysis/${InterSheetAnalysisId} \
+	arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:analysis/${IntraSheetAnalysisId} \
+	--include-all-dependencies --include-permissions --export-format CLOUDFORMATION_JSON --query 'AssetBundleExportJobId' \
+	--cloud-formation-override-property-configuration '{"ResourceIdOverrideConfiguration": {"PrefixForAllResources":true}}')
+DownloadUrl=$(aws quicksight describe-asset-bundle-export-job  --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --output text --asset-bundle-export-job-id ${ExportJobId} --query 'DownloadUrl')
+wget ${DownloadUrl} -O cfn.json
+
+```
+
+### Install with CloudFormation
+``` bash
+STACK_NAME="AutoOpsCostInsights"
+sam build --template-file ./cfn.json && sam deploy --template-file ./cfn.json --stack-name $STACK_NAME --region $AWS_REGION \
+	--confirm-changeset --resolve-s3 --capabilities CAPABILITY_IAM
+```
+
+### Uninstall with AWSCLI
+``` bash
+aws quicksight delete-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --analysis-id ${InterSheetAnalysisId}
+aws quicksight delete-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --analysis-id ${IntraSheetAnalysisId}
+aws quicksight delete-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-set-id ${CUR_Dimensions_DataSetId}
+aws quicksight delete-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-set-id ${CUR_DIRECT_DataSetId}
+aws quicksight delete-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-set-id ${CUR_SPICE_DataSetId}
+aws quicksight delete-data-source --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-source-id ${DataSourceId}
+```
+
+### Uninstall with CloudFormation
+``` bash
+aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager
+```
+
+### Customization
+
+You can update the datasets and analyses in QuickSight console. If you want persist your update to this tool, please run following to export the definition.
+
+``` bash
+aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${InterSheetAnalysisId} --no-cli-pager > inter-sheet-analysis.json
+aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${IntraSheetAnalysisId} --no-cli-pager > intra-sheet-analysis.json
+# Update above files to add AwsAccountId, AnalysisId, Permissions
+aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_SPICE_DataSetId} --no-cli-pager --query 'DataSet' > data-set.json
+aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_Dimensions_DataSetId} --no-cli-pager --query 'DataSet' > data-set-dimemsions.json
+# Update above files to add AwsAccountId, DataSetId, Permissions, DataSourceArn, remove LogicalTableMap, OutputColumns, SubType
+```
+
 
 
 ### Analysis Caculated Field

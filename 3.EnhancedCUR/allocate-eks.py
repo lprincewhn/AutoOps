@@ -76,7 +76,7 @@ select
     sum(net_amortized_cost) as net_amortized_cost,
     sum(billing_cost) as billing_cost
 from {cur_database}.{standardize_table}
-where year='{args["year"]}' and month='{args["month"]}' 
+where year='{args["year"]}' and month='{int(args["month"])}' 
 group by {",".join(map(lambda x:str(x), range(1,len(tags_fields)+14)))}
 '''
 print(cost_sql)

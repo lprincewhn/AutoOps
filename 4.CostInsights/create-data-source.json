@@ -1,6 +1,6 @@
 {
     "AwsAccountId": "{{AwsAccountId}}",
-    "DataSourceId": "athena",
+    "DataSourceId": "{{DataSourceId}}",
     "Name": "Athena",
     "Type": "ATHENA",
     "DataSourceParameters": {

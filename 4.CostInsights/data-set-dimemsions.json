@@ -1,0 +1,51 @@
+{
+    "AwsAccountId": "{{AwsAccountId}}",
+    "DataSetId": "{{DataSetId}}",
+        "Name": "CUR_Dimensions",
+        "PhysicalTableMap": {
+            "dimensions": {
+                "CustomSql": {
+                    "DataSourceArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:datasource/{{DataSourceId}}",
+                    "Name": "dimensions",
+                    "SqlQuery": "WITH dataset AS (\n  SELECT\n    ARRAY['ChargeType', 'UsageAccount', 'Service', 'Region', 'UsageType', 'ResourceId', 'InstanceType', 'InstanceFamily', 'DatabaseEngine', 'Project', 'UsageCategory', 'ChargeCategory'] as d\n)\nSELECT Dimension FROM dataset\nCROSS JOIN UNNEST(d) as t(Dimension)",
+                    "Columns": [
+                        {
+                            "Name": "Dimension",
+                            "Type": "STRING"
+                        }
+                    ]
+                }
+            }
+        },
+        "ImportMode": "SPICE",
+    "Permissions": [
+        {
+            "Principal": "arn:aws:quicksight:us-east-1:597377428377:user/default/Admin/whuaning-Isengard",
+            "Actions": [
+                "quicksight:DeleteDataSet",
+                "quicksight:UpdateDataSetPermissions",
+                "quicksight:PutDataSetRefreshProperties",
+                "quicksight:CreateRefreshSchedule",
+                "quicksight:CancelIngestion",
+                "quicksight:ListRefreshSchedules",
+                "quicksight:PassDataSet",
+                "quicksight:UpdateRefreshSchedule",
+                "quicksight:DeleteRefreshSchedule",
+                "quicksight:DescribeDataSetRefreshProperties",
+                "quicksight:DescribeDataSet",
+                "quicksight:CreateIngestion",
+                "quicksight:DescribeRefreshSchedule",
+                "quicksight:ListIngestions",
+                "quicksight:DescribeDataSetPermissions",
+                "quicksight:UpdateDataSet",
+                "quicksight:DeleteDataSetRefreshProperties",
+                "quicksight:DescribeIngestion"
+            ]
+        }
+    ], 
+        "DataSetUsageConfiguration": {
+            "DisableUseAsDirectQuerySource": false,
+            "DisableUseAsImportedSource": false
+        }
+
+}

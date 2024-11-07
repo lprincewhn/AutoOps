@@ -70,7 +70,7 @@ while current_date <= end:
     for r in res['results']:
         item = {
         	"year": args["year"],
-        	"month": args["month"],
+        	"month": f'{int(args["month"])}' ,
         	"charge_type": "ContainerUsage",
         	"region": region,
         	"usage_account": usage_account,

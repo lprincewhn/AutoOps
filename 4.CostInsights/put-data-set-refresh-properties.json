@@ -5,7 +5,7 @@
         "RefreshConfiguration": {
             "IncrementalRefresh": {
                 "LookbackWindow": {
-                    "ColumnName": "usage_date",
+                    "ColumnName": "date",
                     "Size": 5,
                     "SizeUnit": "DAY"
                 }
