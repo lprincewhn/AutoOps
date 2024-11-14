@@ -1,16 +1,18 @@
 # CostInsightsDashboard
 
-This is a QuickSight Dashboard ti provide cost insights by drilling down on AWS CUR data.
+This is a QuickSight Dashboard to provide cost insights by drilling down on AWS CUR data.
 
 ### Install with AWSCLI
 
-```
+1. Prepare the environment
+
+``` bash
 export AwsAccountId=<AWS Account Id>
 export AWS_REGION=us-east-1
 export QuickSightUser=<QuickSignt User> # IAM User or IAM role + session name
-
 ```
-1. Create Datasource
+
+2. Create Datasource
 
 ```bash
 
@@ -22,10 +24,11 @@ DataSourceId=$(cat create-data-source.json \
 | sed "s/{{DataSourceId}}/$(uuidgen)/g" \
 | xargs -0 aws quicksight create-data-source --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSourceId' --cli-input-json)
 
-# If datasource exist already
-DataSourceId=$(aws quicksight list-data-sources --region ${AWS_REGION} --no-cli-pager --aws-account-id ${AwsAccountId} --output text --query 'DataSources[?Name==`athena`].[DataSourceId]')
+# If datasource exist already, get its id and save it to environment variable DataSourceId.
+DataSourceId=$(aws quicksight list-data-sources --region ${AWS_REGION} --no-cli-pager --aws-account-id ${AwsAccountId} --output text --query 'DataSources[?Name==`Athena`].[DataSourceId]')
 ```
-2. Create DataSet
+
+3. Create DataSet
 
 ```bash
 
@@ -55,7 +58,7 @@ cat create-refresh-schedule.json \
 | xargs -0 aws quicksight create-refresh-schedule --region ${AWS_REGION} --no-cli-pager --cli-input-json
   
 # DataSet  (CUR_DIRECT)
-# Your can also duplicate the dataset of "CUR SPICE" and update its import mode and log its id to environment variable CUR_DIRECT_DataSetId
+# Your can also duplicate the dataset of "CUR SPICE" and update its import mode and save its id to environment variable CUR_DIRECT_DataSetId
 cat data-set.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
@@ -66,8 +69,6 @@ cat data-set.json \
 | sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set.json
 CUR_DIRECT_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --import-mode DIRECT_QUERY --name "CUR DIRECT" --cli-input-json file:///tmp/create-data-set.json)
 
-
-
 # DataSet (CUR_Dimensions)
 cat data-set-dimemsions.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
@@ -76,10 +77,9 @@ cat data-set-dimemsions.json \
 | sed "s/{{DataSourceId}}/${DataSourceId}/g" \
 | sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set-dimensions.json
 CUR_Dimensions_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --cli-input-json file:///tmp/create-data-set-dimensions.json)
-
 ```
 
-3. Create Analysis directly
+4. Create Analysis
 
 ```bash
 # Analysis (Inter-sheet)
@@ -94,9 +94,6 @@ cat inter-sheet-analysis.json \
 
 InterSheetAnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file:///tmp/create-analysis.json)
 
-aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${InterSheetAnalysisId} --no-cli-pager
-aws quicksight describe-analysis-definition --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${InterSheetAnalysisId} --no-cli-pager 
-
 # Analysis (Intra-sheet)
 cat intra-sheet-analysis.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
@@ -108,9 +105,6 @@ cat intra-sheet-analysis.json \
 | sed "s/{{AnalysisId}}/$(uuidgen)/g" > /tmp/create-analysis.json
 
 IntraSheetAnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file:///tmp/create-analysis.json)
-
-aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${IntraSheetAnalysisId} --no-cli-pager
-aws quicksight describe-analysis-definition --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${IntraSheetAnalysisId} --no-cli-pager 
 
 rm create-analysis.json
 ```
@@ -124,7 +118,6 @@ ExportJobId=$(aws quicksight start-asset-bundle-export-job --region ${AWS_REGION
 	--cloud-formation-override-property-configuration '{"ResourceIdOverrideConfiguration": {"PrefixForAllResources":true}}')
 DownloadUrl=$(aws quicksight describe-asset-bundle-export-job  --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --output text --asset-bundle-export-job-id ${ExportJobId} --query 'DownloadUrl')
 wget ${DownloadUrl} -O cfn.json
-
 ```
 
 ### Install with CloudFormation
@@ -190,7 +183,7 @@ InterSheetTemplateId=$(cat create-template.json \
 | xargs -0 aws quicksight create-template --region ${AWS_REGION} --no-cli-pager --output text -query 'TemplateId' --cli-input-json)
 ```
 
-2. Authorize the template
+2. Authorize the template to another AWS account
 
 ``` bash
 cat update-template-permissions.json \
@@ -201,7 +194,8 @@ cat update-template-permissions.json \
 | xargs -0 aws quicksight update-template-permissions --aws-account-id ${AwsAccountId} --region ${AWS_REGION} --template-id ${InterSheetTemplateId} --no-cli-pager --cli-input-json
 ```
 
-3. Share to another aws account
+3. Create dashboard from template
+
 ``` bash
 IntraSheetDashboardId=$(cat create-dashboard-by-template.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
@@ -233,7 +227,6 @@ InterSheetDashboardId=$(cat create-dashboard-by-template.json \
 ### Analysis Caculated Field
 
 ```bash
-
 # usage_category
 ifelse(
 	locate({charge_type}, "SavingsPlanCovered")>0, "SP/RI",
