@@ -20,7 +20,7 @@
         "ImportMode": "SPICE",
     "Permissions": [
         {
-            "Principal": "arn:aws:quicksight:us-east-1:597377428377:user/default/Admin/whuaning-Isengard",
+            "Principal": "arn:aws:quicksight:us-east-1:{{AwsAccountId}}:user/default/{{QuickSightUser}}",
             "Actions": [
                 "quicksight:DeleteDataSet",
                 "quicksight:UpdateDataSetPermissions",

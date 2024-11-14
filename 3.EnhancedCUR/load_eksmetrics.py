@@ -71,7 +71,7 @@ while current_date <= end:
         item = {
         	"year": args["year"],
         	"month": f'{int(args["month"])}' ,
-        	"charge_type": "ContainerUsage",
+        # 	"charge_type": "ContainerUsage",
         	"region": region,
         	"usage_account": usage_account,
         }

@@ -1,0 +1,43 @@
+{
+   "AwsAccountId": "{{AwsAccountId}}",
+   "TemplateId": "{{TemplateId}}",    
+   "SourceEntity": {
+       "SourceAnalysis": {
+         "Arn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:analysis/{{AnalysisId}}",
+         "DataSetReferences": [
+           {
+             "DataSetPlaceholder": "cur_spice",
+             "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_SPICE_DataSetId}}"
+           },
+           {
+             "DataSetPlaceholder": "cur_direct",
+             "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_DIRECT_DataSetId}}"
+           },
+           {
+             "DataSetPlaceholder": "cur_dimemsions",
+             "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_Dimensions_DataSetId}}"
+           }
+         ]
+       }
+    },
+    "Permissions": [
+        {
+            "Principal": "arn:aws:quicksight:us-east-1:{{AwsAccountId}}:user/default/{{QuickSightUser}}",
+            "Actions": [
+                "quicksight:UpdateTemplatePermissions", 
+                "quicksight:DescribeTemplatePermissions", 
+                "quicksight:UpdateTemplateAlias", 
+                "quicksight:DeleteTemplateAlias", 
+                "quicksight:DescribeTemplateAlias", 
+                "quicksight:ListTemplateAliases", 
+                "quicksight:ListTemplates", 
+                "quicksight:CreateTemplateAlias", 
+                "quicksight:DeleteTemplate", 
+                "quicksight:UpdateTemplate", 
+                "quicksight:ListTemplateVersions", 
+                "quicksight:DescribeTemplate", 
+                "quicksight:CreateTemplate"
+            ]
+        }
+    ]
+}
