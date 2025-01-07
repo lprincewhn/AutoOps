@@ -16,12 +16,12 @@ S3Alarm:
       ResponsePlanName:    
   - Key: tag:Project
     Value: ['svhw', 'tools']
-    # 5xxRate:
-    #   Enabled: true
-    #   Threshold: 1
-    #   OpsItemSev: 3
-    #   OpsItemCategory: 
-    #   ResponsePlanName:
+    5xxRate:
+      Enabled: true
+      Threshold: 1
+      OpsItemSev: 3
+      OpsItemCategory: 
+      ResponsePlanName:
     OperationsFailedReplication:
       Enabled: true
       Threshold: 2

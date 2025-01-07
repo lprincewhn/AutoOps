@@ -33,7 +33,7 @@ DataSourceId=$(aws quicksight list-data-sources --region ${AWS_REGION} --no-cli-
 ```bash
 
 # DataSet (CUR_SPICE)
-cat data-set.json \
+cat data-set-spice.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
@@ -43,7 +43,7 @@ cat data-set.json \
 | sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set.json
 CUR_SPICE_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --import-mode SPICE --name "CUR SPICE" --cli-input-json file:///tmp/create-data-set.json)
 
-# You may need to adjust to SQL to fit your CUR table properties, like database name, table name, some missing columns
+# You may need to modify the SQL to adapt your CUR table properties, like database name, table name, some missing columns
 
 cat put-data-set-refresh-properties.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
@@ -59,7 +59,7 @@ cat create-refresh-schedule.json \
   
 # DataSet  (CUR_DIRECT)
 # Your can also duplicate the dataset of "CUR SPICE" and update its import mode and save its id to environment variable CUR_DIRECT_DataSetId
-cat data-set.json \
+cat data-set-direct.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
@@ -82,8 +82,8 @@ CUR_Dimensions_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION}
 4. Create Analysis
 
 ```bash
-# Analysis (Inter-sheet)
-cat inter-sheet-analysis.json \
+# Analysis
+cat analysis.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
@@ -92,21 +92,7 @@ cat inter-sheet-analysis.json \
 | sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
 | sed "s/{{AnalysisId}}/$(uuidgen)/g" > /tmp/create-analysis.json
 
-InterSheetAnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file:///tmp/create-analysis.json)
-
-# Analysis (Intra-sheet)
-cat intra-sheet-analysis.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
-| sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
-| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| sed "s/{{AnalysisId}}/$(uuidgen)/g" > /tmp/create-analysis.json
-
-IntraSheetAnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file:///tmp/create-analysis.json)
-
-rm create-analysis.json
+AnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file:///tmp/create-analysis.json)
 ```
 
 ### Export as CloudFormation Template
@@ -147,10 +133,14 @@ aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION --
 You can update the datasets and analyses in QuickSight console. If you want persist your update to this repo, please run following to export the definition.
 
 ``` bash
-aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${InterSheetAnalysisId} --no-cli-pager > inter-sheet-analysis.json
-aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${IntraSheetAnalysisId} --no-cli-pager > intra-sheet-analysis.json
-# Update above files to add AwsAccountId, AnalysisId, Permissions
-aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_SPICE_DataSetId} --no-cli-pager --query 'DataSet' > data-set.json
+cp analysis.json bk-analysis.json
+aws quicksight describe-analysis-definition --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${AnalysisId} --no-cli-pager > analysis.json
+# Update above files to add AwsAccountId, AnalysisId, DataSourceId, Permissions
+cp data-set-spice.json bk-data-set-spice.json
+aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_SPICE_DataSetId} --no-cli-pager --query 'DataSet' > data-set-spice.json
+cp data-set-direct.json bk-data-set-direct.json
+aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_DIRECT_DataSetId} --no-cli-pager --query 'DataSet' > data-set-direct.json
+cp data-set-dimemsions.json bk-data-set-dimemsions.json
 aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_Dimensions_DataSetId} --no-cli-pager --query 'DataSet' > data-set-dimemsions.json
 # Update above files to add AwsAccountId, DataSetId, Permissions, DataSourceArn, remove LogicalTableMap, OutputColumns, SubType
 ```
@@ -160,27 +150,16 @@ aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAc
 1. Create Template
 
 ``` bash
-IntraSheetTemplateId=$(cat create-template.json \
+TemplateId=$(cat create-template.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
 | sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
 | sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
 | sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| sed "s/{{AnalysisId}}/${IntraSheetAnalysisId}/g" \
+| sed "s/{{AnalysisId}}/${AnalysisId}/g" \
 | sed "s/{{TemplateId}}/$(uuidgen)/g" \
-| xargs -0 aws quicksight create-template --region ${AWS_REGION} --no-cli-pager --output text -query 'TemplateId' --cli-input-json)
-
-InterSheetTemplateId=$(cat create-template.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
-| sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
-| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| sed "s/{{AnalysisId}}/${InterSheetAnalysisId}/g" \
-| sed "s/{{TemplateId}}/$(uuidgen)/g" \
-| xargs -0 aws quicksight create-template --region ${AWS_REGION} --no-cli-pager --output text -query 'TemplateId' --cli-input-json)
+| xargs -0 aws quicksight create-template --region ${AWS_REGION} --no-cli-pager --output text --query 'TemplateId' --cli-input-json)
 ```
 
 2. Authorize the template to another AWS account
@@ -188,16 +167,15 @@ InterSheetTemplateId=$(cat create-template.json \
 ``` bash
 cat update-template-permissions.json \
 | sed "s/{{TargetAccountId}}/${TargeAwsAccountId}/g" \
-| xargs -0 aws quicksight update-template-permissions --aws-account-id ${AwsAccountId} --region ${AWS_REGION} --template-id ${IntraSheetTemplateId} --no-cli-pager --cli-input-json
-cat update-template-permissions.json \
-| sed "s/{{TargetAccountId}}/${TargeAwsAccountId}/g" \
-| xargs -0 aws quicksight update-template-permissions --aws-account-id ${AwsAccountId} --region ${AWS_REGION} --template-id ${InterSheetTemplateId} --no-cli-pager --cli-input-json
+| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
+| sed "s/{{TemplateId}}/${TemplateId}/g" \
+| xargs -0 aws quicksight update-template-permissions --aws-account-id ${AwsAccountId} --region ${AWS_REGION} --template-id ${TemplateId} --no-cli-pager --cli-input-json
 ```
 
-3. Create dashboard from template
+3. Create dashboard in the other account from template 
 
 ``` bash
-IntraSheetDashboardId=$(cat create-dashboard-by-template.json \
+DashboardId=$(cat create-dashboard-by-template.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
@@ -206,22 +184,9 @@ IntraSheetDashboardId=$(cat create-dashboard-by-template.json \
 | sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
 | sed "s/{{SourceRegion}}/${SourceRegion}/g" \
 | sed "s/{{SourceAwsAccountId}}/${SourceAwsAccountId}/g" \
-| sed "s/{{TemplateId}}/${IntraSheetTemplateId}/g" \
+| sed "s/{{TemplateId}}/${TemplateId}/g" \
 | sed "s/{{DashboardId}}/$(uuidgen)/g" \
 | xargs -0 aws quicksight create-dashboard --region ${AWS_REGION} --no-cli-pager --output text --query 'DashboardId' --name 'Cost Insights' --cli-input-json)
-
-InterSheetDashboardId=$(cat create-dashboard-by-template.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
-| sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
-| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| sed "s/{{SourceRegion}}/${SourceRegion}/g" \
-| sed "s/{{SourceAwsAccountId}}/${SourceAwsAccountId}/g" \
-| sed "s/{{TemplateId}}/${InterSheetTemplateId}/g" \
-| sed "s/{{DashboardId}}/$(uuidgen)/g" \
-| xargs -0 aws quicksight create-dashboard --region ${AWS_REGION} --no-cli-pager --output text --query 'DashboardId' --name 'Cost Insights (Inter-sheet)' --cli-input-json)
 ```
 
 ### Analysis Caculated Field
@@ -265,6 +230,9 @@ ifelse(
 		locate({usage_type}, "BoxUsage")>0, "按需实例",
 		locate({usage_type}, "SpotUsage")>0, "Spot",
 		locate({usage_type}, "Snapshot")>0, "EBS快照",
+		locate({usage_type}, "EBS")>0 and locate({usage_type}, "IO")>0, "EBS卷IO",
+		locate({usage_type}, "EBS")>0 and locate({usage_type}, "Throughput")>0, "EBS卷吞吐量",
+		locate({usage_type}, "EBSOptimized")>0, "EBS卷专用带宽",
 		locate({usage_type}, "EBS")>0, "EBS卷存储",
 		locate({usage_type}, "NatGateway")>0, "NAT网关",
 		"其他EC2费用"

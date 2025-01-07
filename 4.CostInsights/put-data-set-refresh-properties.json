@@ -7,7 +7,7 @@
                 "LookbackWindow": {
                     "ColumnName": "date",
                     "Size": 5,
-                    "SizeUnit": "DAY"
+                    "SizeUnit": "WEEK"
                 }
             }
         }

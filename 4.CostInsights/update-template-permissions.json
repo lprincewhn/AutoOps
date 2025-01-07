@@ -1,7 +1,11 @@
 {
-    "Principal": "arn:aws:iam::{{TargetAccountId}}:root",
-    "Actions": [
-      "quicksight:UpdateTemplatePermissions",
-      "quicksight:DescribeTemplate"
+    "AwsAccountId": "{{AwsAccountId}}",
+    "TemplateId": "{{TemplateId}}",
+    "GrantPermissions": [{
+      "Principal": "arn:aws:iam::{{TargetAccountId}}:root",
+      "Actions": [
+        "quicksight:UpdateTemplatePermissions",
+        "quicksight:DescribeTemplate"
+      ]}
     ]
 }

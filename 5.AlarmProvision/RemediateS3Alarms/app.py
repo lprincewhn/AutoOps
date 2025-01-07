@@ -28,8 +28,14 @@ def populateAlarmDef(alarmObject, tags, metricName):
         alarmObject[f'tag:{tag["Key"]}'] = tag['Value']
     matches = list(filter(lambda x:alarmObject.get(x['Key']) and alarmObject[x['Key']] in x['Value'], alarmdef['S3Alarm']['Filters']))
     logger.info(f'Found {len(matches)} filters matched for metric {metricName}')
-    alarmObject['AlarmDef'] = matches[0][metricName] if matches and matches[0].get(metricName)  else alarmdef['S3Alarm']['Default'][metricName]
-    logger.info(f'{alarmObject["AlarmDef"]}')
+    for i,m in enumerate(matches):
+        if m.get(metricName):
+            alarmObject['AlarmDef'] = m[metricName]
+            logger.info(f'Applied AlarmDef[{i}]: {alarmObject["AlarmDef"]}')
+            return
+    alarmObject['AlarmDef'] = alarmdef['S3Alarm']['Default'][metricName]
+    logger.info(f'Applied default AlarmDef: {alarmObject["AlarmDef"]}')
+    return
     
 def create5xxRateAlarm(region, bucketMetricCfg, tags, alarmExisting, alarmsCreated):
     populateAlarmDef(bucketMetricCfg, tags, '5xxRate')
@@ -118,22 +124,22 @@ def create5xxRateAlarm(region, bucketMetricCfg, tags, alarmExisting, alarmsCreat
     logger.debug(f'Response of put_metric_alarm: {response}')
     alarmsCreated.append(alarmName)
     
-def createOperationsFailedReplicationAlarm(region, bucketReliationRule, tags, alarmsExisting, alarmsCreated):
-    populateAlarmDef(bucketReliationRule, tags, 'OperationsFailedReplication')
-    if not bucketReliationRule['AlarmDef']['Enabled']:
+def createOperationsFailedReplicationAlarm(region, bucketRelicationRule, tags, alarmsExisting, alarmsCreated):
+    populateAlarmDef(bucketRelicationRule, tags, 'OperationsFailedReplication')
+    if not bucketRelicationRule['AlarmDef']['Enabled']:
         return
-    sourceBucketName = bucketReliationRule["SourceBucketName"]
-    ruleId = bucketReliationRule["ID"]
-    destinationBucketName = bucketReliationRule["Destination"]["Bucket"]
+    sourceBucketName = bucketRelicationRule["SourceBucketName"]
+    ruleId = bucketRelicationRule["ID"]
+    destinationBucketName = bucketRelicationRule["Destination"]["Bucket"]
     alarmName = f'AWS/S3-OperationsFailedReplication-{sourceBucketName}-{destinationBucketName}-{ruleId}'
     if alarmName in alarmsExisting:
         # 从现存告警列表中移除表示保留该告警
         logger.info(f'{alarmName} existed. skip it...')
         alarmsExisting.remove(alarmName)
         return alarmName, False
-    threshold = bucketReliationRule['AlarmDef']['Threshold']
+    threshold = bucketRelicationRule['AlarmDef']['Threshold']
     logger.info(f'Threshold of {alarmName}: {threshold}')
-    alarm_actions, ok_actions = common.getSSMActions(account_id, region, bucketReliationRule['AlarmDef'])
+    alarm_actions, ok_actions = common.getSSMActions(account_id, region, bucketRelicationRule['AlarmDef'])
     logger.info(f'AlarmActions of {alarmName}: {alarm_actions}')
     logger.info(f'OkActions of {alarmName}: {ok_actions}')
     client = boto3.client('cloudwatch', region_name=region)
@@ -207,6 +213,7 @@ def lambda_handler(event, context):
         alarmNames = []
         for page in page_iterator:
             alarmNames += list(map(lambda x:x.get('AlarmName'), page['MetricAlarms']))
+        logger.info(f'Existed alarms: {alarmNames}')
     
         # 创建告警
         for bucket in bucketList:

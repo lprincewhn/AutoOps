@@ -1,22 +1,22 @@
 {
     "AwsAccountId": "{{AwsAccountId}}",
     "DataSetId": "{{DataSetId}}",
-    "Name": "CUR_Dimensions",
-    "PhysicalTableMap": {
-        "dimensions": {
-            "CustomSql": {
+        "Name": "CUR_Dimensions",
+        "PhysicalTableMap": {
+            "dimensions": {
+                "CustomSql": {
                     "DataSourceArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:datasource/{{DataSourceId}}",
-                "Name": "dimensions",
-                "SqlQuery": "WITH dataset AS (\n  SELECT\n    ARRAY['ChargeType', 'UsageAccount', 'Service', 'Product', 'Region', 'UsageType', 'ResourceId', 'InstanceType', 'InstanceFamily', 'DatabaseEngine', 'VolumeType', 'Project', 'UsageCategory', 'ChargeCategory'] as d\n)\nSELECT Dimension FROM dataset\nCROSS JOIN UNNEST(d) as t(Dimension)",
-                "Columns": [
-                    {
-                        "Name": "Dimension",
-                        "Type": "STRING"
-                    }
-                ]
+                    "Name": "dimensions",
+                    "SqlQuery": "WITH dataset AS (\n  SELECT\n    ARRAY['ChargeType', 'UsageAccount', 'Service', 'Region', 'UsageType', 'ResourceId', 'InstanceType', 'InstanceFamily', 'DatabaseEngine', 'Project', 'UsageCategory', 'ChargeCategory'] as d\n)\nSELECT Dimension FROM dataset\nCROSS JOIN UNNEST(d) as t(Dimension)",
+                    "Columns": [
+                        {
+                            "Name": "Dimension",
+                            "Type": "STRING"
+                        }
+                    ]
+                }
             }
-        }
-    },
+        },
         "ImportMode": "SPICE",
     "Permissions": [
         {
@@ -47,4 +47,5 @@
             "DisableUseAsDirectQuerySource": false,
             "DisableUseAsImportedSource": false
         }
+
 }
