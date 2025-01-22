@@ -123,7 +123,7 @@
         "ImportMode": "SPICE",
     "Permissions": [
         {
-            "Principal": "arn:aws:quicksight:us-east-1:{{AwsAccountId}}:user/default/{{QuickSightUser}}",
+            "Principal": "{{QuickSightUser}}",
             "Actions": [
                 "quicksight:DeleteDataSet",
                 "quicksight:UpdateDataSetPermissions",

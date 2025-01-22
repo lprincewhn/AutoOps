@@ -13,12 +13,11 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 spark.conf.set("spark.sql.sources.partitionOverwriteMode","dynamic")  
 
-args = getResolvedOptions(sys.argv,['year', 'month', 'tags-fields', 'cur-database','work-bucket', 'verbose'])
+args = getResolvedOptions(sys.argv,['year', 'month', 'cur-database','work-bucket', 'verbose'])
 print(f"args: {args}")
 debug = int(args["verbose"])
 cur_database = args['cur_database'].strip()
 work_bucket = args['work_bucket'].strip()
-tags_fields = list(map(lambda x:x.strip(), args['tags_fields'].split(',')))
 eksmetrics_table = 'enhanced_cur_eksmetrics'
 standardize_table = 'enhanced_cur_standardize'
 
@@ -28,11 +27,11 @@ select
     year,
     month,
     region,
-    usage_date,
+    date,
     usage_account,
     resource_id,
     instance,
-    {",".join(tags_fields)},
+    app,
     sum(actual_cpu) as actual_cpu,
     sum(actual_mem) as actual_mem,
     sum(reserved_cpu) as reserved_cpu,
@@ -41,7 +40,7 @@ select
     '1' as eks_flag
 from {cur_database}.{eksmetrics_table}
 where year='{args["year"]}' and month='{args["month"]}' 
-group by {",".join(map(lambda x:str(x), range(1,len(tags_fields)+8)))}
+group by 1,2,3,4,5,6,7,8
 '''
 print(eks_sql)
 df_eks = (spark.sql(eks_sql).fillna("")
@@ -54,30 +53,38 @@ df_eks.describe(['samples']).show(vertical=True)
 # Load cost data
 cost_sql = f'''
 select
-    year,
-    month,
-    charge_type,
-    billing_entity,
-    service, 
-    region,
-    instance_type,
-    instance_family,
-    database_engine,
-    usage_type,
-    usage_date,
-    usage_account,
-    resource_id,
-    {",".join(tags_fields)},
-    sum(usage_amount) as usage_amount,
-    sum(vcpus) as vcpus,
-    sum(memory_gb) as memory_gb,
-    sum(ondemand_cost) as ondemand_cost,
-    sum(amortized_cost) as amortized_cost,
-    sum(net_amortized_cost) as net_amortized_cost,
-    sum(billing_cost) as billing_cost
+	year,
+	month,
+	date,
+	charge_type,
+	payer_account,
+	usage_account,
+	billing_entity,
+	service, 
+	product,
+	region,
+	location,
+	instance_type,
+	instance_family,
+	database_engine,
+	volume_type,
+	usage_type,
+	description,
+	resource_id,
+	emr_job_flow_id,
+	project,
+	name,
+	sum(usage_amount) as usage_amount,
+	sum(vcpus) as vcpus,
+	sum(gcpus) as gcpus,
+	sum(memory_gb) as memory_gb, 
+	sum(ondemand_cost) as ondemand_cost,
+	sum(amortized_cost) as amortized_cost,
+	sum(net_amortized_cost) as net_amortized_cost,
+	sum(billing_cost) as billing_cost
 from {cur_database}.{standardize_table}
 where year='{args["year"]}' and month='{int(args["month"])}' 
-group by {",".join(map(lambda x:str(x), range(1,len(tags_fields)+14)))}
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
 '''
 print(cost_sql)
 df_cost = (spark.sql(cost_sql).fillna(""))
@@ -86,7 +93,7 @@ df_cost.describe(['vcpus', 'memory_gb', 'ondemand_cost','amortized_cost','net_am
 
 # Update column eks_flag to mark items to be allocated
 df_cost_eks_flag = (df_cost
-    .join(df_eks.withColumn("resource_id",col("instance")).drop("instance").groupBy("year","month","usage_account","usage_date", "region", "resource_id").agg(sum("eks_flag")), ["year","month","usage_account","usage_date", "region", "resource_id"], "left")
+    .join(df_eks.withColumn("resource_id",col("instance")).drop("instance").groupBy("year","month","usage_account","date", "region", "resource_id").agg(sum("eks_flag")), ["year","month","usage_account","date", "region", "resource_id"], "left")
     .withColumn("eks_flag", when((col("sum(eks_flag)")>0) & (col("usage_type").contains("BoxUsage") | col("usage_type").contains("SpotUsage")), 1).otherwise(0))
 )
 print(f'cost data with eks flag have {len(df_cost_eks_flag.columns)} columns: {sorted(df_cost_eks_flag.columns)}')
@@ -95,16 +102,16 @@ df_cost_eks_flag.groupBy("eks_flag").agg(count(lit(1)), sum("vcpus"), sum("memor
 
 # Generate metrics sumtable 
 sumtable = (df_eks
-            .groupBy(["year","month","usage_account","usage_date", "region", "instance"])
+            .groupBy(["year","month","usage_account","date", "region", "instance"])
             .agg(sum("cpu_usage"), sum("mem_usage"))
 )
-print(f'esk metric data grouped by instance and usage_date have {len(sumtable.columns)} columns: {sorted(sumtable.columns)}')
+print(f'esk metric data grouped by instance and date have {len(sumtable.columns)} columns: {sorted(sumtable.columns)}')
 sumtable.describe(['sum(cpu_usage)', 'sum(mem_usage)']).show(vertical=True)
 
 # Join the sumtable and eks cost items to caculate the allocated cost
 df = (df_eks
-      .join(sumtable, ["year","month","usage_account","usage_date", "region", "instance"], "left")
-      .join(df_cost_eks_flag.filter(col('eks_flag')==1).withColumn("instance",col("resource_id")).withColumn("cpu_cost_ratio", col("vcpus")*9/(col("vcpus")*9+col("memory_gb"))).drop("resource_id", "name", "eks_flag"), ["year","month","usage_account","usage_date", "region", "instance"], "left")
+      .join(sumtable, ["year","month","usage_account","date", "region", "instance"], "left")
+      .join(df_cost_eks_flag.filter(col('eks_flag')==1).withColumn("instance",col("resource_id")).withColumn("cpu_cost_ratio", col("vcpus")*9/(col("vcpus")*9+col("memory_gb"))).drop("resource_id", "name", "eks_flag"), ["year","month","usage_account","date", "region", "instance"], "left")
       .withColumn("vcpus", col("vcpus")*col("cpu_usage")/col("sum(cpu_usage)"))
       .withColumn("memory_gb", col("memory_gb")*col("mem_usage")/col("sum(mem_usage)"))
       .withColumn("usage_amount", col("usage_amount")*col("cpu_cost_ratio")*col("cpu_usage")/col("sum(cpu_usage)")+col("usage_amount")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("sum(mem_usage)"))

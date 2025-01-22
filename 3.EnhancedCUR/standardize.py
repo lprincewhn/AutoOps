@@ -26,22 +26,29 @@ sql = f'''
 select
 	year,
 	month,
+	date(line_item_usage_start_date) as date,
 	line_item_line_item_type as charge_type,
+	bill_payer_account_id as payer_account,
+	line_item_usage_account_id as usage_account,
 	case when bill_billing_entity='AWS' then 'AWS' else line_item_legal_entity end as billing_entity,
-	case when length(product_servicename)>0 then product_servicename else product_product_name end as service, 
+	case when length(product_servicecode)>0 then product_servicecode when bill_billing_entity='AWS' then line_item_product_code else product_product_name end as service, 
+	case when bill_billing_entity='AWS' then line_item_product_code else product_product_name end as product,
 	product_region as region,
+	product_location as location,
 	product_instance_type as instance_type,
 	regexp_extract(product_instance_type, '([a-z][1-9].{{0,1}})\.', 1) as instance_family,
 	product_database_engine as database_engine,
+	product_volume_type as volume_type,
 	line_item_usage_type as usage_type,
-	line_item_usage_start_date as usage_date,
-	line_item_usage_account_id as usage_account,
+	line_item_line_item_description as description,
 	line_item_resource_id as resource_id,
+	resource_tags_aws_elasticmapreduce_job_flow_id as emr_job_flow_id,
+	resource_tags_user_project as project,
 	resource_tags_user_name as name,
-    resource_tags_user_project as project,
 	sum(line_item_usage_amount) as usage_amount,
-	sum(cast(case when line_item_usage_type not like '%EBSOptimized%' then TRIM(product_vcpu) else '' end as float)*line_item_usage_amount) as vcpus,
-	sum(cast(case when line_item_usage_type not like '%EBSOptimized%' and length(regexp_extract(product_memory, '([\.|0-9]{{1,6}}) GiB', 1))>0 then TRIM(regexp_extract(product_memory, '([\.|0-9]{{1,6}}) GiB', 1)) else TRIM(product_memory_gib) end as float)*line_item_usage_amount) as memory_gb,
+	sum(case when line_item_line_item_type like '%Usage' and line_item_usage_type not like '%EBSOptimized%' then cast(NULLIF(TRIM(product_vcpu), '') as decimal)*line_item_usage_amount else 0 end) as vcpus,
+	sum(case when line_item_line_item_type like '%Usage' and line_item_usage_type not like '%EBSOptimized%' then cast(NULLIF(NULLIF(TRIM(product_gpu), ''), 'N/A') as decimal)*line_item_usage_amount else 0 end) as gcpus,
+	sum(case when line_item_line_item_type like '%Usage' and line_item_usage_type not like '%EBSOptimized%' then COALESCE(cast(NULLIF(regexp_extract(product_memory, '([\.|0-9]{{1,6}}) GiB', 1), '') as decimal), cast(NULLIF(TRIM(product_memory_gib), '') as decimal))*line_item_usage_amount else 0 end) as memory_gb,
 	sum(case
 	    when line_item_line_item_type like '%Discount' then 0
 	    when line_item_line_item_type='SavingsPlanNegation' then 0
@@ -78,7 +85,7 @@ select
 	sum(line_item_unblended_cost) as billing_cost
 from {cur_database}.{cur_table}
 where year='{args["year"]}' and month='{int(args["month"])}' 
-group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
 '''
 print(sql)
 

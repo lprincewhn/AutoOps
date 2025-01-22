@@ -31,9 +31,9 @@ current_date = start
 result = []
 queryString = f'''
 filter !isempty(kubernetes.pod_name) 
-| fields datefloor(Timestamp, 1h) as usage_date, 
+| fields datefloor(Timestamp, 1h) as date, 
     concat(InstanceId,":pod/",ClusterName,"/",kubernetes.namespace_name,"/",kubernetes.pod_name) as resource_id, 
-    kubernetes.labels.app as name, 
+    kubernetes.labels.app as app, 
     kubernetes.labels.project as project, 
     InstanceId as instance 
 | stats min(Timestamp) as start_time, 
@@ -46,7 +46,7 @@ filter !isempty(kubernetes.pod_name)
     sum(pod_memory_working_set) as actual_mem,
     count(pod_memory_request) as reserved_mem_cnt, 
     sum(pod_memory_request) as reserved_mem 
-by usage_date,resource_id,project,name,instance
+by date,resource_id,project,app,instance
 '''
 while current_date <= end:
     next_date = current_date + datetime.timedelta(days=10)
@@ -77,7 +77,8 @@ while current_date <= end:
         }
         for f in r:
             item[f.get("field")] = f.get("value")
-        result.append(item)
+        if item["date"][:7]==f'{args["year"]}-{args["month"]}':
+            result.append(item)
 
     print(len(result))
     print(res['statistics'])
@@ -85,14 +86,16 @@ while current_date <= end:
     current_date = next_date
 print(result[:3])
 
-df_eksmetrics = spark.read.json(sc.parallelize(result)).withColumn("usage_date", to_timestamp("usage_date"))
-
-(df_eksmetrics.coalesce(1).write
-    .mode("overwrite")
-    .partitionBy(["usage_account","year","month","region"])
-    .option("path", f"s3://{work_bucket}/data/eksmetrics/res/")
-    .saveAsTable(f"{cur_database}.enhanced_cur_eksmetrics")
-)
-
-print(f"Job finished.")
+if result:
+    df_eksmetrics = spark.read.json(sc.parallelize(result)).withColumn("date", to_timestamp("date"))
+    
+    (df_eksmetrics.coalesce(1).write
+        .mode("overwrite")
+        .partitionBy(["usage_account","year","month","region"])
+        .option("path", f"s3://{work_bucket}/data/eksmetrics/res/")
+        .saveAsTable(f"{cur_database}.enhanced_cur_eksmetrics")
+    )
+    print(f"Job finished. {len(result)} rows was written into table {cur_database}.enhanced_cur_eksmetrics")
+else:
+    print(f"Result is empty.")
 job.commit()

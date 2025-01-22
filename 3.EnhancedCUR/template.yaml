@@ -123,24 +123,6 @@ Resources:
         '--container-insights-loggroup': '/aws/containerinsights/eksdemo/performance'
         '--verbose': '0'
         
-  LoadRDSMetricsJob:
-    Type: AWS::Glue::Job
-    Properties:
-      Role: !Ref CUREtlRole
-      GlueVersion: 4.0
-      Command:
-        Name: glueetl
-        ScriptLocation: './load_rdsmetrics.py'
-      DefaultArguments:
-        '--year': '2024'
-        '--month': '10'
-        '--cur-database': !Ref CURDatabase
-        '--work-bucket': !Ref WorkBucketName
-        '--enable-glue-datacatalog': 'true'
-        '--region': 'ap-northeast-1'
-        '--usage-account': !Ref AWS::AccountId
-        '--verbose': '0'
-        
   AllocateEksJob:
     Type: AWS::Glue::Job
     Properties:
