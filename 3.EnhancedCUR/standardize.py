@@ -31,8 +31,15 @@ select
 	bill_payer_account_id as payer_account,
 	line_item_usage_account_id as usage_account,
 	case when bill_billing_entity='AWS' then 'AWS' else line_item_legal_entity end as billing_entity,
-	case when length(product_servicecode)>0 then product_servicecode when bill_billing_entity='AWS' then line_item_product_code else product_product_name end as service, 
-	case when bill_billing_entity='AWS' then line_item_product_code else product_product_name end as product,
+	case
+		when length(split_line_item_parent_resource_id)>0 then 'AmazonEC2' 
+		when length(product_servicecode)>0 then product_servicecode 
+		when bill_billing_entity='AWS' then line_item_product_code 
+		else product_product_name end as service, 
+	case
+		when length(split_line_item_parent_resource_id)>0 then 'AmazonEC2'  
+		when bill_billing_entity='AWS' then line_item_product_code 
+		else product_product_name end as product,
 	product_region as region,
 	product_location as location,
 	product_instance_type as instance_type,
@@ -84,7 +91,7 @@ select
 	    else line_item_net_unblended_cost end) as net_amortized_cost,
 	sum(line_item_unblended_cost) as billing_cost
 from {cur_database}.{cur_table}
-where year='{args["year"]}' and month='{int(args["month"])}' 
+where year='{int(args["year"])}' and month='{int(args["month"])}' 
 group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
 '''
 print(sql)

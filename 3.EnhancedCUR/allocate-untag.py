@@ -13,11 +13,11 @@ spark = glueContext.spark_session
 job = Job(glueContext)
 spark.conf.set("spark.sql.sources.partitionOverwriteMode","dynamic")  
 
-args = getResolvedOptions(sys.argv,['year', 'month', 'tags-fields', 'cur-database','work-bucket', 'verbose'])
+args = getResolvedOptions(sys.argv,['year', 'month', 'tags-fields', 'cur-database', 'standardize-table', 'work-bucket', 'verbose'])
 print(f"args: {args}")
 debug = int(args["verbose"])
 cur_database = args['cur_database'].strip()
-cur_table = 'enhanced_cur_allocate_eks'
+cur_table = args['standardize_table'].strip()
 work_bucket = args['work_bucket'].strip()
 tags_fields = list(map(lambda x:x.strip(), args['tags_fields'].split(',')))
 

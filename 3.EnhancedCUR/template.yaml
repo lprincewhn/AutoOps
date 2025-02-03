@@ -21,6 +21,13 @@ Parameters:
     Type: String
   CURTable:
     Type: String
+  SubnetId:
+    Type: String
+  AvailabilityZone:
+    Type: String
+  SecurityGroupIdList:
+    Type: CommaDelimitedList
+  
 Resources:
 
   CUREtlRole:
@@ -87,6 +94,31 @@ Resources:
                   - "cloudwatch:GetMetricData"
                 Resource: 
                   - "*"
+        - PolicyName: "VPC"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              -
+                Effect: "Allow"
+                Action:
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:CreateTags"
+                Resource: 
+                  - "*"
+  
+  VPCConnection:
+    Type: AWS::Glue::Connection
+    Properties:
+      CatalogId: !Ref AWS::AccountId
+      ConnectionInput: 
+        ConnectionType: NETWORK
+        PhysicalConnectionRequirements: 
+          SubnetId: subnet-01745ef720af971f9
+          SecurityGroupIdList:
+            - sg-0dcbedc530fad4622
+          AvailabilityZone: us-east-1a
+
+
   StandardizeJob:
     Type: AWS::Glue::Job
     Properties:
@@ -104,14 +136,19 @@ Resources:
         '--enable-glue-datacatalog': 'true'
         '--verbose': '0'    
         
-  LoadEKSMetricsJob:
+  LoadCloudWatchEKSMetricsJob:
     Type: AWS::Glue::Job
     Properties:
       Role: !Ref CUREtlRole
       GlueVersion: 4.0
+      WorkerType: G.1X
+      NumberOfWorkers: 2
       Command:
         Name: glueetl
-        ScriptLocation: './load_eksmetrics.py'
+        ScriptLocation: './load_cloudwatch_eksmetrics.py'
+      Connections:
+        Connections:
+          - !Ref VPCConnection
       DefaultArguments:
         '--year': '2024'
         '--month': '10'
@@ -121,6 +158,30 @@ Resources:
         '--region': 'ap-northeast-1'
         '--usage-account': !Ref AWS::AccountId
         '--container-insights-loggroup': '/aws/containerinsights/eksdemo/performance'
+        '--verbose': '0'
+        
+  LoadPrometheusEKSMetricsJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !Ref CUREtlRole
+      GlueVersion: 4.0
+      WorkerType: G.1X
+      NumberOfWorkers: 2
+      Command:
+        Name: glueetl
+        ScriptLocation: './load_prometheus_eksmetrics.py'
+      Connections:
+        Connections:
+          - !Ref VPCConnection
+      DefaultArguments:
+        '--year': '2024'
+        '--month': '10'
+        '--cur-database': !Ref CURDatabase
+        '--work-bucket': !Ref WorkBucketName
+        '--enable-glue-datacatalog': 'true'
+        '--region': 'ap-northeast-1'
+        '--usage-account': !Ref AWS::AccountId
+        '--prometheus-endpoint': 'http://k8s-promethe-promethe-e2fcf81d1b-468ba5a5bc316af4.elb.ap-northeast-1.amazonaws.com'
         '--verbose': '0'
         
   AllocateEksJob:
@@ -134,8 +195,9 @@ Resources:
       DefaultArguments:
         '--year': '2024'
         '--month': '10'
-        '--tags-fields': 'name'
         '--cur-database': !Ref CURDatabase
+        '--eksmetrics-table': 'enhanced_cur_eksmetrics_prometheus'
+        '--standardize-table': 'enhanced_cur_standardize'
         '--work-bucket': !Ref WorkBucketName
         '--enable-glue-datacatalog': 'true'
         '--verbose': '1'
@@ -153,6 +215,7 @@ Resources:
         '--month': '10'
         '--tags-fields': 'name'
         '--cur-database': !Ref CURDatabase
+        '--standardize-table': 'enhanced_cur_allocate_eks'
         '--work-bucket': !Ref WorkBucketName
         '--enable-glue-datacatalog': 'true'
         '--verbose': '0'
@@ -192,7 +255,8 @@ Resources:
       DefinitionUri: state.asl.yaml
       DefinitionSubstitutions:
         StandardizeJobName: !Ref StandardizeJob
-        LoadEKSMetricsJob: !Ref LoadEKSMetricsJob
+        LoadCloudWatchEKSMetricsJob: !Ref LoadCloudWatchEKSMetricsJob
+        LoadPrometheusEKSMetricsJob: !Ref LoadPrometheusEKSMetricsJob
         AllocateEksJob: !Ref AllocateEksJob
         AllocateUntagJob: !Ref AllocateUntagJob
       Events:
@@ -203,15 +267,18 @@ Resources:
 
 
 Outputs:
+  EnhanceCURStateMachine:
+    Description: "StateMachine ARN"
+    Value: !Ref EnhanceCURStateMachine 
   StandardizeJob:
     Description: "Glue Job name"
     Value: !Ref StandardizeJob 
-  LoadRDSMetricsJob:
+  LoadCloudWatchEKSMetricsJob:
     Description: "Glue Job name"
-    Value: !Ref LoadRDSMetricsJob 
-  LoadEKSMetricsJob:
+    Value: !Ref LoadCloudWatchEKSMetricsJob 
+  LoadPrometheusEKSMetricsJob:
     Description: "Glue Job name"
-    Value: !Ref LoadEKSMetricsJob 
+    Value: !Ref LoadPrometheusEKSMetricsJob 
   AllocateEksJob:
     Description: "Glue Job name"
     Value: !Ref AllocateEksJob 

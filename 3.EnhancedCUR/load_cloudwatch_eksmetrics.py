@@ -2,6 +2,7 @@ import sys
 import time
 import datetime
 import boto3
+import requests
 from awsglue.transforms import *
 from awsglue.utils import getResolvedOptions
 from pyspark.context import SparkContext
@@ -48,9 +49,10 @@ filter !isempty(kubernetes.pod_name)
     sum(pod_memory_request) as reserved_mem 
 by date,resource_id,project,app,instance
 '''
+print(f"Cloudwatch Log Insights Query: {queryString}.\n")
 while current_date <= end:
     next_date = current_date + datetime.timedelta(days=10)
-    print(current_date, next_date)
+    print(f"Get metrics from {current_date} to {next_date}.\n")
     res = cloudwatch.start_query(
         logGroupName=container_insights_loggroup,
         startTime=int(current_date.timestamp()),
@@ -76,26 +78,25 @@ while current_date <= end:
         	"usage_account": usage_account,
         }
         for f in r:
-            item[f.get("field")] = f.get("value")
+            if "cpu" in f.get("field") or "mem" in f.get("field"):
+                item[f.get("field")] = float(f.get("value"))
+            else:
+                item[f.get("field")] = f.get("value")
         if item["date"][:7]==f'{args["year"]}-{args["month"]}':
             result.append(item)
 
-    print(len(result))
-    print(res['statistics'])
-    print(res['status'])
+    print(f"Got {len(result)} items. Statistics: {res['statistics']}, Status: {res['status']}.\n")
     current_date = next_date
-print(result[:3])
 
 if result:
     df_eksmetrics = spark.read.json(sc.parallelize(result)).withColumn("date", to_timestamp("date"))
-    
     (df_eksmetrics.coalesce(1).write
         .mode("overwrite")
         .partitionBy(["usage_account","year","month","region"])
-        .option("path", f"s3://{work_bucket}/data/eksmetrics/res/")
-        .saveAsTable(f"{cur_database}.enhanced_cur_eksmetrics")
+        .option("path", f"s3://{work_bucket}/data/eksmetrics_cloudwatch/res/")
+        .saveAsTable(f"{cur_database}.enhanced_cur_eksmetrics_cloudwatch")
     )
-    print(f"Job finished. {len(result)} rows was written into table {cur_database}.enhanced_cur_eksmetrics")
+    print(f"Job finished. {len(result)} rows was written into table {cur_database}.enhanced_cur_eksmetrics_cloudwatch.\n")
 else:
     print(f"Result is empty.")
 job.commit()

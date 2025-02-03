@@ -10,20 +10,35 @@ AWS_REGION=<region>
 cd ~/AutoOps/3.EnhancedCUR
 STACK_NAME="AutoOpsEnhancedCUR"
 sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --confirm-changeset --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-    --parameter-overrides CURBucketName=${CURBucketName} WorkBucketName=${WorkBucketName} CURDatabase=${CURDatabase} \
+    --parameter-overrides CURBucketName=${CURBucketName} WorkBucketName=${WorkBucketName} CURDatabase=${CURDatabase} CURTable=${CURTable}\
+    SubnetId=${SubnetId} AvailabilityZone=${AvailabilityZone} SecurityGroupIdList=${SecurityGroupIdList} \
     --s3-bucket ${WorkBucketName} --s3-prefix script
 ```
 
 ## 2. Start
 
+### 2.1 Start the state machine
+``` bash
+STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`EnhanceCURStateMachine`].OutputValue' --output text)
+EXECUTION_ARN=$(aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --region $AWS_REGION --no-cli-pager --query 'executionArn' --output text)
+echo $EXECUTION_ARN
+```
+
+## 2.2 Check the execution of the state machine
+
+``` bash
+aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN --region $AWS_REGION --no-cli-pager
+```
+
+### 2.3 Start a glue job
+
 ``` bash
 GLUE_JOB_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`AllocateUntagJob`].OutputValue' --output text)
-
 JOB_RUN_ID=$(aws glue start-job-run --job-name $GLUE_JOB_NAME --region $AWS_REGION --no-cli-pager --output text --query 'JobRunId' --arguments '{"--enable-glue-datacatalog":"true", "--cur-database":"athenacurcfn_c_u_r_athena","--cur-table":"enhanced_cur","--work-bucket":"cur-597377428377","--year":"2024", "--month":"4", "--tags-fields":"resource_tags_user_project"}')
 echo $JOB_RUN_ID
 ```
 
-## 3. Check the execution
+### 2.4 Check the execution of glue jobs
 
 ``` bash
 aws glue get-job-run --job-name $GLUE_JOB_NAME --region $AWS_REGION --run-id  $JOB_RUN_ID --no-cli-pager
@@ -51,8 +66,15 @@ select
 	bill_payer_account_id as payer_account,
 	line_item_usage_account_id as usage_account,
 	case when bill_billing_entity='AWS' then 'AWS' else line_item_legal_entity end as billing_entity,
-	case when length(product_servicecode)>0 then product_servicecode when bill_billing_entity='AWS' then line_item_product_code else product_product_name end as service, 
-	case when bill_billing_entity='AWS' then line_item_product_code else product_product_name end as product,
+	case
+		when length(split_line_item_parent_resource_id)>0 then 'AmazonEC2' 
+		when length(product_servicecode)>0 then product_servicecode 
+		when bill_billing_entity='AWS' then line_item_product_code 
+		else product_product_name end as service, 
+	case
+		when length(split_line_item_parent_resource_id)>0 then 'AmazonEC2'  
+		when bill_billing_entity='AWS' then line_item_product_code 
+		else product_product_name end as product,
 	product_region as region,
 	product_location as location,
 	product_instance_type as instance_type,
@@ -127,7 +149,7 @@ docker run -it --rm \
     --verbose 0
 ```
 
-### 5.2 LoadEKSMetricsJob
+### 5.2 LoadCloudWatchEKSMetricsJob
 
 This job load eks resource metrics (cpu and memory reserved and actual usage) from CloudWatch ContainerInsights log group. 
 
@@ -161,7 +183,7 @@ docker run -it --rm \
     -p 18080:18080 \
     -p 4040:4040 \
     --name glue_spark_submit \
-    amazon/aws-glue-libs:glue_libs_4.0.0_image_01 spark-submit /home/glue_user/workspace/load_eksmetrics.py \
+    amazon/aws-glue-libs:glue_libs_4.0.0_image_01 spark-submit /home/glue_user/workspace/load_cloudwatch_eksmetrics.py \
     --work-bucket cur-597377428377 \
     --year 2024 \
     --month 12 \
@@ -170,6 +192,39 @@ docker run -it --rm \
     --usage-account $EKS_ACCOUNT \
     --region $EKS_REGION \
     --container-insights-loggroup $EKS_ContainerInsightLogGroup \
+    --verbose 0
+```
+
+### 5.3 LoadPrometheusEKSMetricsJob
+
+This job load eks resource metrics (cpu and memory reserved and actual usage) from CloudWatch ContainerInsights log group. 
+
+```promsql
+CPU: rate(container_cpu_usage_seconds_total{image!=""}[1h])*100*on(pod)group_left(label_app)kube_pod_labels
+Memory: container_memory_working_set_bytes{image!=""}*on(pod)group_left(label_app)kube_pod_labels
+NetworkIn: avg(kube_pod_info{host_network="false"})by(pod)*on(pod)group_right()increase(container_network_receive_bytes_total[1h])*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)
+NetworkOut: avg(kube_pod_info{host_network="false"})by(pod)*on(pod)group_right()increase(container_network_transmit_bytes_total[1h])*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)
+```
+
+**Run in local docker with following command**
+``` bash
+docker run -it --rm \
+    -v ~/.aws:/home/glue_user/.aws \
+    -v $(pwd)/:/home/glue_user/workspace/ \
+    -e DISABLE_SSL=true \
+    -e AWS_REGION=us-east-1 \
+    -p 18080:18080 \
+    -p 4040:4040 \
+    --name glue_spark_submit \
+    amazon/aws-glue-libs:glue_libs_4.0.0_image_01 spark-submit /home/glue_user/workspace/load_prometheus_eksmetrics.py \
+    --work-bucket cur-597377428377 \
+    --year 2024 \
+    --month 12 \
+    --enable-glue-datacatalog true \
+    --cur-database $CURDatabase \
+    --usage-account $EKS_ACCOUNT \
+    --region $EKS_REGION \
+    --prometheus-endpoint $EKS_Prometheus_Endpoint \
     --verbose 0
 ```
 
@@ -193,6 +248,8 @@ docker run -it --rm \
     --month 12 \
     --enable-glue-datacatalog true \
     --cur-database $CURDatabase \
+    --standardize-table enhanced_cur_standardize \
+    --eksmetrics-table enhanced_cur_eksmetrics_prometheus \
     --verbose 0
 ```
 
