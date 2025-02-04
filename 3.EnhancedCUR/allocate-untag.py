@@ -24,20 +24,28 @@ tags_fields = list(map(lambda x:x.strip(), args['tags_fields'].split(',')))
 # Load cost data
 sql = f'''
 select
-    year,
-    month,
-    charge_type,
-    billing_entity,
-    service, 
-    region,
-    instance_type,
-    instance_family,
-    database_engine,
-    usage_type,
-    usage_date,
-    usage_account,
-    resource_id,
-    {",".join(tags_fields)},
+	year,
+	month,
+	date,
+	charge_type,
+	payer_account,
+	usage_account,
+	billing_entity,
+	service, 
+	product,
+	region,
+	location,
+	instance_type,
+	instance_family,
+	database_engine,
+	volume_type,
+	usage_type,
+	description,
+	resource_id,
+	emr_job_flow_id,
+	project,
+	name,
+    app,
     sum(usage_amount) as usage_amount,
     sum(vcpus) as vcpus,
     sum(memory_gb) as memory_gb,
@@ -47,7 +55,7 @@ select
     sum(billing_cost) as billing_cost
 from {cur_database}.{cur_table}
 where year='{args["year"]}' and month='{int(args["month"])}' 
-group by {",".join(map(lambda x:str(x), range(1,len(tags_fields)+14)))}
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
 '''
 print(sql)
 # Replace null value with blank string "" in the original table
@@ -56,7 +64,7 @@ print(f'cost data have {len(df.columns)} columns: {sorted(df.columns)}')
 df.describe(['vcpus', 'memory_gb', 'ondemand_cost','amortized_cost','net_amortized_cost','billing_cost']).show(vertical=True)
 
 # Generate the powerset of tags_fields, which used to split the fields into allocated tags and allocating tags
-# Cost of blank "allocating tags" will be allocated to records with the same "allocated tags" and usage_date
+# Cost of blank "allocating tags" will be allocated to records with the same "allocated tags" and date
 # The powerset stores the "allocated tags", looks like: [ [], [tag1], [tag2], [tag1, tag2] ]
 tags_powerset = []
 for i in range(1 << len(tags_fields)):
@@ -66,7 +74,7 @@ i=0
 for allocated in tags_powerset[:-1]:
     i+=1
     allocating = set(tags_fields) - set(allocated)
-    print(f'Allocate cost of blank tags {allocating} to records with the same {allocated} and usage_date')
+    print(f'Allocate cost of blank tags {allocating} to records with the same {allocated} and date')
     # Mark the allocated records, the "tag_flag" is true if any allocating tag is not blank
     df = df.withColumn("tag_flag", lit(False))
     for t in allocating:
@@ -81,7 +89,7 @@ for allocated in tags_powerset[:-1]:
                 .withColumn("net_amortized_cost_without_tag", when(~col("tag_flag"), col("net_amortized_cost")).otherwise(0))
                 .withColumn("billing_cost_with_tag", when(col("tag_flag"), col("billing_cost")).otherwise(0))
                 .withColumn("billing_cost_without_tag", when(~col("tag_flag"), col("billing_cost")).otherwise(0))
-                .groupBy(allocated+["usage_date"])
+                .groupBy(allocated+["date"])
                 .agg({
                     'ondemand_cost_with_tag': 'sum',
                     'ondemand_cost_without_tag': 'sum',
@@ -95,7 +103,7 @@ for allocated in tags_powerset[:-1]:
     )
     # Join the sumtable and caculate the allocated cost
     df = (df
-          .join(sumtable, allocated+["usage_date"], "left")
+          .join(sumtable, allocated+["date"], "left")
           .withColumn("allocated_ondemand_cost", when(col("tag_flag"), col("ondemand_cost")+col("ondemand_cost")*col("sum(ondemand_cost_without_tag)")/col("sum(ondemand_cost_with_tag)")).when(col("sum(ondemand_cost_with_tag)")==0, col("ondemand_cost")).otherwise(0))
           .withColumn("allocated_amortized_cost", when(col("tag_flag"), col("amortized_cost")+col("amortized_cost")*col("sum(amortized_cost_without_tag)")/col("sum(amortized_cost_with_tag)")).when(col("sum(amortized_cost_with_tag)")==0, col("amortized_cost")).otherwise(0))
           .withColumn("allocated_net_amortized_cost", when(col("tag_flag"), col("net_amortized_cost")+col("net_amortized_cost")*col("sum(net_amortized_cost_without_tag)")/col("sum(net_amortized_cost_with_tag)")).when(col("sum(net_amortized_cost_with_tag)")==0, col("net_amortized_cost")).otherwise(0))

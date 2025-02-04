@@ -260,13 +260,35 @@ Resources:
         AllocateEksJob: !Ref AllocateEksJob
         AllocateUntagJob: !Ref AllocateUntagJob
       Events:
-        ScheduleEvent:
+        DailyEvent:
           Type: Schedule
           Properties:
             Schedule: "rate(12 hours)"
-
+            
+  StartupFunction:
+    Type: 'AWS::Serverless::Function'
+    Properties:
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 300
+      CodeUri: Startup
+      Policies:
+      - StepFunctionsExecutionPolicy:
+          StateMachineName: !GetAtt EnhanceCURStateMachine.Name
+      Environment:
+        Variables:
+          EnhanceCURStateMachineArn: !Ref EnhanceCURStateMachine
+      Events:
+        MonthlyEvent:
+          Type: Schedule
+          Properties:
+            Schedule: "cron(0 0 4 * ? *)"
 
 Outputs:
+  StartupFunction:
+    Description: "StartupFuntion name"
+    Value: !Ref StartupFunction 
   EnhanceCURStateMachine:
     Description: "StateMachine ARN"
     Value: !Ref EnhanceCURStateMachine 

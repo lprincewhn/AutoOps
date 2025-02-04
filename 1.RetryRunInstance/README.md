@@ -25,12 +25,13 @@ sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --paramete
 
 ``` bash
 LAMBDA_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`RunInstanceFunction`].OutputValue' --output text)
-aws lambda invoke --region ap-northeast-1 --function-name $LAMBDA_NAME out.log
+aws lambda invoke /tmp/response.json --region ap-northeast-1 --function-name $LAMBDA_NAME
 ```
 
 ## Check the execution
 
 ``` bash
+cat /tmp/response.json
 aws logs tail /aws/lambda/${LAMBDA_NAME} --region ${AWS_REGION} --follow
 ```
 

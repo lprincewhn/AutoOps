@@ -20,17 +20,29 @@ sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --confirm-
 ### 2.1 Start the state machine
 ``` bash
 STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`EnhanceCURStateMachine`].OutputValue' --output text)
-EXECUTION_ARN=$(aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --region $AWS_REGION --no-cli-pager --query 'executionArn' --output text)
+EXECUTION_ARN=$(aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --region $AWS_REGION --no-cli-pager --query 'executionArn' --input '{"time": "2025-02-03T07:58:40Z"}' --output text)
 echo $EXECUTION_ARN
 ```
 
-## 2.2 Check the execution of the state machine
+### 2.2 Check the execution of the state machine
 
 ``` bash
 aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN --region $AWS_REGION --no-cli-pager
 ```
 
-### 2.3 Start a glue job
+### 2.3 Invoke the lamba to start the state machine for last or specific month
+```
+LAMBDA_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`StartupFunction`].OutputValue' --output text)
+aws lambda invoke /tmp/response.json --function-name ${LAMBDA_NAME} --region $AWS_REGION --payload '{"year":"2024", "month":"12"}' --cli-binary-format raw-in-base64-out 
+```
+
+### 2.4 Check the execution of the lambda function
+``` bash
+cat /tmp/response.json
+aws logs tail /aws/lambda/${LAMBDA_NAME} --region ${AWS_REGION} --follow
+```
+
+### 2.5 Start a glue job
 
 ``` bash
 GLUE_JOB_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`AllocateUntagJob`].OutputValue' --output text)
@@ -38,7 +50,7 @@ JOB_RUN_ID=$(aws glue start-job-run --job-name $GLUE_JOB_NAME --region $AWS_REGI
 echo $JOB_RUN_ID
 ```
 
-### 2.4 Check the execution of glue jobs
+### 2.6 Check the execution of glue jobs
 
 ``` bash
 aws glue get-job-run --job-name $GLUE_JOB_NAME --region $AWS_REGION --run-id  $JOB_RUN_ID --no-cli-pager
@@ -157,7 +169,7 @@ This job load eks resource metrics (cpu and memory reserved and actual usage) fr
 filter !isempty(kubernetes.pod_name) 
 | fields datefloor(Timestamp, 1h) as date, 
     concat(InstanceId,":pod/",ClusterName,"/",kubernetes.namespace_name,"/",kubernetes.pod_name) as resource_id, 
-    kubernetes.labels.app as name, 
+    kubernetes.labels.app as app, 
     kubernetes.labels.project as project, 
     InstanceId as instance 
 | stats min(Timestamp) as start_time, 
@@ -271,7 +283,7 @@ docker run -it --rm \
     --work-bucket cur-597377428377 \
     --year 2024 \
     --month 12 \
-    --tags-fields project,name
+    --tags-fields name
     --enable-glue-datacatalog true \
     --cur-database $CURDatabase \
     --verbose 0
