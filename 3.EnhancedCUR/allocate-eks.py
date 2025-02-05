@@ -42,7 +42,7 @@ select
     '1' as eks_flag
 from {cur_database}.{eksmetrics_table}
 where year='{int(args["year"])}' and month='{int(args["month"])}' 
-group by 1,2,3,4,5,6,7,8
+group by 1,2,3,4,5,6,7,8,9,10
 '''
 print(f"Load EKS metric with SQL: {eks_sql}\n")
 df_eks = (spark.sql(eks_sql).fillna("")
@@ -159,7 +159,13 @@ if debug:
 # Clean unused columns and merge back to cost data.
 df = (df
         .drop("instance","actual_cpu","actual_mem","reserved_cpu","reserved_mem","samples","eks_flag","sum(eks_flag)","cpu_usage","sum(cpu_usage)","mem_usage","sum(mem_usage)", "cpu_cost_ratio")
-        .unionByName(df_cost_eks_flag.filter(col("eks_flag")!=1).drop("sum(eks_flag)","eks_flag").withColumn("eks_cluster_name", "eks_namespace", "eks_app", lit("")))
+        .unionByName(df_cost_eks_flag
+            .filter(col("eks_flag")!=1)
+            .drop("sum(eks_flag)","eks_flag")
+            .withColumn("eks_cluster_name", lit(""))
+            .withColumn("eks_namespace", lit(""))
+            .withColumn("eks_app", lit(""))
+        )
 )
 print(f'Cost data with allocated eks cost have {len(df.columns)} columns: {sorted(df.columns)}\n')
 df.describe(['vcpus', 'memory_gb', 'ondemand_cost','amortized_cost','net_amortized_cost','billing_cost']).show(vertical=True)
