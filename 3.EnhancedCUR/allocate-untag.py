@@ -45,7 +45,9 @@ select
 	emr_job_flow_id,
 	project,
 	name,
-    app,
+	eks_cluster_name,
+	eks_namespace,
+    eks_app,
     sum(usage_amount) as usage_amount,
     sum(vcpus) as vcpus,
     sum(memory_gb) as memory_gb,
@@ -55,7 +57,7 @@ select
     sum(billing_cost) as billing_cost
 from {cur_database}.{cur_table}
 where year='{args["year"]}' and month='{int(args["month"])}' 
-group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24
 '''
 print(sql)
 # Replace null value with blank string "" in the original table
