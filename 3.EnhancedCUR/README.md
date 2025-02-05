@@ -209,10 +209,17 @@ docker run -it --rm \
 This job load eks resource metrics (cpu and memory reserved and actual usage) from CloudWatch ContainerInsights log group. 
 
 ```promsql
-CPU: rate(container_cpu_usage_seconds_total{image!=""}[1h])*100*on(pod)group_left(label_app)kube_pod_labels
-Memory: container_memory_working_set_bytes{image!=""}*on(pod)group_left(label_app)kube_pod_labels
-NetworkIn: avg(kube_pod_info{host_network="false"})by(pod)*on(pod)group_right()increase(container_network_receive_bytes_total[1h])*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)
-NetworkOut: avg(kube_pod_info{host_network="false"})by(pod)*on(pod)group_right()increase(container_network_transmit_bytes_total[1h])*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)
+CPU:
+sum(rate(container_cpu_usage_seconds_total{image!=""}[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*100*on(pod)group_left(label_app)kube_pod_labels
+
+Memory: 
+sum(container_memory_working_set_bytes{image!=""})by(topology_kubernetes_io_region, csi_volume_kubernetes_io_nodeid, alpha_eksctl_io_cluster_name, namespace, pod)*on(pod)group_left(label_app)kube_pod_labels
+
+NetworkIn: 
+avg(kube_pod_info{host_network="false"})by(pod)*on(pod)group_right()sum(increase(container_network_receive_bytes_total[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)
+
+NetworkOut: 
+avg(kube_pod_info{host_network="false"})by(pod)*on(pod)group_right()sum(increase(container_network_transmit_bytes_total[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)
 ```
 
 **Run in local docker with following command**

@@ -35,7 +35,7 @@ while current_date <= end:
     next_date = current_date + datetime.timedelta(days=10)
     print(f"Get metrics from {current_date} to {next_date}.\n")
     
-    queryUrl=f'{prometheus_endpoint}/api/v1/query_range?query=rate(container_cpu_usage_seconds_total{{image!=""}}[1h])*100*on(pod)group_left(label_app)kube_pod_labels&start={current_date:%Y-%m-%dT%H:%M:%SZ}&end={next_date:%Y-%m-%dT%H:%M:%SZ}&step=3600s'
+    queryUrl=f'{prometheus_endpoint}/api/v1/query_range?query=sum(rate(container_cpu_usage_seconds_total{{image!=""}}[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*100*on(pod)group_left(label_app)kube_pod_labels&start={current_date:%Y-%m-%dT%H:%M:%SZ}&end={next_date:%Y-%m-%dT%H:%M:%SZ}&step=3600s'
     print(f"CPU Query URL: {queryUrl}.\n")
     response = requests.get(queryUrl, timeout=5)
     if response.json()["status"]=="success":
@@ -44,16 +44,18 @@ while current_date <= end:
             month = f'{int(args["month"])}'
             region = r["metric"].get("topology_kubernetes_io_region", "")
             instance = json.loads(r["metric"].get("csi_volume_kubernetes_io_nodeid", '{"ebs.csi.aws.com":""}')).get("ebs.csi.aws.com", "")
-            app = r["metric"].get("label_app", "")
-            resource_id = f'{instance}:pod/{r["metric"].get("alpha_eksctl_io_cluster_name", "")}/{r["metric"].get("namespace", "")}/{r["metric"].get("pod", "")}'
+            eks_cluster_name = r["metric"].get("alpha_eksctl_io_cluster_name", "")
+            eks_namespace = r["metric"].get("namespace", "")
+            eks_app = r["metric"].get("label_app", "")
+            resource_id = f'{instance}:pod/{eks_cluster_name}/{eks_namespace}/{r["metric"].get("pod", "")}'
             for v in r["values"]:
                 date = f'{datetime.datetime.fromtimestamp(v[0])-datetime.timedelta(hours=1):%Y-%m-%dT%H:%M:%SZ}'
-                if not result_dict.get((year, month, date, usage_account, region, instance, app, resource_id)):
-                    result_dict[(year, month, date, usage_account, region, instance, app, resource_id)] = {}
-                cpu = result_dict[(year, month, date, usage_account, region, instance, app, resource_id)].get("cpu", 0)
-                result_dict[(year, month, date, usage_account, region, instance, app, resource_id)]["cpu"] = cpu + float(v[1])
+                if not result_dict.get((year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)):
+                    result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)] = {}
+                cpu = result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)].get("cpu", 0)
+                result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)]["cpu"] = cpu + float(v[1])
 
-    queryUrl=f'{prometheus_endpoint}/api/v1/query_range?query=container_memory_working_set_bytes{{image!=""}}*on(pod)group_left(label_app)kube_pod_labels&start={current_date:%Y-%m-%dT%H:%M:%SZ}&end={next_date:%Y-%m-%dT%H:%M:%SZ}&step=3600s'
+    queryUrl=f'{prometheus_endpoint}/api/v1/query_range?sum(container_memory_working_set_bytes{{image!=""}})by(topology_kubernetes_io_region, csi_volume_kubernetes_io_nodeid, alpha_eksctl_io_cluster_name, namespace, pod)*on(pod)group_left(label_app)kube_pod_labels&start={current_date:%Y-%m-%dT%H:%M:%SZ}&end={next_date:%Y-%m-%dT%H:%M:%SZ}&step=3600s'
     print(f"Memory Query URL: {queryUrl}.\n")
     response = requests.get(queryUrl, timeout=5)    
     if response.json()["status"]=="success":
@@ -62,14 +64,16 @@ while current_date <= end:
             month = f'{int(args["month"])}'
             region = r["metric"].get("topology_kubernetes_io_region", "")
             instance = json.loads(r["metric"].get("csi_volume_kubernetes_io_nodeid", '{"ebs.csi.aws.com":""}')).get("ebs.csi.aws.com", "")
-            app = r["metric"].get("label_app", "")
-            resource_id = f'{instance}:pod/{r["metric"].get("alpha_eksctl_io_cluster_name", "")}/{r["metric"].get("namespace", "")}/{r["metric"].get("pod", "")}'
+            eks_cluster_name = r["metric"].get("alpha_eksctl_io_cluster_name", "")
+            eks_namespace = r["metric"].get("namespace", "")
+            eks_app = r["metric"].get("label_app", "")
+            resource_id = f'{instance}:pod/{eks_cluster_name}/{eks_namespace}/{r["metric"].get("pod", "")}'
             for v in r["values"]:
                 date = f'{datetime.datetime.fromtimestamp(v[0])-datetime.timedelta(hours=1):%Y-%m-%dT%H:%M:%SZ}'
-                memory = result_dict[(year, month, date, usage_account, region, instance, app, resource_id)].get("memory", 0)
-                result_dict[(year, month, date, usage_account, region, instance, app, resource_id)]["memory"] = memory + float(v[1])
+                memory = result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)].get("memory", 0)
+                result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)]["memory"] = memory + float(v[1])
 
-    queryUrl=f'{prometheus_endpoint}/api/v1/query_range?query=avg(kube_pod_info{{host_network="false"}})by(pod)*on(pod)group_right()increase(container_network_receive_bytes_total[1h])*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)&start={current_date:%Y-%m-%dT%H:%M:%SZ}&end={next_date:%Y-%m-%dT%H:%M:%SZ}&step=3600s'
+    queryUrl=f'{prometheus_endpoint}/api/v1/query_range?query=avg(kube_pod_info{{host_network="false"}})by(pod)*on(pod)group_right()sum(increase(container_network_receive_bytes_total[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)&start={current_date:%Y-%m-%dT%H:%M:%SZ}&end={next_date:%Y-%m-%dT%H:%M:%SZ}&step=3600s'
     print(f"Network BytesIn Query URL: {queryUrl}.\n")
     response = requests.get(queryUrl, timeout=5)    
     if response.json()["status"]=="success":
@@ -78,14 +82,16 @@ while current_date <= end:
             month = f'{int(args["month"])}'
             region = r["metric"].get("topology_kubernetes_io_region", "")
             instance = json.loads(r["metric"].get("csi_volume_kubernetes_io_nodeid", '{"ebs.csi.aws.com":""}')).get("ebs.csi.aws.com", "")
-            app = r["metric"].get("label_app", "")
-            resource_id = f'{instance}:pod/{r["metric"].get("alpha_eksctl_io_cluster_name", "")}/{r["metric"].get("namespace", "")}/{r["metric"].get("pod", "")}'
+            eks_cluster_name = r["metric"].get("alpha_eksctl_io_cluster_name", "")
+            eks_namespace = r["metric"].get("namespace", "")
+            eks_app = r["metric"].get("label_app", "")
+            resource_id = f'{instance}:pod/{eks_cluster_name}/{eks_namespace}/{r["metric"].get("pod", "")}'
             for v in r["values"]:
                 date = f'{datetime.datetime.fromtimestamp(v[0])-datetime.timedelta(hours=1):%Y-%m-%dT%H:%M:%SZ}'
-                networkin = result_dict[(year, month, date, usage_account, region, instance, app, resource_id)].get("networkin", 0)
-                result_dict[(year, month, date, usage_account, region, instance, app, resource_id)]["networkin"] = networkin + float(v[1])
+                networkin = result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)].get("networkin", 0)
+                result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)]["networkin"] = networkin + float(v[1])
 
-    queryUrl=f'{prometheus_endpoint}/api/v1/query_range?query=avg(kube_pod_info{{host_network="false"}})by(pod)*on(pod)group_right()increase(container_network_transmit_bytes_total[1h])*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)&start={current_date:%Y-%m-%dT%H:%M:%SZ}&end={next_date:%Y-%m-%dT%H:%M:%SZ}&step=3600s'
+    queryUrl=f'{prometheus_endpoint}/api/v1/query_range?query=avg(kube_pod_info{{host_network="false"}})by(pod)*on(pod)group_right()sum(increase(container_network_transmit_bytes_total[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)&start={current_date:%Y-%m-%dT%H:%M:%SZ}&end={next_date:%Y-%m-%dT%H:%M:%SZ}&step=3600s'
     print(f"Network BytesOut Query URL: {queryUrl}.\n")
     response = requests.get(queryUrl, timeout=5)    
     if response.json()["status"]=="success":
@@ -94,12 +100,14 @@ while current_date <= end:
             month = f'{int(args["month"])}'
             region = r["metric"].get("topology_kubernetes_io_region", "")
             instance = json.loads(r["metric"].get("csi_volume_kubernetes_io_nodeid", '{"ebs.csi.aws.com":""}')).get("ebs.csi.aws.com", "")
-            app = r["metric"].get("label_app", "")
-            resource_id = f'{instance}:pod/{r["metric"].get("alpha_eksctl_io_cluster_name", "")}/{r["metric"].get("namespace", "")}/{r["metric"].get("pod", "")}'
+            eks_cluster_name = r["metric"].get("alpha_eksctl_io_cluster_name", "")
+            eks_namespace = r["metric"].get("namespace", "")
+            eks_app = r["metric"].get("label_app", "")
+            resource_id = f'{instance}:pod/{eks_cluster_name}/{eks_namespace}/{r["metric"].get("pod", "")}'
             for v in r["values"]:
                 date = f'{datetime.datetime.fromtimestamp(v[0])-datetime.timedelta(hours=1):%Y-%m-%dT%H:%M:%SZ}'
-                networkout = result_dict[(year, month, date, usage_account, region, instance, app, resource_id)].get("networkout", 0)
-                result_dict[(year, month, date, usage_account, region, instance, app, resource_id)]["networkin"] = networkout + float(v[1])
+                networkout = result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)].get("networkout", 0)
+                result_dict[(year, month, date, usage_account, region, instance, eks_cluster_name, eks_namespace, eks_app, resource_id)]["networkin"] = networkout + float(v[1])
                 
     current_date = next_date
 

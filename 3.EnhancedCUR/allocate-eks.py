@@ -31,7 +31,9 @@ select
     usage_account,
     resource_id,
     instance,
-    app,
+    eks_cluster_name,
+    eks_namespace,
+    eks_app,
     sum(actual_cpu) as actual_cpu,
     sum(actual_mem) as actual_mem,
     sum(0) as reserved_cpu,
@@ -157,7 +159,7 @@ if debug:
 # Clean unused columns and merge back to cost data.
 df = (df
         .drop("instance","actual_cpu","actual_mem","reserved_cpu","reserved_mem","samples","eks_flag","sum(eks_flag)","cpu_usage","sum(cpu_usage)","mem_usage","sum(mem_usage)", "cpu_cost_ratio")
-        .unionByName(df_cost_eks_flag.filter(col("eks_flag")!=1).drop("sum(eks_flag)","eks_flag").withColumn("app", lit("")))
+        .unionByName(df_cost_eks_flag.filter(col("eks_flag")!=1).drop("sum(eks_flag)","eks_flag").withColumn("eks_cluster_name", "eks_namespace", "eks_app", lit("")))
 )
 print(f'Cost data with allocated eks cost have {len(df.columns)} columns: {sorted(df.columns)}\n')
 df.describe(['vcpus', 'memory_gb', 'ondemand_cost','amortized_cost','net_amortized_cost','billing_cost']).show(vertical=True)
