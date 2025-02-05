@@ -17,55 +17,52 @@ sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --confirm-
 
 ## 2. Start
 
-### 2.1 Start the state machine
+### Option 1: Start the state machine 
+
 ``` bash
+# Start
 STATE_MACHINE_ARN=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`EnhanceCURStateMachine`].OutputValue' --output text)
 EXECUTION_ARN=$(aws stepfunctions start-execution --state-machine-arn $STATE_MACHINE_ARN --region $AWS_REGION --no-cli-pager --query 'executionArn' --input '{"time": "2025-02-03T07:58:40Z"}' --output text)
 echo $EXECUTION_ARN
-```
 
-### 2.2 Check the execution of the state machine
-
-``` bash
+# Check the execution
 aws stepfunctions describe-execution --execution-arn $EXECUTION_ARN --region $AWS_REGION --no-cli-pager
 ```
 
-### 2.3 Invoke the lamba to start the state machine for last or specific month
-```
+### Option 2: Invoke the lamba to start the state machine for last or specific month
+
+``` bash
+# Start
 LAMBDA_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`StartupFunction`].OutputValue' --output text)
 aws lambda invoke /tmp/response.json --function-name ${LAMBDA_NAME} --region $AWS_REGION --payload '{"year":"2024", "month":"12"}' --cli-binary-format raw-in-base64-out 
-```
 
-### 2.4 Check the execution of the lambda function
-``` bash
+# Check the execution
 cat /tmp/response.json
 aws logs tail /aws/lambda/${LAMBDA_NAME} --region ${AWS_REGION} --follow
 ```
 
-### 2.5 Start a glue job
+### Option 3: Start a glue job
 
 ``` bash
+# Start
 GLUE_JOB_NAME=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager --query 'Stacks[0].Outputs[?OutputKey==`AllocateUntagJob`].OutputValue' --output text)
 JOB_RUN_ID=$(aws glue start-job-run --job-name $GLUE_JOB_NAME --region $AWS_REGION --no-cli-pager --output text --query 'JobRunId' --arguments '{"--enable-glue-datacatalog":"true", "--cur-database":"athenacurcfn_c_u_r_athena","--cur-table":"enhanced_cur","--work-bucket":"cur-597377428377","--year":"2024", "--month":"4", "--tags-fields":"resource_tags_user_project"}')
 echo $JOB_RUN_ID
-```
 
-### 2.6 Check the execution of glue jobs
-
-``` bash
+# Check the execution
 aws glue get-job-run --job-name $GLUE_JOB_NAME --region $AWS_REGION --run-id  $JOB_RUN_ID --no-cli-pager
 aws logs tail /aws-glue/jobs/output --region $AWS_REGION --follow
 ```
 
-## 4. Uninstall
+## 3. Uninstall
 
 ```bash
 aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager
 ```
 
-## 5. Introduction of Jobs
+## 4. Introduction of Jobs
 
-### 5.1 StandardizeJob
+### 4.1 StandardizeJob
 
 This job generates tables with 20 dimensions and 8 mesurements with following SQL. You can add more dimensions with other tags, such as 'Project'.
 
@@ -161,7 +158,7 @@ docker run -it --rm \
     --verbose 0
 ```
 
-### 5.2 LoadCloudWatchEKSMetricsJob
+### 4.2 LoadCloudWatchEKSMetricsJob
 
 This job load eks resource metrics (cpu and memory reserved and actual usage) from CloudWatch ContainerInsights log group. 
 
@@ -207,7 +204,7 @@ docker run -it --rm \
     --verbose 0
 ```
 
-### 5.3 LoadPrometheusEKSMetricsJob
+### 4.3 LoadPrometheusEKSMetricsJob
 
 This job load eks resource metrics (cpu and memory reserved and actual usage) from CloudWatch ContainerInsights log group. 
 
@@ -240,7 +237,7 @@ docker run -it --rm \
     --verbose 0
 ```
 
-### 5.3 AllocateEksJob
+### 4.4 AllocateEksJob
 
 This Job allocates the EC2 instance cost of EKS cluster to pod according its cpu and memory reserved and actual usage.
 
@@ -265,7 +262,7 @@ docker run -it --rm \
     --verbose 0
 ```
 
-### 5.4 AllocateUntagJob
+### 4.5 AllocateUntagJob
 
 This Job allocates untagged cost.
 
@@ -289,7 +286,7 @@ docker run -it --rm \
     --verbose 0
 ```
 
-## 6. Tunning jobs in loal Jupyter Notebook    
+## 5. Tunning jobs in loal Jupyter Notebook    
 
 ``` bash
 docker run -it --rm \
