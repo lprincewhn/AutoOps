@@ -34,7 +34,9 @@ queryString = f'''
 filter !isempty(kubernetes.pod_name) 
 | fields datefloor(Timestamp, 1h) as date, 
     concat(InstanceId,":pod/",ClusterName,"/",kubernetes.namespace_name,"/",kubernetes.pod_name) as resource_id, 
-    kubernetes.labels.app as app, 
+    ClusterName as eks_cluster_name,
+    kubernetes.namespace_name as eks_namespace,
+    kubernetes.labels.app as eks_app, 
     kubernetes.labels.project as project, 
     InstanceId as instance 
 | stats min(Timestamp) as start_time, 

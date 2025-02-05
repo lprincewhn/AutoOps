@@ -15,7 +15,7 @@ States:
     Type: Task
     Resource: arn:aws:states:::glue:startJobRun.sync
     Parameters:
-      JobName: '${LoadCloudWatchEKSMetricsJob}'
+      JobName: '${LoadPrometheusEKSMetricsJob}'
       Arguments:
         --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
         --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
