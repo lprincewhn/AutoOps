@@ -69,14 +69,14 @@ cat data-set-direct.json \
 | sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set.json
 CUR_DIRECT_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --import-mode DIRECT_QUERY --name "CUR DIRECT" --cli-input-json file:///tmp/create-data-set.json)
 
-# DataSet (CUR_Dimensions)
-cat data-set-dimemsions.json \
+# DataSet (CUR_Fields)
+cat data-set-fields.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
 | sed "s/{{DataSourceId}}/${DataSourceId}/g" \
 | sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set-dimensions.json
-CUR_Dimensions_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --cli-input-json file:///tmp/create-data-set-dimensions.json)
+CUR_Fields_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --cli-input-json file:///tmp/create-data-set-dimensions.json)
 ```
 
 4. Create Analysis
@@ -87,7 +87,7 @@ cat analysis.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
+| sed "s/{{CUR_Fields_DataSetId}}/${CUR_Fields_DataSetId}/g" \
 | sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
 | sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
 | sed "s/{{AnalysisId}}/$(uuidgen)/g" > /tmp/create-analysis.json
@@ -98,8 +98,7 @@ AnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-page
 ### Export as CloudFormation Template
 ``` bash
 ExportJobId=$(aws quicksight start-asset-bundle-export-job --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --asset-bundle-export-job-id $(uuidgen) \
-	--resource-arns arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:analysis/${InterSheetAnalysisId} \
-	arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:analysis/${IntraSheetAnalysisId} \
+	--resource-arns arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:analysis/${AnalysisId} \
 	--include-all-dependencies --include-permissions --export-format CLOUDFORMATION_JSON --query 'AssetBundleExportJobId' \
 	--cloud-formation-override-property-configuration '{"ResourceIdOverrideConfiguration": {"PrefixForAllResources":true}}')
 DownloadUrl=$(aws quicksight describe-asset-bundle-export-job  --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --output text --asset-bundle-export-job-id ${ExportJobId} --query 'DownloadUrl')
@@ -115,9 +114,8 @@ sam build --template-file ./cfn.json && sam deploy --template-file ./cfn.json --
 
 ### Uninstall with AWSCLI
 ``` bash
-aws quicksight delete-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --analysis-id ${InterSheetAnalysisId}
-aws quicksight delete-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --analysis-id ${IntraSheetAnalysisId}
-aws quicksight delete-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-set-id ${CUR_Dimensions_DataSetId}
+aws quicksight delete-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --analysis-id ${AnalysisId}
+aws quicksight delete-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-set-id ${CUR_Fields_DataSetId}
 aws quicksight delete-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-set-id ${CUR_DIRECT_DataSetId}
 aws quicksight delete-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-set-id ${CUR_SPICE_DataSetId}
 aws quicksight delete-data-source --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --no-cli-pager --data-source-id ${DataSourceId}
@@ -140,8 +138,8 @@ cp data-set-spice.json bk-data-set-spice.json
 aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_SPICE_DataSetId} --no-cli-pager --query 'DataSet' > data-set-spice.json
 cp data-set-direct.json bk-data-set-direct.json
 aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_DIRECT_DataSetId} --no-cli-pager --query 'DataSet' > data-set-direct.json
-cp data-set-dimemsions.json bk-data-set-dimemsions.json
-aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_Dimensions_DataSetId} --no-cli-pager --query 'DataSet' > data-set-dimemsions.json
+cp data-set-fields.json bk-data-set-fields.json
+aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_Fields_DataSetId} --no-cli-pager --query 'DataSet' > data-set-fields.json
 # Update above files to add AwsAccountId, DataSetId, Permissions, DataSourceArn, remove LogicalTableMap, OutputColumns, SubType
 ```
 
@@ -154,7 +152,7 @@ TemplateId=$(cat create-template.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
+| sed "s/{{CUR_Fields_DataSetId}}/${CUR_Fields_DataSetId}/g" \
 | sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
 | sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
 | sed "s/{{AnalysisId}}/${AnalysisId}/g" \
@@ -179,7 +177,7 @@ DashboardId=$(cat create-dashboard-by-template.json \
 | sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Dimensions_DataSetId}}/${CUR_Dimensions_DataSetId}/g" \
+| sed "s/{{CUR_Fields_DataSetId}}/${CUR_Fields_DataSetId}/g" \
 | sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
 | sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
 | sed "s/{{SourceRegion}}/${SourceRegion}/g" \

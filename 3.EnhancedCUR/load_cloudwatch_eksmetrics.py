@@ -49,7 +49,7 @@ filter !isempty(kubernetes.pod_name)
     sum(pod_memory_working_set) as actual_mem,
     count(pod_memory_request) as reserved_mem_cnt, 
     sum(pod_memory_request) as reserved_mem 
-by date,resource_id,project,app,instance
+by date,resource_id,project,eks_cluster_name,eks_namespace,eks_app,instance
 '''
 print(f"Cloudwatch Log Insights Query: {queryString}.\n")
 while current_date <= end:

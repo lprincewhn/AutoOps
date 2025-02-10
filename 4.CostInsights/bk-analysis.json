@@ -2,6 +2,20 @@
     "AwsAccountId": "{{AwsAccountId}}",
     "AnalysisId": "{{AnalysisId}}",
     "Name": "Cost Insights",
+    "Permissions": [
+        {
+            "Principal": "{{QuickSightUser}}",
+            "Actions": [
+                "quicksight:RestoreAnalysis",
+                "quicksight:UpdateAnalysisPermissions",
+                "quicksight:DeleteAnalysis",
+                "quicksight:DescribeAnalysisPermissions",
+                "quicksight:QueryAnalysis",
+                "quicksight:DescribeAnalysis",
+                "quicksight:UpdateAnalysis"
+            ]
+        }
+    ],
     "Definition": {
         "DataSetIdentifierDeclarations": [
             {
@@ -10,11 +24,11 @@
             },
             {
                 "Identifier": "CUR_Dimensions",
-                "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_DIRECT_DataSetId}}"
+                "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_Dimensions_DataSetId}}"
             },
             {
                 "Identifier": "CUR_DIRECT",
-                "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_Dimensions_DataSetId}}"
+                "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_DIRECT_DataSetId}}"
             }
         ],
         "Sheets": [
@@ -139,13 +153,13 @@
                                         "Category": [
                                             {
                                                 "DateDimensionField": {
-                                                    "FieldId": "cur.date.0.1725398745245",
+                                                    "FieldId": "cur.date.2.1734444979859",
                                                     "Column": {
                                                         "DataSetIdentifier": "CUR_SPICE",
                                                         "ColumnName": "date"
                                                     },
                                                     "DateGranularity": "MONTH",
-                                                    "HierarchyId": "cur.date.0.1725398745245"
+                                                    "HierarchyId": "cur.date.2.1734444979859"
                                                 }
                                             }
                                         ],
@@ -203,7 +217,7 @@
                                     "CategorySort": [
                                         {
                                             "FieldSort": {
-                                                "FieldId": "cur.date.0.1725398745245",
+                                                "FieldId": "cur.date.2.1734444979859",
                                                 "Direction": "ASC"
                                             }
                                         }
@@ -211,6 +225,14 @@
                                     "CategoryItemsLimit": {
                                         "OtherCategories": "INCLUDE"
                                     },
+                                    "ColorSort": [
+                                        {
+                                            "FieldSort": {
+                                                "FieldId": "cur.instance_family.2.1725866497072",
+                                                "Direction": "DESC"
+                                            }
+                                        }
+                                    ],
                                     "ColorItemsLimit": {
                                         "OtherCategories": "INCLUDE"
                                     },
@@ -236,12 +258,6 @@
                                         "TooltipFields": [
                                             {
                                                 "FieldTooltipItem": {
-                                                    "FieldId": "cur.date.0.1725398745245",
-                                                    "Visibility": "VISIBLE"
-                                                }
-                                            },
-                                            {
-                                                "FieldTooltipItem": {
                                                     "FieldId": "cur.instance_family.2.1725866497072",
                                                     "Visibility": "VISIBLE"
                                                 }
@@ -251,6 +267,12 @@
                                                     "FieldId": "63028fcb-9677-46fe-9d9c-fc3360372274.2.1734325577013",
                                                     "Visibility": "VISIBLE"
                                                 }
+                                            },
+                                            {
+                                                "FieldTooltipItem": {
+                                                    "FieldId": "cur.date.2.1734444979859",
+                                                    "Visibility": "VISIBLE"
+                                                }
                                             }
                                         ]
                                     }
@@ -258,8 +280,8 @@
                             },
                             "Actions": [
                                 {
-                                    "CustomActionId": "241bffdd-bd7b-453a-8594-d3fb185033ec",
-                                    "Name": "Customized Drilldown",
+                                    "CustomActionId": "0f060370-65c9-4aa7-9258-10cf748af1e8",
+                                    "Name": "DrillDown",
                                     "Status": "ENABLED",
                                     "Trigger": "DATA_POINT_CLICK",
                                     "ActionOperations": [
@@ -281,19 +303,6 @@
                                                                 "CustomValues": {
                                                                     "StringValues": [
                                                                         "Service"
-                                                                    ]
-                                                                }
-                                                            }
-                                                        }
-                                                    },
-                                                    {
-                                                        "DestinationParameterName": "Dim1Filter",
-                                                        "Value": {
-                                                            "CustomValuesConfiguration": {
-                                                                "IncludeNullValue": false,
-                                                                "CustomValues": {
-                                                                    "StringValues": [
-                                                                        "Database"
                                                                     ]
                                                                 }
                                                             }
@@ -332,7 +341,7 @@
                                                                 "IncludeNullValue": false,
                                                                 "CustomValues": {
                                                                     "StringValues": [
-                                                                        "DatabaseEngine"
+                                                                        "DatabaseEngind"
                                                                     ]
                                                                 }
                                                             }
@@ -363,6 +372,19 @@
                                                                 }
                                                             }
                                                         }
+                                                    },
+                                                    {
+                                                        "DestinationParameterName": "ServiceFilter",
+                                                        "Value": {
+                                                            "CustomValuesConfiguration": {
+                                                                "IncludeNullValue": false,
+                                                                "CustomValues": {
+                                                                    "StringValues": [
+                                                                        "Amazon Relational Database Service"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 ]
                                             }
@@ -373,8 +395,7 @@
                             "ColumnHierarchies": [
                                 {
                                     "DateTimeHierarchy": {
-                                        "HierarchyId": "cur.date.0.1725398745245",
-                                        "DrillDownFilters": []
+                                        "HierarchyId": "cur.date.2.1734444979859"
                                     }
                                 }
                             ]
@@ -520,8 +541,8 @@
                             },
                             "Actions": [
                                 {
-                                    "CustomActionId": "afe8feaf-20ed-4d15-b8d2-4cdf0d5b3a3d",
-                                    "Name": "Customized Drilldown",
+                                    "CustomActionId": "ae742032-6344-4479-b27e-bfe680b575fb",
+                                    "Name": "Drilldown",
                                     "Status": "ENABLED",
                                     "Trigger": "DATA_POINT_CLICK",
                                     "ActionOperations": [
@@ -543,19 +564,6 @@
                                                                 "CustomValues": {
                                                                     "StringValues": [
                                                                         "Service"
-                                                                    ]
-                                                                }
-                                                            }
-                                                        }
-                                                    },
-                                                    {
-                                                        "DestinationParameterName": "Dim1Filter",
-                                                        "Value": {
-                                                            "CustomValuesConfiguration": {
-                                                                "IncludeNullValue": false,
-                                                                "CustomValues": {
-                                                                    "StringValues": [
-                                                                        "Compute"
                                                                     ]
                                                                 }
                                                             }
@@ -621,6 +629,19 @@
                                                                 "CustomValues": {
                                                                     "StringValues": [
                                                                         "ResourceId"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "DestinationParameterName": "ServiceFilter",
+                                                        "Value": {
+                                                            "CustomValuesConfiguration": {
+                                                                "IncludeNullValue": false,
+                                                                "CustomValues": {
+                                                                    "StringValues": [
+                                                                        "Amazon Elastic Compute Cloud"
                                                                     ]
                                                                 }
                                                             }
@@ -779,8 +800,8 @@
                             },
                             "Actions": [
                                 {
-                                    "CustomActionId": "19170292-a01f-4a65-a17a-3c365d648297",
-                                    "Name": "Customized Drilldown",
+                                    "CustomActionId": "7e323e55-4644-4fe2-9cd2-4aff03fb8013",
+                                    "Name": "Drilldown",
                                     "Status": "ENABLED",
                                     "Trigger": "DATA_POINT_CLICK",
                                     "ActionOperations": [
@@ -805,12 +826,6 @@
                                                                     ]
                                                                 }
                                                             }
-                                                        }
-                                                    },
-                                                    {
-                                                        "DestinationParameterName": "Dim1Filter",
-                                                        "Value": {
-                                                            "SelectAllValueOptions": "ALL_VALUES"
                                                         }
                                                     },
                                                     {
@@ -1397,7 +1412,7 @@
                                         "GroupBy": [
                                             {
                                                 "DateDimensionField": {
-                                                    "FieldId": "fe3aca80-51d8-4445-a9e4-4eddb2c7831a.1.1733716972182",
+                                                    "FieldId": "fe3aca80-51d8-4445-a9e4-4eddb2c7831a.0.1734445077123",
                                                     "Column": {
                                                         "DataSetIdentifier": "CUR_DIRECT",
                                                         "ColumnName": "date"
@@ -1409,7 +1424,7 @@
                                         "Values": [
                                             {
                                                 "DateMeasureField": {
-                                                    "FieldId": "fe3aca80-51d8-4445-a9e4-4eddb2c7831a.2.1733716927686",
+                                                    "FieldId": "fe3aca80-51d8-4445-a9e4-4eddb2c7831a.1.1734445079346",
                                                     "Column": {
                                                         "DataSetIdentifier": "CUR_DIRECT",
                                                         "ColumnName": "date"
@@ -1424,7 +1439,7 @@
                                     "RowSort": [
                                         {
                                             "FieldSort": {
-                                                "FieldId": "fe3aca80-51d8-4445-a9e4-4eddb2c7831a.1.1733716972182",
+                                                "FieldId": "fe3aca80-51d8-4445-a9e4-4eddb2c7831a.0.1734445077123",
                                                 "Direction": "DESC"
                                             }
                                         }
@@ -1604,30 +1619,6 @@
                                 }
                             },
                             "Type": "SINGLE_SELECT",
-                            "SelectableValues": {
-                                "Values": []
-                            }
-                        }
-                    },
-                    {
-                        "Dropdown": {
-                            "ParameterControlId": "13400363-60a9-482d-b7b7-9c45237ac6c5",
-                            "Title": "ChargeType",
-                            "SourceParameterName": "ChargeType",
-                            "DisplayOptions": {
-                                "SelectAllOptions": {
-                                    "Visibility": "VISIBLE"
-                                },
-                                "TitleOptions": {
-                                    "Visibility": "VISIBLE",
-                                    "FontConfiguration": {
-                                        "FontSize": {
-                                            "Relative": "MEDIUM"
-                                        }
-                                    }
-                                }
-                            },
-                            "Type": "MULTI_SELECT",
                             "SelectableValues": {
                                 "Values": []
                             }
@@ -7039,14 +7030,6 @@
                                         "RowSpan": 1
                                     },
                                     {
-                                        "ElementId": "13400363-60a9-482d-b7b7-9c45237ac6c5",
-                                        "ElementType": "PARAMETER_CONTROL",
-                                        "ColumnIndex": 2,
-                                        "ColumnSpan": 2,
-                                        "RowIndex": 0,
-                                        "RowSpan": 1
-                                    },
-                                    {
                                         "ElementId": "7d270d48-e6ca-4648-b225-9d9b1f92637a",
                                         "ElementType": "PARAMETER_CONTROL",
                                         "ColumnIndex": 4,
@@ -9161,57 +9144,63 @@
                                 }
                             }
                         }
+                    },
+                    {
+                        "Dropdown": {
+                            "ParameterControlId": "04208b5c-8135-4db0-b03c-933dac7106be",
+                            "Title": "ChargeType Filter",
+                            "SourceParameterName": "ChargeTypeFilter",
+                            "DisplayOptions": {
+                                "SelectAllOptions": {
+                                    "Visibility": "VISIBLE"
+                                },
+                                "TitleOptions": {
+                                    "Visibility": "VISIBLE",
+                                    "FontConfiguration": {
+                                        "FontSize": {
+                                            "Relative": "MEDIUM"
+                                        }
+                                    }
+                                }
+                            },
+                            "Type": "MULTI_SELECT",
+                            "SelectableValues": {
+                                "LinkToDataSetColumn": {
+                                    "DataSetIdentifier": "CUR_SPICE",
+                                    "ColumnName": "charge_type"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "Dropdown": {
+                            "ParameterControlId": "a579033f-2a2d-40b4-8a22-0fd99d4d729b",
+                            "Title": "Service Filter",
+                            "SourceParameterName": "ServiceFilter",
+                            "DisplayOptions": {
+                                "SelectAllOptions": {
+                                    "Visibility": "VISIBLE"
+                                },
+                                "TitleOptions": {
+                                    "Visibility": "VISIBLE",
+                                    "FontConfiguration": {
+                                        "FontSize": {
+                                            "Relative": "MEDIUM"
+                                        }
+                                    }
+                                }
+                            },
+                            "Type": "MULTI_SELECT",
+                            "SelectableValues": {
+                                "LinkToDataSetColumn": {
+                                    "DataSetIdentifier": "CUR_SPICE",
+                                    "ColumnName": "service"
+                                }
+                            }
+                        }
                     }
                 ],
                 "FilterControls": [
-                    {
-                        "Dropdown": {
-                            "FilterControlId": "3115f959-5017-4d08-bdfb-28091b743ee8",
-                            "Title": "Service Filter",
-                            "SourceFilterId": "050a87a7-3ecd-4f43-b3fa-15ffdcbed829",
-                            "DisplayOptions": {
-                                "SelectAllOptions": {
-                                    "Visibility": "VISIBLE"
-                                },
-                                "TitleOptions": {
-                                    "Visibility": "VISIBLE",
-                                    "FontConfiguration": {
-                                        "FontSize": {
-                                            "Relative": "MEDIUM"
-                                        }
-                                    }
-                                },
-                                "InfoIconLabelOptions": {
-                                    "Visibility": "HIDDEN"
-                                }
-                            },
-                            "Type": "MULTI_SELECT"
-                        }
-                    },
-                    {
-                        "Dropdown": {
-                            "FilterControlId": "25d3c735-6f37-4bf4-bab1-f83aad0240e9",
-                            "Title": "ChargeType Filter",
-                            "SourceFilterId": "a4b5e802-4ed5-4b57-99a0-483ef8e0d569",
-                            "DisplayOptions": {
-                                "SelectAllOptions": {
-                                    "Visibility": "VISIBLE"
-                                },
-                                "TitleOptions": {
-                                    "Visibility": "VISIBLE",
-                                    "FontConfiguration": {
-                                        "FontSize": {
-                                            "Relative": "MEDIUM"
-                                        }
-                                    }
-                                },
-                                "InfoIconLabelOptions": {
-                                    "Visibility": "HIDDEN"
-                                }
-                            },
-                            "Type": "MULTI_SELECT"
-                        }
-                    },
                     {
                         "Dropdown": {
                             "FilterControlId": "57457f0d-0eca-438b-b11c-2376c77fa068",
@@ -11330,6 +11319,18 @@
                                             "CustomLabel": "PoP(%)",
                                             "Visibility": "VISIBLE"
                                         }
+                                    ],
+                                    "DataPathOptions": [
+                                        {
+                                            "DataPathList": [
+                                                {
+                                                    "DataPathType": {
+                                                        "PivotTableDataPathType": "HIERARCHY_ROWS_LAYOUT_COLUMN"
+                                                    }
+                                                }
+                                            ],
+                                            "Width": "229px"
+                                        }
                                     ]
                                 }
                             },
@@ -12348,7 +12349,7 @@
                                                     }
                                                 }
                                             ],
-                                            "Width": "178px"
+                                            "Width": "221px"
                                         }
                                     ]
                                 }
@@ -12866,7 +12867,7 @@
                                         "RowSpan": 1
                                     },
                                     {
-                                        "ElementId": "25d3c735-6f37-4bf4-bab1-f83aad0240e9",
+                                        "ElementId": "57457f0d-0eca-438b-b11c-2376c77fa068",
                                         "ElementType": "FILTER_CONTROL",
                                         "ColumnIndex": 8,
                                         "ColumnSpan": 2,
@@ -12874,7 +12875,7 @@
                                         "RowSpan": 1
                                     },
                                     {
-                                        "ElementId": "57457f0d-0eca-438b-b11c-2376c77fa068",
+                                        "ElementId": "5d6f17fb-1211-45ef-8c50-cf368e9e7fe9",
                                         "ElementType": "FILTER_CONTROL",
                                         "ColumnIndex": 10,
                                         "ColumnSpan": 2,
@@ -12882,9 +12883,25 @@
                                         "RowSpan": 1
                                     },
                                     {
+                                        "ElementId": "04208b5c-8135-4db0-b03c-933dac7106be",
+                                        "ElementType": "PARAMETER_CONTROL",
+                                        "ColumnIndex": 0,
+                                        "ColumnSpan": 2,
+                                        "RowIndex": 1,
+                                        "RowSpan": 1
+                                    },
+                                    {
                                         "ElementId": "fad67a93-dd39-4be5-bbb4-bb3dc03078fd",
                                         "ElementType": "FILTER_CONTROL",
-                                        "ColumnIndex": 0,
+                                        "ColumnIndex": 2,
+                                        "ColumnSpan": 2,
+                                        "RowIndex": 1,
+                                        "RowSpan": 1
+                                    },
+                                    {
+                                        "ElementId": "a579033f-2a2d-40b4-8a22-0fd99d4d729b",
+                                        "ElementType": "PARAMETER_CONTROL",
+                                        "ColumnIndex": 4,
                                         "ColumnSpan": 2,
                                         "RowIndex": 1,
                                         "RowSpan": 1
@@ -12892,15 +12909,7 @@
                                     {
                                         "ElementId": "c157f8c7-b80b-4c82-b1a5-c208c3496ddf",
                                         "ElementType": "FILTER_CONTROL",
-                                        "ColumnIndex": 2,
-                                        "ColumnSpan": 2,
-                                        "RowIndex": 1,
-                                        "RowSpan": 1
-                                    },
-                                    {
-                                        "ElementId": "3115f959-5017-4d08-bdfb-28091b743ee8",
-                                        "ElementType": "FILTER_CONTROL",
-                                        "ColumnIndex": 4,
+                                        "ColumnIndex": 6,
                                         "ColumnSpan": 2,
                                         "RowIndex": 1,
                                         "RowSpan": 1
@@ -12908,7 +12917,7 @@
                                     {
                                         "ElementId": "09fcf536-9c09-4a26-9f1b-a4844466ade0",
                                         "ElementType": "FILTER_CONTROL",
-                                        "ColumnIndex": 6,
+                                        "ColumnIndex": 8,
                                         "ColumnSpan": 2,
                                         "RowIndex": 1,
                                         "RowSpan": 1
@@ -12916,7 +12925,7 @@
                                     {
                                         "ElementId": "0660ffcc-d392-4d8b-9571-6e530cb3077a",
                                         "ElementType": "FILTER_CONTROL",
-                                        "ColumnIndex": 8,
+                                        "ColumnIndex": 10,
                                         "ColumnSpan": 2,
                                         "RowIndex": 1,
                                         "RowSpan": 1
@@ -12924,21 +12933,13 @@
                                     {
                                         "ElementId": "c4417c8e-c14b-4c6e-bde9-856414e54276",
                                         "ElementType": "FILTER_CONTROL",
-                                        "ColumnIndex": 10,
-                                        "ColumnSpan": 2,
-                                        "RowIndex": 1,
-                                        "RowSpan": 1
-                                    },
-                                    {
-                                        "ElementId": "093419d8-7f3c-47a6-b094-d7e6c99b2013",
-                                        "ElementType": "FILTER_CONTROL",
                                         "ColumnIndex": 0,
                                         "ColumnSpan": 2,
                                         "RowIndex": 2,
                                         "RowSpan": 1
                                     },
                                     {
-                                        "ElementId": "b1e5aba7-6fa5-4f32-88d2-10b3e35e9c73",
+                                        "ElementId": "093419d8-7f3c-47a6-b094-d7e6c99b2013",
                                         "ElementType": "FILTER_CONTROL",
                                         "ColumnIndex": 2,
                                         "ColumnSpan": 2,
@@ -12946,7 +12947,7 @@
                                         "RowSpan": 1
                                     },
                                     {
-                                        "ElementId": "5d6f17fb-1211-45ef-8c50-cf368e9e7fe9",
+                                        "ElementId": "b1e5aba7-6fa5-4f32-88d2-10b3e35e9c73",
                                         "ElementType": "FILTER_CONTROL",
                                         "ColumnIndex": 4,
                                         "ColumnSpan": 2,
@@ -12980,37 +12981,49 @@
                                     {
                                         "ElementId": "5d1b0d1b-b45e-4b33-b5f3-546d603a6d91",
                                         "ElementType": "PARAMETER_CONTROL",
+                                        "ColumnIndex": 0,
                                         "ColumnSpan": 2,
+                                        "RowIndex": 3,
                                         "RowSpan": 1
                                     },
                                     {
                                         "ElementId": "94ad8459-fec7-4f4a-aa52-264326e43412",
                                         "ElementType": "PARAMETER_CONTROL",
+                                        "ColumnIndex": 2,
                                         "ColumnSpan": 2,
+                                        "RowIndex": 3,
                                         "RowSpan": 1
                                     },
                                     {
                                         "ElementId": "bf637bf4-1bff-4d42-a7c9-1a4265e0db40",
                                         "ElementType": "PARAMETER_CONTROL",
+                                        "ColumnIndex": 4,
                                         "ColumnSpan": 2,
+                                        "RowIndex": 3,
                                         "RowSpan": 1
                                     },
                                     {
                                         "ElementId": "977b7840-7929-498b-8aba-9df6d00f2283",
                                         "ElementType": "PARAMETER_CONTROL",
+                                        "ColumnIndex": 6,
                                         "ColumnSpan": 2,
+                                        "RowIndex": 3,
                                         "RowSpan": 1
                                     },
                                     {
                                         "ElementId": "419f3e76-ff72-486a-9525-fc7ba45813e7",
                                         "ElementType": "PARAMETER_CONTROL",
+                                        "ColumnIndex": 8,
                                         "ColumnSpan": 2,
+                                        "RowIndex": 3,
                                         "RowSpan": 1
                                     },
                                     {
                                         "ElementId": "89e25248-a47b-4345-91df-a0cc03381a1c",
                                         "ElementType": "PARAMETER_CONTROL",
+                                        "ColumnIndex": 10,
                                         "ColumnSpan": 2,
+                                        "RowIndex": 3,
                                         "RowSpan": 1
                                     }
                                 ]
@@ -13793,7 +13806,9 @@
                     "ParameterValueType": "SINGLE_VALUED",
                     "Name": "EDPTarget",
                     "DefaultValues": {
-                        "StaticValues": []
+                        "StaticValues": [
+                            5000000.0
+                        ]
                     },
                     "ValueWhenUnset": {
                         "ValueWhenUnsetOption": "RECOMMENDED_VALUE"
@@ -13845,7 +13860,7 @@
             {
                 "StringParameterDeclaration": {
                     "ParameterValueType": "MULTI_VALUED",
-                    "Name": "ChargeType",
+                    "Name": "ChargeTypeFilter",
                     "DefaultValues": {
                         "StaticValues": [
                             "DiscountedUsage",
@@ -13931,66 +13946,6 @@
             {
                 "StringParameterDeclaration": {
                     "ParameterValueType": "SINGLE_VALUED",
-                    "Name": "Dim1Filter",
-                    "DefaultValues": {
-                        "StaticValues": []
-                    },
-                    "ValueWhenUnset": {
-                        "ValueWhenUnsetOption": "RECOMMENDED_VALUE"
-                    }
-                }
-            },
-            {
-                "StringParameterDeclaration": {
-                    "ParameterValueType": "SINGLE_VALUED",
-                    "Name": "Dim2Filter",
-                    "DefaultValues": {
-                        "StaticValues": []
-                    },
-                    "ValueWhenUnset": {
-                        "ValueWhenUnsetOption": "RECOMMENDED_VALUE"
-                    }
-                }
-            },
-            {
-                "StringParameterDeclaration": {
-                    "ParameterValueType": "SINGLE_VALUED",
-                    "Name": "Dim3Filter",
-                    "DefaultValues": {
-                        "StaticValues": []
-                    },
-                    "ValueWhenUnset": {
-                        "ValueWhenUnsetOption": "RECOMMENDED_VALUE"
-                    }
-                }
-            },
-            {
-                "StringParameterDeclaration": {
-                    "ParameterValueType": "SINGLE_VALUED",
-                    "Name": "Dim4Filter",
-                    "DefaultValues": {
-                        "StaticValues": []
-                    },
-                    "ValueWhenUnset": {
-                        "ValueWhenUnsetOption": "RECOMMENDED_VALUE"
-                    }
-                }
-            },
-            {
-                "StringParameterDeclaration": {
-                    "ParameterValueType": "SINGLE_VALUED",
-                    "Name": "Dim5Filter",
-                    "DefaultValues": {
-                        "StaticValues": []
-                    },
-                    "ValueWhenUnset": {
-                        "ValueWhenUnsetOption": "RECOMMENDED_VALUE"
-                    }
-                }
-            },
-            {
-                "StringParameterDeclaration": {
-                    "ParameterValueType": "SINGLE_VALUED",
                     "Name": "Dim6",
                     "DefaultValues": {
                         "StaticValues": [
@@ -14004,11 +13959,9 @@
             },
             {
                 "StringParameterDeclaration": {
-                    "ParameterValueType": "SINGLE_VALUED",
-                    "Name": "Dim6Filter",
-                    "DefaultValues": {
-                        "StaticValues": []
-                    },
+                    "ParameterValueType": "MULTI_VALUED",
+                    "Name": "ServiceFilter",
+                    "DefaultValues": {},
                     "ValueWhenUnset": {
                         "ValueWhenUnsetOption": "RECOMMENDED_VALUE"
                     }
@@ -14086,13 +14039,9 @@
                                 "ColumnName": "charge_type"
                             },
                             "Configuration": {
-                                "FilterListConfiguration": {
-                                    "MatchOperator": "CONTAINS",
-                                    "CategoryValues": [
-                                        "DiscountedUsage",
-                                        "SavingsPlanCoveredUsage",
-                                        "Usage"
-                                    ],
+                                "CustomFilterConfiguration": {
+                                    "MatchOperator": "EQUALS",
+                                    "ParameterName": "ChargeTypeFilter",
                                     "NullOption": "NON_NULLS_ONLY"
                                 }
                             }
@@ -17638,42 +17587,6 @@
                 "CrossDataset": "SINGLE_DATASET"
             },
             {
-                "FilterGroupId": "7c1399b5-6f12-4ffb-94d4-c81a62531fed",
-                "Filters": [
-                    {
-                        "TimeRangeFilter": {
-                            "FilterId": "0b79fc17-7a44-4c4b-af47-c4e5a21e92d2",
-                            "Column": {
-                                "DataSetIdentifier": "CUR_DIRECT",
-                                "ColumnName": "date"
-                            },
-                            "IncludeMinimum": true,
-                            "IncludeMaximum": true,
-                            "RangeMinimumValue": {
-                                "Parameter": "StartDate"
-                            },
-                            "RangeMaximumValue": {
-                                "Parameter": "EndDate"
-                            },
-                            "NullOption": "NON_NULLS_ONLY",
-                            "TimeGranularity": "DAY"
-                        }
-                    }
-                ],
-                "ScopeConfiguration": {
-                    "SelectedSheets": {
-                        "SheetVisualScopingConfigurations": [
-                            {
-                                "SheetId": "da96210f-55fc-4b67-8eaa-b83b539eff9e",
-                                "Scope": "ALL_VISUALS"
-                            }
-                        ]
-                    }
-                },
-                "Status": "ENABLED",
-                "CrossDataset": "SINGLE_DATASET"
-            },
-            {
                 "FilterGroupId": "6b5dc1b1-980e-4c59-98ad-32bc0c046b38",
                 "Filters": [
                     {
@@ -17822,42 +17735,6 @@
                 "CrossDataset": "SINGLE_DATASET"
             },
             {
-                "FilterGroupId": "101e3f00-4bfc-4be0-988e-b8f29fa5d075",
-                "Filters": [
-                    {
-                        "TimeRangeFilter": {
-                            "FilterId": "b52f0b90-0ccc-4a51-9fcb-69c629a2cd55",
-                            "Column": {
-                                "DataSetIdentifier": "CUR_SPICE",
-                                "ColumnName": "date"
-                            },
-                            "IncludeMinimum": true,
-                            "IncludeMaximum": true,
-                            "RangeMinimumValue": {
-                                "Parameter": "StartDate"
-                            },
-                            "RangeMaximumValue": {
-                                "Parameter": "EndDate"
-                            },
-                            "NullOption": "NON_NULLS_ONLY",
-                            "TimeGranularity": "DAY"
-                        }
-                    }
-                ],
-                "ScopeConfiguration": {
-                    "SelectedSheets": {
-                        "SheetVisualScopingConfigurations": [
-                            {
-                                "SheetId": "da96210f-55fc-4b67-8eaa-b83b539eff9e",
-                                "Scope": "ALL_VISUALS"
-                            }
-                        ]
-                    }
-                },
-                "Status": "ENABLED",
-                "CrossDataset": "SINGLE_DATASET"
-            },
-            {
                 "FilterGroupId": "90e2adf4-98b6-439f-ab8e-73ea39bbd6b1",
                 "Filters": [
                     {
@@ -17868,9 +17745,9 @@
                                 "ColumnName": "service"
                             },
                             "Configuration": {
-                                "FilterListConfiguration": {
-                                    "MatchOperator": "CONTAINS",
-                                    "SelectAllOptions": "FILTER_ALL_VALUES",
+                                "CustomFilterConfiguration": {
+                                    "MatchOperator": "EQUALS",
+                                    "ParameterName": "ServiceFilter",
                                     "NullOption": "NON_NULLS_ONLY"
                                 }
                             }
@@ -18440,6 +18317,84 @@
                 },
                 "Status": "ENABLED",
                 "CrossDataset": "SINGLE_DATASET"
+            },
+            {
+                "FilterGroupId": "8865faf9-3a7d-48a6-a261-aa401a01a017",
+                "Filters": [
+                    {
+                        "TimeRangeFilter": {
+                            "FilterId": "252a6e70-f26f-4ad0-99ca-0af9806ff1d1",
+                            "Column": {
+                                "DataSetIdentifier": "CUR_SPICE",
+                                "ColumnName": "date"
+                            },
+                            "IncludeMinimum": true,
+                            "IncludeMaximum": true,
+                            "RangeMinimumValue": {
+                                "Parameter": "StartDate"
+                            },
+                            "RangeMaximumValue": {
+                                "Parameter": "EndDate"
+                            },
+                            "NullOption": "NON_NULLS_ONLY",
+                            "TimeGranularity": "DAY"
+                        }
+                    }
+                ],
+                "ScopeConfiguration": {
+                    "SelectedSheets": {
+                        "SheetVisualScopingConfigurations": [
+                            {
+                                "SheetId": "da96210f-55fc-4b67-8eaa-b83b539eff9e",
+                                "Scope": "SELECTED_VISUALS",
+                                "VisualIds": [
+                                    "31ef4a47-2961-46c8-84e8-71f246373f85",
+                                    "21f1f1eb-4296-4ca4-8319-d2a95c553523",
+                                    "d831c8e6-bc3e-441e-a230-5c871f9f60fb",
+                                    "f427b779-2ef5-44bb-9b82-48294ac2e55d"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "Status": "ENABLED",
+                "CrossDataset": "SINGLE_DATASET"
+            },
+            {
+                "FilterGroupId": "6df6ee37-8fd4-4c92-979c-f521ce236e89",
+                "Filters": [
+                    {
+                        "TimeRangeFilter": {
+                            "FilterId": "bceae927-988a-49ba-b7d0-f3f19d48b91d",
+                            "Column": {
+                                "DataSetIdentifier": "CUR_DIRECT",
+                                "ColumnName": "date"
+                            },
+                            "IncludeMinimum": true,
+                            "IncludeMaximum": true,
+                            "RangeMinimumValue": {
+                                "Parameter": "StartDate"
+                            },
+                            "RangeMaximumValue": {
+                                "Parameter": "EndDate"
+                            },
+                            "NullOption": "NON_NULLS_ONLY",
+                            "TimeGranularity": "DAY"
+                        }
+                    }
+                ],
+                "ScopeConfiguration": {
+                    "SelectedSheets": {
+                        "SheetVisualScopingConfigurations": [
+                            {
+                                "SheetId": "da96210f-55fc-4b67-8eaa-b83b539eff9e",
+                                "Scope": "ALL_VISUALS"
+                            }
+                        ]
+                    }
+                },
+                "Status": "ENABLED",
+                "CrossDataset": "SINGLE_DATASET"
             }
         ],
         "ColumnConfigurations": [
@@ -18543,19 +18498,5 @@
         "Options": {
             "WeekStart": "SUNDAY"
         }
-    },
-    "Permissions": [
-        {
-            "Principal": "arn:aws:quicksight:us-east-1:{{AwsAccountId}}:user/default/{{QuickSightUser}}",
-            "Actions": [
-                "quicksight:RestoreAnalysis",
-                "quicksight:UpdateAnalysisPermissions",
-                "quicksight:DeleteAnalysis",
-                "quicksight:DescribeAnalysisPermissions",
-                "quicksight:QueryAnalysis",
-                "quicksight:DescribeAnalysis",
-                "quicksight:UpdateAnalysis"
-            ]
-        }
-    ]
+    }
 }

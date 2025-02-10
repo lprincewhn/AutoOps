@@ -1,0 +1,54 @@
+{
+    "AwsAccountId": "{{AwsAccountId}}",
+    "DataSetId": "{{DataSetId}}",
+    "Name": "CUR_Dimensions",
+    "PhysicalTableMap": {
+        "dimensions": {
+            "CustomSql": {
+                    "DataSourceArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:datasource/{{DataSourceId}}",
+                "Name": "fields",
+                "SqlQuery": "WITH dataset AS (\n  SELECT\n    ARRAY[\n        CAST(ROW('ChargeType', 'Amortized Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('UsageAccount', 'Net Amortized Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('Service', 'Ondemand Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('Product', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('PayerAccount', 'Fixed Amortized Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('Region', 'Fixed Ondemand Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('UsageType', 'Fixed Net Amortized Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('ResourceId', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('InstanceType', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('InstanceFamily', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('DatabaseEngine', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('VolumeType', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('Project', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('EKSDeployment', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('EKSWorkload', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('CountryCode', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('EKSClusterName', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('UsageCategory', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR)),\n        CAST(ROW('ChargeCategory', 'Billing Cost') AS ROW(Dimension VARCHAR, Measure VARCHAR))\n    ] AS fields\n)\nSELECT f.Dimension, f.Measure FROM dataset\nCROSS JOIN UNNEST(fields) as t(f)",
+                "Columns": [
+                    {
+                        "Name": "Dimension",
+                        "Type": "STRING"
+                    },
+                    {
+                        "Name": "Measure",
+                        "Type": "STRING"
+                    }
+                ]
+            }
+        }
+    },
+    "Permissions": [
+        {
+            "Principal": "{{QuickSightUser}}",
+            "Actions": [
+                "quicksight:DeleteDataSet",
+                "quicksight:UpdateDataSetPermissions",
+                "quicksight:PutDataSetRefreshProperties",
+                "quicksight:CreateRefreshSchedule",
+                "quicksight:CancelIngestion",
+                "quicksight:ListRefreshSchedules",
+                "quicksight:PassDataSet",
+                "quicksight:UpdateRefreshSchedule",
+                "quicksight:DeleteRefreshSchedule",
+                "quicksight:DescribeDataSetRefreshProperties",
+                "quicksight:DescribeDataSet",
+                "quicksight:CreateIngestion",
+                "quicksight:DescribeRefreshSchedule",
+                "quicksight:ListIngestions",
+                "quicksight:DescribeDataSetPermissions",
+                "quicksight:UpdateDataSet",
+                "quicksight:DeleteDataSetRefreshProperties",
+                "quicksight:DescribeIngestion"
+            ]
+        }
+    ], 
+    "ImportMode": "SPICE",
+    "DataSetUsageConfiguration": {
+        "DisableUseAsDirectQuerySource": false,
+        "DisableUseAsImportedSource": false
+    }
+}

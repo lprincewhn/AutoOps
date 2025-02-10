@@ -1,14 +1,16 @@
 {
-    "AwsAccountId": "{{AwsAccountId}}",
-    "DataSetId": "{{DataSetId}}",
-    "Name": "CUR SPICE",
+    "Arn": "arn:aws:quicksight:us-east-1:597377428377:dataset/74a4ef76-d1f5-4923-a19b-274844dcc7df",
+    "DataSetId": "74a4ef76-d1f5-4923-a19b-274844dcc7df",
+    "Name": "CUR DIRECT",
+    "CreatedTime": "2024-11-07T04:16:10.756000+00:00",
+    "LastUpdatedTime": "2025-01-17T05:08:24.200000+00:00",
     "PhysicalTableMap": {
         "da47e529-b172-4165-b2e5-99394919787f": {
             "RelationalTable": {
-                "DataSourceArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:datasource/{{DataSourceId}}",
+                "DataSourceArn": "arn:aws:quicksight:us-east-1:597377428377:datasource/f4310071-afc6-4d43-9ba7-854a546616a5",
                 "Catalog": "AwsDataCatalog",
-                "Schema": "{{CURDatabase}}",
-                "Name": "{{CURTable}}",
+                "Schema": "athenacurcfn_c_u_r_athena",
+                "Name": "cur_athena",
                 "InputColumns": [
                     {
                         "Name": "identity_line_item_id",
@@ -3395,32 +3397,9 @@
             "Type": "DECIMAL"
         }
     ],
-    "Permissions": [
-        {
-            "Principal": "{{QuickSightUser}}",
-            "Actions": [
-                "quicksight:DeleteDataSet",
-                "quicksight:UpdateDataSetPermissions",
-                "quicksight:PutDataSetRefreshProperties",
-                "quicksight:CreateRefreshSchedule",
-                "quicksight:CancelIngestion",
-                "quicksight:ListRefreshSchedules",
-                "quicksight:PassDataSet",
-                "quicksight:UpdateRefreshSchedule",
-                "quicksight:DeleteRefreshSchedule",
-                "quicksight:DescribeDataSetRefreshProperties",
-                "quicksight:DescribeDataSet",
-                "quicksight:CreateIngestion",
-                "quicksight:DescribeRefreshSchedule",
-                "quicksight:ListIngestions",
-                "quicksight:DescribeDataSetPermissions",
-                "quicksight:UpdateDataSet",
-                "quicksight:DeleteDataSetRefreshProperties",
-                "quicksight:DescribeIngestion"
-            ]
-        }
-    ], 
     "ImportMode": "DIRECT_QUERY",
+    "ConsumedSpiceCapacityInBytes": 0,
+    "FieldFolders": {},
     "DataSetUsageConfiguration": {
         "DisableUseAsDirectQuerySource": false,
         "DisableUseAsImportedSource": false

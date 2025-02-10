@@ -206,7 +206,44 @@ docker run -it --rm \
 
 ### 4.3 LoadPrometheusEKSMetricsJob
 
-This job load eks resource metrics (cpu and memory reserved and actual usage) from CloudWatch ContainerInsights log group. 
+This job load eks resource metrics (cpu and memory reserved and actual usage) from Prometheus. Please config your prometheus as: 
+
+1. The Prometheus scraper jobs to fetch the node annotation as labels in the node metrics. These labels will be populated into pod metrics by kubernetes scraper.
+``` yaml
+    - job_name: kubernetes-nodes-cadvisor
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - action: labelmap
+        regex: __meta_kubernetes_node_annotation_(.+) # Fetch node annotation as metric labels
+      - replacement: kubernetes.default.svc:443
+        target_label: __address__
+      - regex: (.+)
+        replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+        source_labels:
+        - __meta_kubernetes_node_name
+        target_label: __metrics_path__
+      scheme: https
+      tls_config:
+        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
+```
+
+2. Configure kube-state-metrics to fetch the pod labels by argument "--metric-labels-allowlist=pods=[xxx,xxx]"
+```
+    spec:
+      containers:
+        - name: kube-state-metrics
+          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
+          args:
+            - '--port=8080'
+            - '--metric-labels-allowlist=pods=[app]' # Fetch pod labels app.
+```
+
+This job load eks resource metrics by following PromQL:
 
 ```promsql
 CPU:

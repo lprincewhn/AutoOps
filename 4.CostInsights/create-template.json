@@ -15,7 +15,7 @@
            },
            {
              "DataSetPlaceholder": "cur_dimemsions",
-             "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_Dimensions_DataSetId}}"
+             "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_Fields_DataSetId}}"
            }
          ]
        }
