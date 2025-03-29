@@ -44,4 +44,13 @@ States:
         --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
     InputPath: $
     ResultPath: $.AllocateUntagResult
+    Next: CreateIngestion
+  CreateIngestion:
+    Type: Task
+    Parameters:
+      AwsAccountId: '${AwsAccountId}'
+      DataSetId: '${QuicksightDataSetId}'
+      IngestionId.$: States.UUID()
+      IngestionType: INCREMENTAL_REFRESH
+    Resource: arn:aws:states:::aws-sdk:quicksight:createIngestion
     End: true

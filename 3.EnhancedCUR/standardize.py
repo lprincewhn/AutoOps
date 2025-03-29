@@ -54,7 +54,7 @@ select
 	resource_tags_user_name as name,
 	sum(line_item_usage_amount) as usage_amount,
 	sum(case when line_item_line_item_type like '%Usage' and line_item_usage_type not like '%EBSOptimized%' then cast(NULLIF(TRIM(product_vcpu), '') as decimal)*line_item_usage_amount else 0 end) as vcpus,
-	sum(case when line_item_line_item_type like '%Usage' and line_item_usage_type not like '%EBSOptimized%' then cast(NULLIF(NULLIF(TRIM(product_gpu), ''), 'N/A') as decimal)*line_item_usage_amount else 0 end) as gcpus,
+	sum(case when line_item_line_item_type like '%Usage' and line_item_usage_type not like '%EBSOptimized%' then cast(NULLIF(NULLIF(TRIM(product_gpu), ''), 'N/A') as decimal)*line_item_usage_amount else 0 end) as gpus,
 	sum(case when line_item_line_item_type like '%Usage' and line_item_usage_type not like '%EBSOptimized%' then COALESCE(cast(NULLIF(regexp_extract(product_memory, '([\.|0-9]{{1,6}}) GiB', 1), '') as decimal), cast(NULLIF(TRIM(product_memory_gib), '') as decimal))*line_item_usage_amount else 0 end) as memory_gb,
 	sum(case
 	    when line_item_line_item_type like '%Discount' then 0

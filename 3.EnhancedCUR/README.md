@@ -10,9 +10,10 @@ AWS_REGION=<region>
 cd ~/AutoOps/3.EnhancedCUR
 STACK_NAME="AutoOpsEnhancedCUR"
 sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --confirm-changeset --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
-    --parameter-overrides CURBucketName=${CURBucketName} WorkBucketName=${WorkBucketName} CURDatabase=${CURDatabase} CURTable=${CURTable}\
-    SubnetId=${SubnetId} AvailabilityZone=${AvailabilityZone} SecurityGroupIdList=${SecurityGroupIdList} \
-    --s3-bucket ${WorkBucketName} --s3-prefix script
+    --parameter-overrides CURBucketName=${CURBucketName} WorkBucketName=${WorkBucketName} CURDatabase=${CURDatabase} CURTable=${CURTable} \
+    QuicksightDataSetId=${QuicksightDataSetId} --s3-bucket ${WorkBucketName} --s3-prefix script
+aws s3 cp ./requirement.txt s3://${WorkBucketName}/
+```
 ```
 
 ## 2. Start
@@ -208,31 +209,7 @@ docker run -it --rm \
 
 This job load eks resource metrics (cpu and memory reserved and actual usage) from Prometheus. Please config your prometheus as: 
 
-1. The Prometheus scraper jobs to fetch the node annotation as labels in the node metrics. These labels will be populated into pod metrics by kubernetes scraper.
-``` yaml
-    - job_name: kubernetes-nodes-cadvisor
-      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-      kubernetes_sd_configs:
-      - role: node
-      relabel_configs:
-      - action: labelmap
-        regex: __meta_kubernetes_node_label_(.+)
-      - action: labelmap
-        regex: __meta_kubernetes_node_annotation_(.+) # Fetch node annotation as metric labels
-      - replacement: kubernetes.default.svc:443
-        target_label: __address__
-      - regex: (.+)
-        replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
-        source_labels:
-        - __meta_kubernetes_node_name
-        target_label: __metrics_path__
-      scheme: https
-      tls_config:
-        ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-        insecure_skip_verify: true
-```
-
-2. Configure kube-state-metrics to fetch the pod labels by argument "--metric-labels-allowlist=pods=[xxx,xxx]"
+1. Configure kube-state-metrics to fetch the pod labels by argument "--metric-labels-allowlist=pods=[xxx,xxx]"
 ```
     spec:
       containers:
@@ -240,7 +217,20 @@ This job load eks resource metrics (cpu and memory reserved and actual usage) fr
           image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
           args:
             - '--port=8080'
-            - '--metric-labels-allowlist=pods=[app]' # Fetch pod labels app.
+            - '--metric-labels-allowlist=pods=[app,app.kubernetes.io/name]' # Fetch pod labels app.
+```
+
+2. Configure prometheus server to keep the data for at least 2 month by argument "--storage.tsdb.retention.time=65d"
+```
+        - name: prometheus-server
+          image: quay.io/prometheus/prometheus:v2.54.1
+          args:
+            - '--storage.tsdb.retention.time=65d'
+            - '--config.file=/etc/config/prometheus.yml'
+            - '--storage.tsdb.path=/data'
+            - '--web.console.libraries=/etc/prometheus/console_libraries'
+            - '--web.console.templates=/etc/prometheus/consoles'
+            - '--web.enable-lifecycle'
 ```
 
 This job load eks resource metrics by following PromQL:
