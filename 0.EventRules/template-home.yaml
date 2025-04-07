@@ -7,20 +7,26 @@ Parameters:
   AutoOpsEventTargetArn:
     Type: String  
 Resources:
+
   AutoOpsRetryRunInstanceRule:
     Type: AWS::Events::Rule
     Properties:
-      EventPattern: {"source": ["AutoOpsRetryRunInstance"]}
+      EventPattern: 
+        source:
+          - AutoOpsRetryRunInstance
       Targets: 
         - Arn: !Ref AutoOpsEventTargetArn
           Id: 1
           InputTransformer: 
             InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "instance-id": "$.detail.Instances[0].InstanceId", "instance-type": "$.detail.Instances[0].InstanceType", "private-ip": "$.detail.Instances[0].PrivateIpAddress"}
             InputTemplate: '"【AutoOps运维事件】<detail-type>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【实例ID】<instance-id>\n【实例类型】<instance-type>\n【私有IP】<private-ip>\n"'
+  
   AutoOpsElastiCacheEventRule:
     Type: AWS::Events::Rule
     Properties:
-      EventPattern: {"source": ["AutoOpsElastiCacheEvent"]}
+      EventPattern: 
+        source:
+           - AutoOpsElastiCacheEvent
       Targets: 
         - Arn: !Ref AutoOpsEventTargetArn
           Id: 1
@@ -28,30 +34,64 @@ Resources:
             InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "resources": "$.resources"}
             InputTemplate: '"【AutoOps运维事件】<detail-type>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【资源】<resources>\n"'
 
+  StepFunctionStatusRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern: 
+        source:
+          - aws.states
+        detail-type:
+          - Step Functions Execution Status Change
+        detail:
+          status:
+             - FAILED
+             - TIMED_OUT
+      Targets: 
+        - Arn: !Ref AutoOpsEventTargetArn
+          Id: 1
+          InputTransformer: 
+            InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "stateMachineArn":"$.detail.stateMachineArn", "executionArn":"$.detail.stateMachineArn", "status":"$.detail.status"}
+            InputTemplate: '"【AutoOps工作流运行异常】<status>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【工作流】<stateMachineArn>\n【详情】https://console.aws.amazon.com/states/home?region=<region>#/executions/details/<executionArn>\n"'
+  
+  
   CloudWatchAlarmRule:
     Type: AWS::Events::Rule
     Properties:
-      EventPattern: {"source": ["aws.cloudwatch"], "detail-type": ["CloudWatch Alarm State Change"]}
+      EventPattern:
+        source:
+          - aws.cloudwatch
+        detail-type:
+          - CloudWatch Alarm State Change
       Targets: 
         - Arn: !Ref AutoOpsEventTargetArn
           Id: 1
           InputTransformer: 
             InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "alarmName":"$.detail.alarmName", "description":"$.detail.configuration.description", "state":"$.detail.state.value", "reason":"$.detail.state.reason"}
             InputTemplate: '"【告警通知】<state>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【名称】<alarmName>\n【描述】<description>\n【原因】<reason>\n"'
+  
   EC2InstanceStateRule:
     Type: AWS::Events::Rule
     Properties:
-      EventPattern: {"source": ["aws.ec2"], "detail-type": ["EC2 Instance State-change Notification"]}
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
       Targets: 
         - Arn: !Ref AutoOpsEventTargetArn
           Id: 1
           InputTransformer: 
             InputPathsMap: {"time":"$.time", "detail-type":"$.detail-type", "account": "$.account", "region": "$.region", "instance-id":"$.detail.instance-id", "state":"$.detail.state"}
             InputTemplate: '"【EC2实例状态变化】<state>\n【时间】<time>\n【帐号】<account>\n【区域】<region>\n【实例ID】<instance-id>\n"'
+  
   HealthEventRule:
     Type: AWS::Events::Rule
     Properties:
-      EventPattern: {"source": ["aws.health"],"detail-type": ["AWS Health Event"]}
+      EventPattern:
+        source:
+          - aws.health
+        detail-type:
+          - AWS Health Event
       Targets: 
         - Arn: !Ref AutoOpsEventTargetArn
           Id: 1

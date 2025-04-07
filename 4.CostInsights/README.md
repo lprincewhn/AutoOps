@@ -75,8 +75,8 @@ cat data-set-fields.json \
 | sed "s/{{Region}}/${AWS_REGION}/g" \
 | sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
 | sed "s/{{DataSourceId}}/${DataSourceId}/g" \
-| sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set-dimensions.json
-CUR_Fields_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --cli-input-json file:///tmp/create-data-set-dimensions.json)
+| sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set-fields.json
+CUR_Fields_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --cli-input-json file:///tmp/create-data-set-fields.json)
 ```
 
 4. Create Analysis

@@ -22,7 +22,7 @@ Parameters:
   AthenaResultBucketPrefix:
     Type: String
     Description: Prefix of S3 bucket where store the query result of Athena. The bucket name is <prefix>.<region>.<accountId>
-    Default: athena-result.cmdb.autoops 
+    Default: athena-result-cmdb-autoops 
 Resources:
 
   AthenaResultBucket:
@@ -64,7 +64,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 30
@@ -104,7 +104,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 30
@@ -144,7 +144,7 @@ Resources:
     Type: 'AWS::Serverless::Function'
     Properties:
       Handler: app.lambda_handler
-      Runtime: python3.7
+      Runtime: python3.8
       Description: ''
       MemorySize: 128
       Timeout: 30

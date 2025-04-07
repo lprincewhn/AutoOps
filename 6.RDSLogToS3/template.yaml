@@ -43,6 +43,6 @@ Resources:
         ScheduleEvent:
           Type: Schedule
           Properties:
-            Name: demodb_audti_log_to_s3
+            Name: demodb_audit_log_to_s3
             Schedule: 'rate(5 minutes)'
             Input: '{"rds_instance_name":"demodb", "s3_bucket_name":"s3_bucket_name", "aws_region":"ap-northeast-1", "log_prefix":"server_audit", "min_size":1}'

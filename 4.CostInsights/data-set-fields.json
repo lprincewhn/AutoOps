@@ -1,7 +1,7 @@
 {
     "AwsAccountId": "{{AwsAccountId}}",
     "DataSetId": "{{DataSetId}}",
-    "Name": "CUR_Dimensions",
+    "Name": "CUR_Fields",
     "PhysicalTableMap": {
         "dimensions": {
             "CustomSql": {

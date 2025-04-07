@@ -28,6 +28,7 @@ Resources:
               - Effect: Allow
                 Action: 'events:PutEvents'
                 Resource: !Ref HomeDefaultBusArn
+                
   AutoOpsEventRule:
     Type: AWS::Events::Rule
     Properties:
@@ -38,6 +39,24 @@ Resources:
         - Arn: !Ref HomeDefaultBusArn
           Id: 1
           RoleArn: !GetAtt PutEventToHomeDefaultBusRole.Arn
+          
+  StepFunctionStatusRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern: 
+        source:
+          - aws.states
+        detail-type:
+          - Step Functions Execution Status Change
+        detail:
+          status:
+             - FAILED
+             - TIMED_OUT
+      Targets: 
+        - Arn: !Ref HomeDefaultBusArn
+          Id: 1
+          RoleArn: !GetAtt PutEventToHomeDefaultBusRole.Arn
+          
   CloudWatchAlarmRule:
     Type: AWS::Events::Rule
     Properties:
@@ -50,6 +69,7 @@ Resources:
         - Arn: !Ref HomeDefaultBusArn
           Id: 1
           RoleArn: !GetAtt PutEventToHomeDefaultBusRole.Arn
+          
   EC2InstanceStateRule:
     Type: AWS::Events::Rule
     Properties:
@@ -62,6 +82,7 @@ Resources:
         - Arn: !Ref HomeDefaultBusArn
           Id: 1
           RoleArn: !GetAtt PutEventToHomeDefaultBusRole.Arn
+          
   HealthEventRule:
     Type: AWS::Events::Rule
     Properties:

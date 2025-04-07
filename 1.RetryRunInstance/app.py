@@ -53,7 +53,7 @@ def lambda_handler(event, context):
         ImageId=os.getenv('ImageId'),
         InstanceType=os.getenv('InstanceType'),
         KeyName=os.getenv('KeyName'),
-        MaxCount=1,
+        MaxCount=needed-cnt,
         MinCount=1,
         SecurityGroupIds=os.getenv('SecurityGroupIds').split(','),
         SubnetId=os.getenv('SubnetId'),
