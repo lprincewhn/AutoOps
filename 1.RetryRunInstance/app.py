@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import boto3
+import time
 import logging
 import datetime
 
@@ -32,13 +33,14 @@ def lambda_handler(event, context):
     needed = int(os.getenv("InstanceCount", "1"))
     if cnt >= needed:
         return cnt
-    logger.info(f'Need {needed}. Starting a new instance.')
+    logger.info(f'Need {needed}. Starting {needed-cnt} new instance.')
     response = client.run_instances(
         BlockDeviceMappings=[
             {
                 'DeviceName': '/dev/xvda',
                 'Ebs': {
                     'VolumeType': 'gp3',
+                    'VolumeSize': 8
                 },
             },
             {
@@ -69,18 +71,25 @@ def lambda_handler(event, context):
             },
         ],
     )
-    eventbridge = boto3.client('events')
-    events = [{
-        'Source':'AutoOpsRetryRunInstance',
-        'DetailType':'Successfully start EC2 instance',
-        'Detail':json.dumps(response, sort_keys=True, default=str),
-        'EventBusName': os.getenv('EventBusName')
-    }]
-    response = eventbridge.put_events(
-        Entries=events,
-    )
+    
+    if os.getenv('EventBusName'):
+        eventbridge = boto3.client('events')
+        events = [{
+            'Source':'AutoOpsRetryRunInstance',
+            'DetailType':'Successfully start EC2 instance',
+            'Detail':json.dumps(response, sort_keys=True, default=str),
+            'EventBusName': os.getenv('EventBusName')
+        }]
+        response = eventbridge.put_events(
+            Entries=events,
+        )
     return cnt+1
     
 if __name__ == '__main__':
     logger.setLevel(logging.INFO)
-    lambda_handler(None, None)
+    while True:
+        try:
+            lambda_handler(None, None)
+        except:
+            pass
+        time.sleep(1)

@@ -1,3 +1,4 @@
+# Allocate EKS EC2 and DataTransfer cost
 import sys
 import datetime
 from awsglue.transforms import *
@@ -60,7 +61,7 @@ group by 1,2,3,4,5,6,7,8,9,10
 print(f"Load EKS metric with SQL: {eks_sql}\n")
 df_eks = (spark.sql(eks_sql).fillna("")
             .withColumn("cpu_usage", greatest(col("actual_cpu"), col("reserved_cpu")))
-            .withColumn("mem_usage", greatest(col("actual_mem"), col("reserved_mem")))
+            .withColumn("mem_usage", greatest(col("actual_mem"), col("reserved_mem"))/1024/1024/1024)
             .withColumn("network_usage", col("network_out")+col("network_in"))
          )
 print(f'EKS metrics data have {len(df_eks.columns)} columns: {sorted(df_eks.columns)}\n')
@@ -118,8 +119,8 @@ df_cost_eks_flag = (df_cost
         ["year","month","usage_account","date", "region", "resource_id"], 
         "left")
     .withColumn("eks_flag", 
-        when((col("sum(eks_flag)")>0) & (col("usage_type").contains("BoxUsage") | col("usage_type").contains("SpotUsage")), 1)
-        .when((col("sum(eks_flag)")>0) & (col("usage_type").contains("DataTransfer")), 2)
+        when((col("sum(eks_flag)")>0) & (col("charge_type").endswith("Usage")) & (col("usage_type").contains("BoxUsage") | col("usage_type").contains("SpotUsage")), 1)
+        .when((col("sum(eks_flag)")>0) & (col("charge_type").endswith("Usage")) & (col("usage_type").contains("DataTransfer")), 2)
         .otherwise(0)
     )
 )

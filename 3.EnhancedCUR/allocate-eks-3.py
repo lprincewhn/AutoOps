@@ -1,3 +1,4 @@
+# Add resource threshold of allocation.
 import sys
 import datetime
 from awsglue.transforms import *
@@ -60,7 +61,7 @@ group by 1,2,3,4,5,6,7,8,9,10
 print(f"Load EKS metric with SQL: {eks_sql}\n")
 df_eks = (spark.sql(eks_sql).fillna("")
             .withColumn("cpu_usage", greatest(col("actual_cpu"), col("reserved_cpu")))
-            .withColumn("mem_usage", greatest(col("actual_mem"), col("reserved_mem")))
+            .withColumn("mem_usage", greatest(col("actual_mem"), col("reserved_mem"))/1024/1024/1024)
             .withColumn("network_usage", col("network_out")+col("network_in"))
          )
 print(f'EKS metrics data have {len(df_eks.columns)} columns: {sorted(df_eks.columns)}\n')
@@ -119,8 +120,8 @@ df_cost_eks_flag = (df_cost
         ["year","month","usage_account","date", "region", "resource_id"], 
         "left")
     .withColumn("eks_flag", 
-        when((col("sum(eks_flag)")>0) & (col("usage_type").contains("BoxUsage") | col("usage_type").contains("SpotUsage")), 1)
-        .when((col("sum(eks_flag)")>0) & (col("usage_type").contains("DataTransfer")), 2)
+        when((col("sum(eks_flag)")>0) & (col("charge_type").endswith("Usage")) & (col("usage_type").contains("BoxUsage") | col("usage_type").contains("SpotUsage")), 1)
+        .when((col("sum(eks_flag)")>0) & (col("charge_type").endswith("Usage")) & (col("usage_type").contains("DataTransfer")), 2)
         .otherwise(0)
     )
 )
@@ -136,35 +137,61 @@ if debug:
         .saveAsTable(f"{cur_database}.enhanced_cur_allocate_eks_1")
     )
 
-# Generate metrics sumtable 
-sumtable = (df_eks
-                .groupBy(["year","month","usage_account","date", "region", "instance"])
-                .agg(sum("cpu_usage"), sum("mem_usage"), sum("network_usage"))
+# Generate cost sumtable
+cost_sumtable = (df_cost_eks_flag
+                    .filter(col('eks_flag')==1)
+                .groupBy(["year","month","usage_account","date", "region", "resource_id"])
+                .agg(sum("vcpus"), sum("memory_gb"))
 )
-print(f'EKS metric grouped by instance and date have {len(sumtable.columns)} columns: {sorted(sumtable.columns)}\n')
-sumtable.describe(['sum(cpu_usage)', 'sum(mem_usage)', 'sum(network_usage)']).show(vertical=True)
+print(f'Cost grouped by resrouce_id and date have {len(cost_sumtable.columns)} columns: {sorted(cost_sumtable.columns)}\n')
+cost_sumtable.describe(['sum(vcpus)', 'sum(memory_gb)']).show(vertical=True)
+
+# Split metric table because the same EC2 instance may billed by SP, RI or Ondemand
+df_eks_split_usage = (df_eks
+                        .join(
+                            cost_sumtable.withColumn("instance",col("resource_id")).drop("resource_id"), 
+                            ["year", "month", "usage_account", "date", "region", "instance"], 
+                            "left")
+                        .join(
+                            df_cost_eks_flag.filter(col('eks_flag')==1).withColumn("instance",col("resource_id")).drop("resource_id"), 
+                            ["year", "month", "usage_account", "date", "region", "instance"], 
+                            "left")
+                        .withColumn("cpu_usage", col("cpu_usage")*col("vcpus")/col("sum(vcpus)"))
+                        .withColumn("mem_usage", col("mem_usage")*col("memory_gb")/col("sum(memory_gb)"))
+                        .drop("usage_amount", "amortized_cost", "ondemand_cost", "net_amortized_cost", "billing_cost", "vcpus", "sum(vcpus)", "memory_db", "sum(memory_gb)", "billing_entity", "database_engine", "description", "eks_flag", "emr_job_flow_id", "gpus", "instance_family", "instance_type", "location", "memory_gb", "name", "payer_account", "product", "project", "service", "sum(eks_flag)", "usage_type", "volume_type")
+)
+print(f'EKS metric split have {len(df_eks_split_usage.columns)} columns: {sorted(df_eks_split_usage.columns)}\n')
+df_eks_split_usage.describe(['cpu_usage', 'mem_usage']).show(vertical=True)
+
+# Generate metrics sumtable of instance
+instance_sumtable = (df_eks_split_usage
+                .groupBy(["year","month","usage_account","date", "region", "instance", "charge_type"])
+                .agg(sum("cpu_usage"), sum("mem_usage"))
+)
+print(f'EKS instance metric grouped by instance and date have {len(instance_sumtable.columns)} columns: {sorted(instance_sumtable.columns)}\n')
+instance_sumtable.describe(['sum(cpu_usage)', 'sum(mem_usage)']).show(vertical=True)
 
 # Join eks cost items to caculate the allocated cost of EC2 instance
-df_eks_ec2 = (df_eks
-        .join(sumtable, ["year", "month", "usage_account", "date", "region", "instance"], "left")
+df_eks_ec2 = (df_eks_split_usage
+        .join(instance_sumtable, ["year", "month", "usage_account", "date", "region", "instance", "charge_type"], "left")
         .join(
             df_cost_eks_flag
               .filter(col('eks_flag')==1)
               .withColumn("instance",col("resource_id"))
               .withColumn("cpu_cost_ratio", col("vcpus")*9/(col("vcpus")*9+col("memory_gb")))
               .drop("resource_id", "eks_flag"), 
-            ["year", "month", "usage_account", "date", "region", "instance"], 
+            ["year", "month", "usage_account", "date", "region", "instance", "charge_type"], 
             "left")
         .withColumn("usage_amount", 
             when(col("sum(cpu_usage)")/col("vcpus")>0.75, col("usage_amount")*col("cpu_usage")/col("vcpus"))
-            .when(col("sum(mem_usage)")/1024/1024/1014/col("memory_gb")>0.75, col("usage_amount")*col("mem_usage")/1024/1024/1024/col("memory_gb"))
-            .otherwise(col("usage_amount")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("usage_amount")*(1-col("cpu_cost_ratio"))*col("mem_usage")/1024/1024/1024/col("memory_gb")))
-        .withColumn("ondemand_cost", col("ondemand_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("ondemand_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/1024/1024/1024/col("memory_gb"))
-        .withColumn("amortized_cost", col("amortized_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("amortized_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/1024/1024/1024/col("memory_gb"))
-        .withColumn("net_amortized_cost", col("net_amortized_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("net_amortized_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/1024/1024/1024/col("memory_gb"))
-        .withColumn("billing_cost", col("billing_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("billing_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/1024/1024/1024/col("memory_gb"))
+            .when(col("sum(mem_usage)")/col("memory_gb")>0.75, col("usage_amount")*col("mem_usage")/col("memory_gb"))
+            .otherwise(col("usage_amount")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("usage_amount")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("memory_gb")))
+        .withColumn("ondemand_cost", col("ondemand_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("ondemand_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("memory_gb"))
+        .withColumn("amortized_cost", col("amortized_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("amortized_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("memory_gb"))
+        .withColumn("net_amortized_cost", col("net_amortized_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("net_amortized_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("memory_gb"))
+        .withColumn("billing_cost", col("billing_cost")*col("cpu_cost_ratio")*col("cpu_usage")/col("vcpus")+col("billing_cost")*(1-col("cpu_cost_ratio"))*col("mem_usage")/col("memory_gb"))
         .withColumn("vcpus", col("cpu_usage"))
-        .withColumn("memory_gb", col("mem_usage")/1024/1024/1024)
+        .withColumn("memory_gb", col("mem_usage"))
         .drop("actual_cpu","actual_mem","reserved_cpu","reserved_mem","eks_flag","sum(eks_flag)","cpu_usage","mem_usage", "network_in", "network_out", "network_usage", "cpu_cost_ratio", "sum(cpu_usage)", "sum(mem_usage)", "sum(network_usage)")
 )
 print(f'EKS metric with allocated ec2 instance cost have {len(df_eks_ec2.columns)} columns: {sorted(df_eks_ec2.columns)}\n')
@@ -205,10 +232,17 @@ if debug:
         .option("path", f"s3://{work_bucket}/data/enhanced_cur_allocate_eks_3/")
         .saveAsTable(f"{cur_database}.enhanced_cur_allocate_eks_3")
     )
-    
+
+# Generate metrics sumtable on network
+network_sumtable = (df_eks_split_usage
+                .groupBy(["year","month","usage_account","date", "region", "instance"])
+                .agg(sum("network_usage"))
+)
+print(f'EKS network metric grouped by instance and date have {len(network_sumtable.columns)} columns: {sorted(network_sumtable.columns)}\n')
+network_sumtable.describe(['sum(network_usage)']).show(vertical=True)    
 # Join the sumtable and eks cost items to caculate the allocated cost of EC2 datatransfer
 df_eks_dt = (df_eks
-        .join(sumtable, ["year", "month", "usage_account", "date", "region", "instance"], "left")
+        .join(network_sumtable, ["year", "month", "usage_account", "date", "region", "instance"], "left")
         .join(
             df_cost_eks_flag
               .filter(col('eks_flag')==2)

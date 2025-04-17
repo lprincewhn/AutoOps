@@ -1,3 +1,4 @@
+# Only allocate EKS EC2 cost
 import sys
 import datetime
 from awsglue.transforms import *
@@ -57,7 +58,7 @@ group by 1,2,3,4,5,6,7,8,9,10
 print(f"Load EKS metric with SQL: {eks_sql}\n")
 df_eks = (spark.sql(eks_sql).fillna("")
             .withColumn("cpu_usage", greatest(col("actual_cpu"), col("reserved_cpu")))
-            .withColumn("mem_usage", greatest(col("actual_mem"), col("reserved_mem")))
+            .withColumn("mem_usage", greatest(col("actual_mem"), col("reserved_mem"))/1024/1024/1024)
          )
 print(f'EKS metrics data have {len(df_eks.columns)} columns: {sorted(df_eks.columns)}\n')
 df_eks.describe(['samples']).show(vertical=True)
@@ -113,7 +114,7 @@ df_cost_eks_flag = (df_cost
             .agg(sum("eks_flag")), 
         ["year","month","usage_account","date", "region", "resource_id"], 
         "left")
-    .withColumn("eks_flag", when((col("sum(eks_flag)")>0) & (col("usage_type").contains("BoxUsage") | col("usage_type").contains("SpotUsage")), 1).otherwise(0))
+    .withColumn("eks_flag", when((col("sum(eks_flag)")>0) & (col("charge_type").endswith("Usage")) & (col("usage_type").contains("BoxUsage") | col("usage_type").contains("SpotUsage")), 1).otherwise(0))
 )
 print(f'Cost data with eks flag have {len(df_cost_eks_flag.columns)} columns: {sorted(df_cost_eks_flag.columns)}\n')
 df_cost_eks_flag.describe(['vcpus', 'memory_gb', 'ondemand_cost','amortized_cost','net_amortized_cost','billing_cost','eks_flag']).show(vertical=True)

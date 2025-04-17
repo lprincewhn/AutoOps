@@ -50,6 +50,7 @@ select
 	line_item_line_item_description as description,
 	line_item_resource_id as resource_id,
 	resource_tags_aws_elasticmapreduce_job_flow_id as emr_job_flow_id,
+	resource_tags_aws_eks_cluster_name as eks_cluster_name,
 	resource_tags_user_project as project,
 	resource_tags_user_name as name,
 	sum(line_item_usage_amount) as usage_amount,
@@ -92,7 +93,7 @@ select
 	sum(line_item_unblended_cost) as billing_cost
 from {cur_database}.{cur_table}
 where year='{int(args["year"])}' and month='{int(args["month"])}' 
-group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21
+group by 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22
 '''
 print(sql)
 

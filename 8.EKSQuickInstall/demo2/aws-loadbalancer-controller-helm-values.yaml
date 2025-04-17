@@ -1,0 +1,7 @@
+clusterName: demo2
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::597377428377:role/demo2-aws-loadbalancer-controller-role
+tolerations:
+  - key: CriticalAddonsOnly
+    operator: Exists

@@ -1,0 +1,33 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: "$CLUSTER_NAME"
+  region: "$REGION"
+  version: "$CLUSTER_VERSION"
+vpc:
+  id: "$VPC_ID"
+  subnets:
+    private:
+      private-one:
+        id: "$PRIVATE_SUBNET1_ID"
+      private-two:
+        id: "$PRIVATE_SUBNET2_ID"
+      private-three:
+        id: "$PRIVATE_SUBNET3_ID"
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+  - name: "$ADDON_NODEGROUP_NAME"
+    privateNetworking: true
+    minSize: 0
+    desiredCapacity: 2
+    maxSize: 2
+    ssh:
+      publicKeyName: "$ADDON_NODEGROUP_SSHKEY"
+    instanceType: "$ADDON_NODEGROUP_INSTANCE_TYPE"
+    taints:
+      - key: CriticalAddonsOnly
+        effect: NoSchedule
+

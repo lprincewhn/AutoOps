@@ -1,0 +1,33 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: "demo1"
+  region: "ap-northeast-1"
+  version: "1.25"
+vpc:
+  id: "vpc-0fa219345714af743"
+  subnets:
+    private:
+      private-one:
+        id: "subnet-0dfba9cbf1a243eb4"
+      private-two:
+        id: "subnet-053dc36a6eee2fd5d"
+      private-three:
+        id: "subnet-0df398e3d5080a264"
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+  - name: "ng-ondemand"
+    privateNetworking: true
+    minSize: 0
+    desiredCapacity: 2
+    maxSize: 2
+    ssh:
+      publicKeyName: "keypair-tokyo-2024"
+    instanceType: "t3.medium"
+    taints:
+      - key: CriticalAddonsOnly
+        effect: NoSchedule
+

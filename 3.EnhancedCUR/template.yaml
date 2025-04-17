@@ -206,7 +206,7 @@ Resources:
       GlueVersion: 4.0
       Command:
         Name: glueetl
-        ScriptLocation: './allocate-eks.py'
+        ScriptLocation: './allocate-eks-1.py'
       DefaultArguments:
         '--year': '2024'
         '--month': '10'
