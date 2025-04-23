@@ -1,41 +1,6 @@
 #!/bin/bash
 
-echo "[检查子网IP数量和标签]"
-QUERY="Subnets[*].{SubnetId:SubnetId,Name:Tags[?Key==\`Name\`].Value|[0],CIDR:CidrBlock,AvailableIPs:AvailableIpAddressCount,kubernetes_io_cluster_$CLUSTER_NAME:Tags[?Key==\`kubernetes.io/cluster/$CLUSTER_NAME\`].Value|[0],kubernetes_io_role_elb:Tags[?Key==\`kubernetes.io/role/elb\`].Value|[0],kubernetes_io_role_internal_elb:Tags[?Key==\`kubernetes.io/role/internal-elb\`].Value|[0]}"
-echo "*包含kubernetes.io/cluster/$CLUSTER_NAME标签的子网:"
-aws ec2 describe-subnets \
-  --filters "Name=tag-key,Values=kubernetes.io/cluster/$CLUSTER_NAME" \
-  --query $QUERY --region ${REGION} --no-cli-pager --output table
-echo "*将在以下子网创建集群："
-aws ec2 describe-subnets \
-  --subnet-ids ${PRIVATE_SUBNET1_ID} ${PRIVATE_SUBNET2_ID} ${PRIVATE_SUBNET3_ID} \
-  --query $QUERY --region ${REGION} --no-cli-pager --output table
-echo
-echo -n "是否继续创建集群，选择 y 将开始创建本地目录${CLUSTER_NAME}，用于存放所有定义文件。如果目录已经存在，请注意备份！！！ (y/n): "
-read input
-input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
-if [ "$input_lower" = "n" ]; then
-    exit
-fi
-mkdir -p ${CLUSTER_NAME}
-echo
-
-echo "[创建集群]"
-envsubst < ./templates/cluster.yaml > ./${CLUSTER_NAME}/cluster.yaml
-cat ./${CLUSTER_NAME}/cluster.yaml
-echo
-echo -n "是否创建上述集群 (y/n): "
-read input
-input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
-if [ "$input_lower" = "y" ]; then
-    eksctl create cluster -f ./${CLUSTER_NAME}/cluster.yaml
-else
-    echo "跳过创建集群。"
-fi
-eksctl utils write-kubeconfig --cluster ${CLUSTER_NAME} --region ${REGION}
-echo
-
-echo "[安装ebs-csi-driver"]
+echo "[安装ebs-csi-driver]"
 if [ "$EBS_CSI_DRIVER" = "on" ]; then
     echo -n "是否使用AWS托管策略AmazonEBSCSIDriverPolicy创建角色 ${CLUSTER_NAME}-ebs-csi-role (y/n): "
     read input
@@ -117,7 +82,7 @@ if [ "$KARPENTER" = "on" ]; then
     read input
     input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
     if [ "$input_lower" = "y" ]; then
-        aws cloudformation deploy \
+        aws cloudformation deploy --region ${REGION} \
             --stack-name "Karpenter-${CLUSTER_NAME}" \
             --template-file "templates/karpenter-cloudformation-v${KARPENTER_VERSION}.yaml" \
             --capabilities CAPABILITY_NAMED_IAM \
@@ -149,26 +114,6 @@ if [ "$KARPENTER" = "on" ]; then
         echo "跳过创建Karpenter。"
     fi
     echo
-fi
-
-echo "[安装ingress-nginx-controller"]
-if [ "$INGRESS_NGINX_CONTROLLER" = "on" ]; then
-    envsubst < ./templates/ingress-nginx-helm-values.yaml > ./${CLUSTER_NAME}/ingress-nginx-helm-values.yaml
-    cat ./${CLUSTER_NAME}/ingress-nginx-helm-values.yaml
-    echo
-    echo -n "是否根据以上参数安装/更新ingress-nginx-controller (y/n): "
-    read input
-    input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
-    if [ "$input_lower" = "y" ]; then
-        helm upgrade --install ingress-nginx ingress-nginx \
-          --repo https://kubernetes.github.io/ingress-nginx \
-          --version "${INGRESS_NGINX_CONTROLLER_CHART_VERSION}" --namespace ingress-nginx --create-namespace \
-          -f ./${CLUSTER_NAME}/ingress-nginx-helm-values.yaml
-        echo "安装完毕，检查组件"
-        kubectl get all -n ingress-nginx | grep ingress-nginx
-    else
-        echo "跳过创建ingress-nginx-controller。"
-    fi
 fi
 
 echo "[安装aws-loadbalancer-controller]"
@@ -211,5 +156,71 @@ if [ "$AWS_LOADBALANCER_CONTROLLER" = "on" ]; then
     echo
 fi
 
+echo "[安装ingress-nginx-controller"]
+if [ "$INGRESS_NGINX_CONTROLLER" = "on" ]; then
+    envsubst < ./templates/ingress-nginx-helm-values.yaml > ./${CLUSTER_NAME}/ingress-nginx-helm-values.yaml
+    cat ./${CLUSTER_NAME}/ingress-nginx-helm-values.yaml
+    echo
+    echo -n "是否根据以上参数安装/更新ingress-nginx-controller (y/n): "
+    read input
+    input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    if [ "$input_lower" = "y" ]; then
+        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx && helm repo update ingress-nginx
+        helm upgrade --install ingress-nginx \
+          --version "${INGRESS_NGINX_CONTROLLER_CHART_VERSION}" --namespace ingress-nginx --create-namespace \
+          ingress-nginx/ingress-nginx \
+          -f ./${CLUSTER_NAME}/ingress-nginx-helm-values.yaml
+        echo "安装完毕，检查组件"
+        kubectl get all -n ingress-nginx | grep ingress-nginx
+    else
+        echo "跳过创建ingress-nginx-controller。"
+    fi
+fi
+
+echo "[安装prometheus"]
+if [ "${PROMETHEUS}" = "on" ]; then
+    envsubst < ./templates/prometheus-helm-values.yaml > ./${CLUSTER_NAME}/prometheus-helm-values.yaml
+    cat ./${CLUSTER_NAME}/prometheus-helm-values.yaml
+    echo
+    echo -n "是否根据以上参数安装/更新prometheus (y/n): "
+    read input
+    input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    if [ "$input_lower" = "y" ]; then
+        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts && helm repo update prometheus-community
+        helm upgrade --install prometheus \
+          --version "${PROMETHEUS_CHART_VERSION}" --namespace monitoring --create-namespace \
+          prometheus-community/prometheus \
+          -f ./${CLUSTER_NAME}/prometheus-helm-values.yaml
+        echo "安装完毕，检查组件"
+        kubectl get all -n monitoring | grep prometheus
+    else
+        echo "跳过创建安装prometheus。"
+    fi
+fi
+
+echo "[安装fluentbit"]
+if [ "${FLUENT_BIT}" = "on" ]; then
+    envsubst < ./templates/fluentbit-helm-values.yaml > ./${CLUSTER_NAME}/fluentbit-helm-values.yaml
+    cat ./${CLUSTER_NAME}/fluentbit-helm-values.yaml
+    echo
+    echo -n "是否根据以上参数安装/更新fluentbit (y/n): "
+    read input
+    input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    if [ "$input_lower" = "y" ]; then
+        helm repo add fluent https://fluent.github.io/helm-charts && helm repo update fluent
+        helm upgrade --install fluent-bit \
+          --version "${FLUENTBIT_CHART_VERSION}" --namespace logging --create-namespace \
+          fluent/fluent-bit \
+          -f ./${CLUSTER_NAME}/fluentbit-helm-values.yaml
+        echo "安装完毕，检查组件"
+        kubectl get all -n logging | grep fluent-bit
+    else
+        echo "跳过创建安装fluentbit。"
+    fi
+fi
+
+
+## TODO: kuboard
 echo "[安装完毕，检查集群所有Pod]"
 kubectl get pod -A
+kubec

@@ -1,0 +1,31 @@
+---
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: "$CLUSTER_NAME"
+  region: "$REGION"
+  version: "$CLUSTER_VERSION"
+managedNodeGroups:
+  - name: "$ADDON_NODEGROUP_NAME"
+    privateNetworking: true
+    minSize: 0
+    desiredCapacity: 2
+    maxSize: 2
+    volumeSize: 100
+    ssh:
+      publicKeyName: "$ADDON_NODEGROUP_SSHKEY"
+    instanceType: "$ADDON_NODEGROUP_INSTANCE_TYPE"
+    securityGroups:
+      attachIDs:
+        - "sg-035921483b1edde22"
+    taints:
+      - key: CriticalAddonsOnly
+        effect: NoSchedule
+    labels:
+      project: svhw
+    tags:
+      Project: svhw
+    # disableIMDSv1: false 
+    # preBootstrapCommands:
+    #   - 'mkdir -p /etc/eks/kubelet/'
+    #   - 'echo "KUBELET_EXTRA_ARGS=--node-labels=eks.amazonaws.com/instance-id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)" > /etc/eks/kubelet/kubelet-extra-args'

@@ -1,0 +1,11 @@
+service:
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+server:
+  persistentVolume:
+    storageClass: "ebs-sc"
+  service:
+    type: "LoadBalancer"
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Exists

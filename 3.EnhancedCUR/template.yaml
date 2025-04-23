@@ -146,6 +146,10 @@ Resources:
         '--cur-table': !Ref CURTable
         '--work-bucket': !Ref WorkBucketName
         '--enable-glue-datacatalog': 'true'
+        '--enable-metrics': 'true'
+        '--enable-continuous-cloudwatch-log': 'true'
+        '--enable-job-insights': 'true'
+        '--enable-observability-metrics': 'true'
         '--verbose': '0'    
         
   LoadCloudWatchEKSMetricsJob:
@@ -166,11 +170,15 @@ Resources:
         '--month': '10'
         '--cur-database': !Ref CURDatabase
         '--work-bucket': !Ref WorkBucketName
-        '--enable-glue-datacatalog': 'true'
         '--region': 'ap-northeast-1'
         '--usage-account': !Ref AWS::AccountId
         '--container-insights-loggroup': '/aws/containerinsights/eksdemo/performance'
-        '--verbose': '0'
+        '--enable-glue-datacatalog': 'true'
+        '--enable-metrics': 'true'
+        '--enable-continuous-cloudwatch-log': 'true'
+        '--enable-job-insights': 'true'
+        '--enable-observability-metrics': 'true'
+        '--verbose': '0' 
         
   LoadPrometheusEKSMetricsJob:
     Type: AWS::Glue::Job
@@ -190,14 +198,18 @@ Resources:
         '--month': '10'
         '--cur-database': !Ref CURDatabase
         '--work-bucket': !Ref WorkBucketName
-        '--enable-glue-datacatalog': 'true'
         '--region': 'ap-northeast-1'
         '--usage-account': !Ref AWS::AccountId
         # '--prometheus-endpoint': 'http://k8s-promethe-promethe-e2fcf81d1b-468ba5a5bc316af4.elb.ap-northeast-1.amazonaws.com'
         '--prometheus-endpoint': 'https://aps-workspaces.ap-northeast-1.amazonaws.com/workspaces/ws-4bc81632-87d7-47d8-8b02-1f4335804e37'
         '--python-modules-installer-option': '-r'
         '--additional-python-modules': !Join [ '', [ 's3://', !Ref WorkBucketName, '/requirement.txt' ] ]
-        '--verbose': '0'
+        '--enable-glue-datacatalog': 'true'
+        '--enable-metrics': 'true'
+        '--enable-continuous-cloudwatch-log': 'true'
+        '--enable-job-insights': 'true'
+        '--enable-observability-metrics': 'true'
+        '--verbose': '0' 
         
   AllocateEksJob:
     Type: AWS::Glue::Job
@@ -215,7 +227,11 @@ Resources:
         '--standardize-table': 'enhanced_cur_standardize'
         '--work-bucket': !Ref WorkBucketName
         '--enable-glue-datacatalog': 'true'
-        '--verbose': '1'
+        '--enable-metrics': 'true'
+        '--enable-continuous-cloudwatch-log': 'true'
+        '--enable-job-insights': 'true'
+        '--enable-observability-metrics': 'true'
+        '--verbose': '0' 
         
   AllocateUntagJob:
     Type: AWS::Glue::Job
@@ -233,7 +249,11 @@ Resources:
         '--standardize-table': 'enhanced_cur_allocate_eks'
         '--work-bucket': !Ref WorkBucketName
         '--enable-glue-datacatalog': 'true'
-        '--verbose': '0'
+        '--enable-metrics': 'true'
+        '--enable-continuous-cloudwatch-log': 'true'
+        '--enable-job-insights': 'true'
+        '--enable-observability-metrics': 'true'
+        '--verbose': '0' 
         
   StepFunctionRole:
     Type: AWS::IAM::Role

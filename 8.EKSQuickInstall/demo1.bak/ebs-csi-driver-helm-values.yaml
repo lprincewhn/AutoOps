@@ -1,4 +1,0 @@
-controller:
-  serviceAccount:
-    annotations:
-      eks.amazonaws.com/role-arn: arn:aws:iam::597377428377:role/demo1-ebs-csi-role
