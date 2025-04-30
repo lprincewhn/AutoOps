@@ -17,12 +17,15 @@ vpc:
         id: "$PRIVATE_SUBNET3_ID"
 iam:
   withOIDC: true
+
 addons:
   - name: vpc-cni
     configurationValues: |
       {
         "env": {
           "WARM_ENI_TARGET": "2",
-          "WARM_IP_TARGET": "5"
+          "WARM_IP_TARGET": "5",
+          "AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG": "${AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG}",
+          "ENI_CONFIG_LABEL_DEF": "${ENI_CONFIG_LABEL_DEF}"
         }
       }

@@ -1,0 +1,13 @@
+tolerations:
+  - key: CriticalAddonsOnly
+    operator: Exists
+config:
+  inputs: |
+    [INPUT]
+        Name tail
+        Path /var/log/containers/*.log
+        Parser docker
+  outputs: |
+    [OUTPUT]
+        Name stdout
+        Match *

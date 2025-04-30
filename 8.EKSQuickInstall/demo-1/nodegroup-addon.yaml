@@ -2,19 +2,19 @@
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
-  name: "$CLUSTER_NAME"
-  region: "$REGION"
-  version: "$CLUSTER_VERSION"
+  name: "demo-1"
+  region: "ap-northeast-1"
+  version: "1.25"
 managedNodeGroups:
-  - name: "$ADDON_NODEGROUP_NAME"
+  - name: "ng-ondemand"
     privateNetworking: true
     minSize: 0
     desiredCapacity: 2
     maxSize: 2
     volumeSize: 100
     ssh:
-      publicKeyName: "$ADDON_NODEGROUP_SSHKEY"
-    instanceType: "$ADDON_NODEGROUP_INSTANCE_TYPE"
+      publicKeyName: "keypair-tokyo-2024"
+    instanceType: "t3.medium"
     securityGroups:
       attachIDs:
         - "sg-035921483b1edde22"

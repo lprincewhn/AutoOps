@@ -1,6 +1,6 @@
 {
-    "AwsAccountId": "{{AwsAccountId}}",
-    "DataSourceId": "{{DataSourceId}}",
+    "AwsAccountId": "${AwsAccountId}",
+    "DataSourceId": "${DataSourceId}",
     "Name": "Athena",
     "Type": "ATHENA",
     "DataSourceParameters": {
@@ -10,7 +10,7 @@
     },
     "Permissions": [
         {
-            "Principal": "{{QuickSightUser}}",
+            "Principal": "${QuickSightUser}",
             "Actions": [
                 "quicksight:UpdateDataSourcePermissions", 
                 "quicksight:DescribeDataSourcePermissions", 

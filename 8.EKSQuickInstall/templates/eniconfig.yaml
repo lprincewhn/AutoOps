@@ -1,0 +1,30 @@
+---
+apiVersion: crd.k8s.amazonaws.com/v1alpha1
+kind: ENIConfig
+metadata:
+  name: ${AZ1}
+spec:
+  securityGroups:
+    - ${SHAREDNODE_SG}
+    - ${CLUSTER_SG}
+  subnet: ${POD_SUBNET1_ID}
+---
+apiVersion: crd.k8s.amazonaws.com/v1alpha1
+kind: ENIConfig
+metadata:
+  name: ${AZ2}
+spec:
+  securityGroups:
+    - ${SHAREDNODE_SG}
+    - ${CLUSTER_SG}
+  subnet: ${POD_SUBNET2_ID}
+---
+apiVersion: crd.k8s.amazonaws.com/v1alpha1
+kind: ENIConfig
+metadata:
+  name: ${AZ3}
+spec:
+  securityGroups:
+    - ${SHAREDNODE_SG}
+    - ${CLUSTER_SG}
+  subnet: ${POD_SUBNET3_ID}

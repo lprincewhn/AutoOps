@@ -1,6 +1,6 @@
 {
-    "AwsAccountId": "{{AwsAccountId}}",
-    "DataSetId": "{{DataSetId}}",
+    "AwsAccountId": "${AwsAccountId}",
+    "DataSetId": "${CUR_SPICE_DataSetId}",
     "DataSetRefreshProperties": {
         "RefreshConfiguration": {
             "IncrementalRefresh": {

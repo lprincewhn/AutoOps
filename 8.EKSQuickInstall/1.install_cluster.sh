@@ -23,3 +23,22 @@ else
 fi
 eksctl utils write-kubeconfig --cluster ${CLUSTER_NAME} --region ${REGION}
 echo
+
+if [ "AWS_VPC_K8S_CNI_CUSTOM_NETWORK_CFG" = "true" ]; then
+    echo "[更改Pod所属子网]"
+    export SHAREDNODE_SG=$(aws cloudformation describe-stacks --stack-name eksctl-${CLUSTER_NAME}-cluster --region ${REGION} \
+        --query 'Stacks[0].Outputs[?OutputKey==`SharedNodeSecurityGroup`].OutputValue' --output text --no-cli-pager)
+    export CLUSTER_SG=$(aws cloudformation describe-stacks --stack-nameeksctl-${CLUSTER_NAME}-cluster --region ${REGION} \
+        --query 'Stacks[0].Outputs[?OutputKey==`ClusterSecurityGroupId`].OutputValue' --output text --no-cli-pager)
+    envsubst < ./templates/eniconfig.yaml > ./${CLUSTER_NAME}/eniconfig.yaml
+    echo
+    echo -n "是否创建上述ENI Config (y/n): "
+    read input
+    input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
+    if [ "$input_lower" = "y" ]; then
+        kubectl apply -f ./${CLUSTER_NAME}/eniconfig.yaml
+        kubectl patch daemonset aws-node \
+          -n kube-system \
+          -p '{"spec": {"template": {"spec": {"initContainers": [{"env":[{"name":"DISABLE_TCP_EARLY_DEMUX","value":"true"}],"name":"aws-vpc-cni-init"}]}}}}'
+    fi
+fi

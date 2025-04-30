@@ -1,10 +1,10 @@
 {
-    "AwsAccountId": "{{AwsAccountId}}",
-    "AnalysisId": "{{AnalysisId}}",
+    "AwsAccountId": "${AwsAccountId}",
+    "AnalysisId": "${AnalysisId}",
     "Name": "Cost Insights",
     "Permissions": [
         {
-            "Principal": "{{QuickSightUser}}",
+            "Principal": "${QuickSightUser}",
             "Actions": [
                 "quicksight:RestoreAnalysis",
                 "quicksight:UpdateAnalysisPermissions",
@@ -20,15 +20,15 @@
         "DataSetIdentifierDeclarations": [
             {
                 "Identifier": "CUR_SPICE",
-                "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_SPICE_DataSetId}}"
+                "DataSetArn": "arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:dataset/${CUR_SPICE_DataSetId}"
             },
             {
                 "Identifier": "CUR_Fields",
-                "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_Fields_DataSetId}}"
+                "DataSetArn": "arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:dataset/${CUR_Fields_DataSetId}"
             },
             {
                 "Identifier": "CUR_DIRECT",
-                "DataSetArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:dataset/{{CUR_DIRECT_DataSetId}}"
+                "DataSetArn": "arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:dataset/${CUR_DIRECT_DataSetId}"
             }
         ],
         "Sheets": [
@@ -15129,11 +15129,6 @@
             },
             {
                 "DataSetIdentifier": "CUR_SPICE",
-                "Name": "MonthBudget",
-                "Expression": "ifelse(\n    parseInt(month)=1, 31,\n    parseInt(month)=2, ifelse(IsLeapYear=1, 29, 28),\n    parseInt(month)=3, 31,\n    parseInt(month)=4, 30,\n    parseInt(month)=5, 31,\n    parseInt(month)=6, 30,\n    parseInt(month)=7, 31,\n    parseInt(month)=8, 31,\n    parseInt(month)=9, 30,\n    parseInt(month)=10, 31,\n    parseInt(month)=11, 30,\n    parseInt(month)=12, 31,\n    0\n) * DayBudget"
-            },
-            {
-                "DataSetIdentifier": "CUR_SPICE",
                 "Name": "Period",
                 "Expression": "ifelse(\n    InPeriodCurrent+InPeriod1+InPeriod2>=2, \"OverlapPeriod\",\n    InPeriodCurrent=1, concat(toString(DaysToCompare), \" days from \", formatDate(${StartDate}, \"yyyy-MM-dd\")),\n    InPeriod1=1, concat(toString(DaysToCompare), \" days from \", formatDate(${Period1StartDate}, \"yyyy-MM-dd\")),\n    InPeriod2=1, concat(toString(DaysToCompare), \" days from \", formatDate(${Period2StartDate}, \"yyyy-MM-dd\")),\n    \"NotInPeriod\"\n)"
             },
@@ -20342,6 +20337,5 @@
         "Options": {
             "WeekStart": "SUNDAY"
         }
-    },
-    "RequestId": "fa337c25-212b-4e55-a3f0-d1d81aaddeca"
+    }
 }

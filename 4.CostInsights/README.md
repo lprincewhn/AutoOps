@@ -17,12 +17,10 @@ export QuickSightUser=<QuickSignt User> # IAM User or IAM role + session name
 ```bash
 
 # DataSource
-DataSourceId=$(cat create-data-source.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{DataSourceId}}/$(uuidgen)/g" \
-| xargs -0 aws quicksight create-data-source --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSourceId' --cli-input-json)
+export DataSourceId=$(uuidgen)
+envsubst < ./create-data-source.json \
+| xargs -0 aws quicksight create-data-source --region ${AWS_REGION} --no-cli-pager --cli-input-json
+aws quicksight  describe-data-source --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-source-id ${DataSourceId} --no-cli-pager
 
 # If datasource exist already, get its id and save it to environment variable DataSourceId.
 DataSourceId=$(aws quicksight list-data-sources --region ${AWS_REGION} --no-cli-pager --aws-account-id ${AwsAccountId} --output text --query 'DataSources[?Name==`Athena`].[DataSourceId]')
@@ -33,66 +31,40 @@ DataSourceId=$(aws quicksight list-data-sources --region ${AWS_REGION} --no-cli-
 ```bash
 
 # DataSet (CUR_SPICE)
-cat data-set-spice.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{DataSourceId}}/${DataSourceId}/g" \
-| sed "s/{{CURDatabase}}/${CURDatabase}/g" \
-| sed "s/{{CURTable}}/${CURTable}/g" \
-| sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set.json
-CUR_SPICE_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --import-mode SPICE --name "CUR SPICE" --cli-input-json file:///tmp/create-data-set.json)
+export CUR_SPICE_DataSetId=$(uuidgen)
+envsubst < ./data-set-spice.json  > /tmp/create-data-set-spice.json
+aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --import-mode SPICE --name "CUR SPICE" --cli-input-json file:///tmp/create-data-set-spice.json
+aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_SPICE_DataSetId} --no-cli-pager
 
 # You may need to modify the SQL to adapt your CUR table properties, like database name, table name, some missing columns
 
-cat put-data-set-refresh-properties.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{DataSetId}}/${CUR_SPICE_DataSetId}/g" \
+envsubst < ./put-data-set-refresh-properties.json \
 | xargs -0 aws quicksight put-data-set-refresh-properties --region ${AWS_REGION} --no-cli-pager --cli-input-json
 
-cat create-refresh-schedule.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{DataSetId}}/${CUR_SPICE_DataSetId}/g" \
+envsubst < ./create-refresh-schedule.json \
 | xargs -0 aws quicksight create-refresh-schedule --region ${AWS_REGION} --no-cli-pager --cli-input-json
   
 # DataSet  (CUR_DIRECT)
-# Your can also duplicate the dataset of "CUR SPICE" and update its import mode and save its id to environment variable CUR_DIRECT_DataSetId
-cat data-set-direct.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{DataSourceId}}/${DataSourceId}/g" \
-| sed "s/{{CURDatabase}}/${CURDatabase}/g" \
-| sed "s/{{CURTable}}/${CURTable}/g" \
-| sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set.json
-CUR_DIRECT_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --import-mode DIRECT_QUERY --name "CUR DIRECT" --cli-input-json file:///tmp/create-data-set.json)
+export CUR_DIRECT_DataSetId=$(uuidgen)
+envsubst < ./data-set-direct.json  > /tmp/create-data-set-direct.json
+aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --import-mode DIRECT_QUERY --name "CUR DIRECT" --cli-input-json file:///tmp/create-data-set-direct.json
+aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_DIRECT_DataSetId} --no-cli-pager
 
 # DataSet (CUR_Fields)
-cat data-set-fields.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{DataSourceId}}/${DataSourceId}/g" \
-| sed "s/{{DataSetId}}/$(uuidgen)/g" > /tmp/create-data-set-fields.json
-CUR_Fields_DataSetId=$(aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --output text --query 'DataSetId' --cli-input-json file:///tmp/create-data-set-fields.json)
+export CUR_Fields_DataSetId=$(uuidgen)
+envsubst < ./data-set-fields.json  > /tmp/create-data-set-fields.json
+aws quicksight create-data-set --region ${AWS_REGION} --no-cli-pager --cli-input-json file:///tmp/create-data-set-fields.json
+aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-set-id ${CUR_Fields_DataSetId} --no-cli-pager
 ```
 
 4. Create Analysis
 
 ```bash
 # Analysis
-cat analysis.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Fields_DataSetId}}/${CUR_Fields_DataSetId}/g" \
-| sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
-| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| sed "s/{{AnalysisId}}/$(uuidgen)/g" > /tmp/create-analysis.json
-
-AnalysisId=$(aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --output text --query 'AnalysisId' --cli-input-json file:///tmp/create-analysis.json)
+export AnalysisId=$(uuidgen)
+envsubst '${AwsAccountId} ${AWS_REGION} ${QuickSightUser} ${CUR_Fields_DataSetId} ${CUR_DIRECT_DataSetId} ${CUR_SPICE_DataSetId} ${AnalysisId}' < ./create-analysis.json  > /tmp/create-analysis.json
+aws quicksight create-analysis --region ${AWS_REGION} --no-cli-pager --cli-input-json file:///tmp/create-analysis.json
+aws quicksight describe-analysis --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --analysis-id ${AnalysisId} --no-cli-pager
 ```
 
 ### Export as CloudFormation Template
@@ -148,43 +120,26 @@ aws quicksight describe-data-set --region ${AWS_REGION} --aws-account-id ${AwsAc
 1. Create Template
 
 ``` bash
-TemplateId=$(cat create-template.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Fields_DataSetId}}/${CUR_Fields_DataSetId}/g" \
-| sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
-| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| sed "s/{{AnalysisId}}/${AnalysisId}/g" \
-| sed "s/{{TemplateId}}/$(uuidgen)/g" \
-| xargs -0 aws quicksight create-template --region ${AWS_REGION} --no-cli-pager --output text --query 'TemplateId' --cli-input-json)
+export TemplateId=$(uuidgen)
+envsubst < ./create-template.json  > /tmp/create-template.json
+aws quicksight create-template --region ${AWS_REGION} --no-cli-pager --cli-input-json file:///tmp/create-template.json
+aws quicksight describe-template --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --template-id ${TemplateId} --no-cli-pager
 ```
 
 2. Authorize the template to another AWS account
 
 ``` bash
-cat update-template-permissions.json \
-| sed "s/{{TargetAccountId}}/${TargeAwsAccountId}/g" \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{TemplateId}}/${TemplateId}/g" \
-| xargs -0 aws quicksight update-template-permissions --aws-account-id ${AwsAccountId} --region ${AWS_REGION} --template-id ${TemplateId} --no-cli-pager --cli-input-json
+envsubst < ./update-template-permissions.json  > /tmp/update-template-permissions.json
+aws quicksight update-template-permissions --aws-account-id ${AwsAccountId} --region ${AWS_REGION} --template-id ${TemplateId} --no-cli-pager --cli-input-json file:///tmp/update-template-permissions.json
 ```
 
 3. Create dashboard in the other account from template 
 
 ``` bash
-DashboardId=$(cat create-dashboard-by-template.json \
-| sed "s/{{AwsAccountId}}/${AwsAccountId}/g" \
-| sed "s/{{Region}}/${AWS_REGION}/g" \
-| sed "s/{{QuickSightUser}}/${QuickSightUser}/g" \
-| sed "s/{{CUR_Fields_DataSetId}}/${CUR_Fields_DataSetId}/g" \
-| sed "s/{{CUR_DIRECT_DataSetId}}/${CUR_DIRECT_DataSetId}/g" \
-| sed "s/{{CUR_SPICE_DataSetId}}/${CUR_SPICE_DataSetId}/g" \
-| sed "s/{{SourceRegion}}/${SourceRegion}/g" \
-| sed "s/{{SourceAwsAccountId}}/${SourceAwsAccountId}/g" \
-| sed "s/{{TemplateId}}/${TemplateId}/g" \
-| sed "s/{{DashboardId}}/$(uuidgen)/g" \
-| xargs -0 aws quicksight create-dashboard --region ${AWS_REGION} --no-cli-pager --output text --query 'DashboardId' --name 'Cost Insights' --cli-input-json)
+export DashboardId=$(uuidgen)
+envsubst < ./create-dashboard-by-template.json  > /tmp/create-dashboard-by-template.json
+aws quicksight create-dashboard --region ${AWS_REGION} --no-cli-pager --output text --query 'DashboardId' --name 'Cost Insights' --cli-input-json file:///tmp/create-dashboard-by-template
+aws quicksight describe-dashboard --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --dashboard-id ${DashboardId} --no-cli-pager
 ```
 
 ### Analysis Caculated Field

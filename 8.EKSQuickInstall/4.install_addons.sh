@@ -1,7 +1,8 @@
 #!/bin/bash
 
-echo "[安装ebs-csi-driver]"
+
 if [ "$EBS_CSI_DRIVER" = "on" ]; then
+    echo "[安装ebs-csi-driver]"
     echo -n "是否使用AWS托管策略AmazonEBSCSIDriverPolicy创建角色 ${CLUSTER_NAME}-ebs-csi-role (y/n): "
     read input
     input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
@@ -24,7 +25,7 @@ if [ "$EBS_CSI_DRIVER" = "on" ]; then
         helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver && helm repo update aws-ebs-csi-driver
         helm upgrade --install aws-ebs-csi-driver \
             --version "${EBS_CSI_DRIVER_CHART_VERSION}" --namespace kube-system \
-            aws-ebs-csi-driver/aws-ebs-csi-driver \
+            aws-ebs-csi-driver/aws-ebs-csi-driver  \
             -f ./${CLUSTER_NAME}/ebs-csi-driver-helm-values.yaml
         echo "安装完毕，检查pod和sa状态"
         kubectl get all -n kube-system | grep ebs-csi
@@ -35,8 +36,9 @@ if [ "$EBS_CSI_DRIVER" = "on" ]; then
     echo
 fi
 
-echo "[安装efs-csi-driver]"
+
 if [ "$EFS_CSI_DRIVER" = "on" ]; then
+    echo "[安装efs-csi-driver]"
     cat ./templates/efs-csi-driver-iam-policy-v"${EFS_CSI_DRIVER_VERSION}".json
     echo
     echo -n "是否创建上述策略并用该策略创建角色 ${CLUSTER_NAME}-efs-csi-role (y/n): "
@@ -47,7 +49,7 @@ if [ "$EFS_CSI_DRIVER" = "on" ]; then
             --policy-name EKS_EFS_CSI_Driver_Policy \
             --policy-document file://./templates/efs-csi-driver-iam-policy-v"${EFS_CSI_DRIVER_VERSION}".json
         eksctl create iamserviceaccount --name efs-csi-controller-sa --namespace kube-system --cluster ${CLUSTER_NAME} --region ${REGION} \
-            --role-name ${CLUSTER_NAME}-efs-csi-role \
+            --role-name ${CLUSTER_NAME}-efs-csi-role  \
             --attach-policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/EKS_EFS_CSI_Driver_Policy \
             --role-only --approve
     else
@@ -63,7 +65,7 @@ if [ "$EFS_CSI_DRIVER" = "on" ]; then
         helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver && helm repo update aws-efs-csi-driver
         helm upgrade --install aws-efs-csi-driver \
             --version "${EFS_CSI_DRIVER_CHART_VERSION}" --namespace kube-system \
-            aws-efs-csi-driver/aws-efs-csi-driver \
+            aws-efs-csi-driver/aws-efs-csi-driver  \
             -f ./${CLUSTER_NAME}/efs-csi-driver-helm-values.yaml
         echo "安装完毕，检查pod和sa状态"
         kubectl get all -n kube-system | grep efs-csi
@@ -74,8 +76,9 @@ if [ "$EFS_CSI_DRIVER" = "on" ]; then
     echo
 fi
 
-echo "[安装karpenter]"
+
 if [ "$KARPENTER" = "on" ]; then
+    echo "[安装karpenter]"
     cat templates/karpenter-cloudformation-v${KARPENTER_VERSION}.yaml
     echo
     echo -n "是否创建上述Karpenter所需AWS组件，包括节点角色，节点事件规则和队列 (y/n): "
@@ -94,6 +97,11 @@ if [ "$KARPENTER" = "on" ]; then
             --role-name ${CLUSTER_NAME}-karpenter \
             --attach-policy-arn arn:aws:iam::${AWS_ACCOUNT_ID}:policy/KarpenterControllerPolicy-${CLUSTER_NAME} \
             --role-only --approve
+        aws eks create-access-entry \
+            --cluster-name ${CLUSTER_NAME} \
+            --principal-arn arn:aws:iam::${AWS_ACCOUNT_ID}:role/KarpenterNodeRole-${CLUSTER_NAME} \
+            --type EC2_LINUX \
+            --region ${REGION}
     else
         echo "跳过创建Karpenter所需AWS组件。"
     fi
@@ -106,7 +114,7 @@ if [ "$KARPENTER" = "on" ]; then
     if [ "$input_lower" = "y" ]; then
         helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
             --version "v${KARPENTER_VERSION}" --namespace karpenter --create-namespace \
-            -f ./${CLUSTER_NAME}/karpenter-helm-values.yaml
+            -f ./${CLUSTER_NAME}/karpenter-helm-values.yaml 
         echo "安装完毕，检查pod和sa状态"
         kubectl get all -n karpenter | grep karpenter
         kubectl describe sa karpenter -n karpenter
@@ -116,8 +124,9 @@ if [ "$KARPENTER" = "on" ]; then
     echo
 fi
 
-echo "[安装aws-loadbalancer-controller]"
+
 if [ "$AWS_LOADBALANCER_CONTROLLER" = "on" ]; then
+    echo "[安装aws-loadbalancer-controller]"
     cat ./templates/aws-loadbalancer-controller-iam-policy-v"${AWS_LOADBALANCER_CONTROLLER_VERSION}".json
     echo
     echo -n "是否创建上述策略并用该策略创建角色 ${CLUSTER_NAME}-aws-loadbalancer-controller-role (y/n): "
@@ -145,7 +154,7 @@ if [ "$AWS_LOADBALANCER_CONTROLLER" = "on" ]; then
         helm repo add eks https://aws.github.io/eks-charts && helm repo update eks
         helm upgrade --install aws-load-balancer-controller \
             --version "${AWS_LOADBALANCER_CONTROLLER_CHART_VERSION}" -n kube-system \
-            eks/aws-load-balancer-controller \
+            eks/aws-load-balancer-controller  \
             -f ./${CLUSTER_NAME}/aws-loadbalancer-controller-helm-values.yaml
         echo "安装完毕，检查pod和sa状态"
         kubectl get all -n kube-system | grep aws-load-balancer-controller
@@ -156,8 +165,9 @@ if [ "$AWS_LOADBALANCER_CONTROLLER" = "on" ]; then
     echo
 fi
 
-echo "[安装ingress-nginx-controller"]
+
 if [ "$INGRESS_NGINX_CONTROLLER" = "on" ]; then
+    echo "[安装ingress-nginx-controller"]
     envsubst < ./templates/ingress-nginx-helm-values.yaml > ./${CLUSTER_NAME}/ingress-nginx-helm-values.yaml
     cat ./${CLUSTER_NAME}/ingress-nginx-helm-values.yaml
     echo
@@ -177,8 +187,9 @@ if [ "$INGRESS_NGINX_CONTROLLER" = "on" ]; then
     fi
 fi
 
-echo "[安装prometheus"]
+
 if [ "${PROMETHEUS}" = "on" ]; then
+    echo "[安装prometheus"]
     envsubst < ./templates/prometheus-helm-values.yaml > ./${CLUSTER_NAME}/prometheus-helm-values.yaml
     cat ./${CLUSTER_NAME}/prometheus-helm-values.yaml
     echo
@@ -189,7 +200,7 @@ if [ "${PROMETHEUS}" = "on" ]; then
         helm repo add prometheus-community https://prometheus-community.github.io/helm-charts && helm repo update prometheus-community
         helm upgrade --install prometheus \
           --version "${PROMETHEUS_CHART_VERSION}" --namespace monitoring --create-namespace \
-          prometheus-community/prometheus \
+          prometheus-community/prometheus  \
           -f ./${CLUSTER_NAME}/prometheus-helm-values.yaml
         echo "安装完毕，检查组件"
         kubectl get all -n monitoring | grep prometheus
@@ -198,8 +209,9 @@ if [ "${PROMETHEUS}" = "on" ]; then
     fi
 fi
 
-echo "[安装fluentbit"]
+
 if [ "${FLUENT_BIT}" = "on" ]; then
+    echo "[安装fluentbit"]
     envsubst < ./templates/fluentbit-helm-values.yaml > ./${CLUSTER_NAME}/fluentbit-helm-values.yaml
     cat ./${CLUSTER_NAME}/fluentbit-helm-values.yaml
     echo
@@ -210,7 +222,7 @@ if [ "${FLUENT_BIT}" = "on" ]; then
         helm repo add fluent https://fluent.github.io/helm-charts && helm repo update fluent
         helm upgrade --install fluent-bit \
           --version "${FLUENTBIT_CHART_VERSION}" --namespace logging --create-namespace \
-          fluent/fluent-bit \
+          fluent/fluent-bit  \
           -f ./${CLUSTER_NAME}/fluentbit-helm-values.yaml
         echo "安装完毕，检查组件"
         kubectl get all -n logging | grep fluent-bit
@@ -219,8 +231,7 @@ if [ "${FLUENT_BIT}" = "on" ]; then
     fi
 fi
 
-
 ## TODO: kuboard
-echo "[安装完毕，检查集群所有Pod]"
+echo "[安装完毕，检查集群所有Pod和Service]"
 kubectl get pod -A
-kubec
+kubectl get svc -A

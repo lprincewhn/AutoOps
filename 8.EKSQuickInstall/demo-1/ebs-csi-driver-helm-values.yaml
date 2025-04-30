@@ -1,0 +1,7 @@
+controller:
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::597377428377:role/demo-1-ebs-csi-role
+  tolerations:
+    - key: CriticalAddonsOnly
+      operator: Exists

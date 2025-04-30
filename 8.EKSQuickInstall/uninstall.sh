@@ -3,6 +3,7 @@ echo -n "是否确认删除集群，选择 y 将开始删除 ${CLUSTER_NAME} 集
 read input
 input_lower=$(echo "$input" | tr '[:upper:]' '[:lower:]')
 if [ "$input_lower" = "y" ]; then
+    echo "删除prometheus，释放其PV/PVC"
     helm uninstall prometheus -n monitoring
     STACKS=(
         "eksctl-${CLUSTER_NAME}-addon-iamserviceaccount-kube-system-efs-csi-controller-sa"
@@ -21,5 +22,4 @@ if [ "$input_lower" = "y" ]; then
         echo "堆栈 $s 已成功删除"
     done
 fi
-
 # TODO: Termitate EC2 launched by Karpenter

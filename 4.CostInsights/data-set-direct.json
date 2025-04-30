@@ -1,14 +1,14 @@
 {
-    "AwsAccountId": "{{AwsAccountId}}",
-    "DataSetId": "{{DataSetId}}",
+    "AwsAccountId": "${AwsAccountId}",
+    "DataSetId": "${CUR_DIRECT_DataSetId}",
     "Name": "CUR SPICE",
     "PhysicalTableMap": {
         "da47e529-b172-4165-b2e5-99394919787f": {
             "RelationalTable": {
-                "DataSourceArn": "arn:aws:quicksight:{{Region}}:{{AwsAccountId}}:datasource/{{DataSourceId}}",
+                "DataSourceArn": "arn:aws:quicksight:${AWS_REGION}:${AwsAccountId}:datasource/${DataSourceId}",
                 "Catalog": "AwsDataCatalog",
-                "Schema": "{{CURDatabase}}",
-                "Name": "{{CURTable}}",
+                "Schema": "${CURDatabase}",
+                "Name": "${CURTable}",
                 "InputColumns": [
                     {
                         "Name": "identity_line_item_id",
@@ -1983,7 +1983,7 @@
     },
     "Permissions": [
         {
-            "Principal": "{{QuickSightUser}}",
+            "Principal": "${QuickSightUser}",
             "Actions": [
                 "quicksight:DeleteDataSet",
                 "quicksight:UpdateDataSetPermissions",

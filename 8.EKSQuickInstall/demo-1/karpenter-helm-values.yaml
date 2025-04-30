@@ -1,0 +1,15 @@
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::597377428377:role/demo-1-karpenter
+tolerations:
+  - key: CriticalAddonsOnly
+    operator: Exists
+replicas: 2
+settings:
+  aws:
+    clusterName: demo-1
+    interruptionQueueName: demo-1
+    defaultInstanceProfile: KarpenterNodeInstanceProfile-demo-1
+  featureGates:
+    drift: false
+    
