@@ -1,18 +1,21 @@
 # AutoOps
 
-This project contains useful operational processes represented as state machines with AWS StepFunctions. 
+This project contains useful operational processes represented as state machines with AWS Serverless Application.
+The core of this project is the incident manager，it could be:
 
+1. Incident Manager in AWS Systems Manager.
 
 ```mermaid
 flowchart TD
     CloudWatch["CloudWatch Alarm"] --> OpsItem;
     OpsItem --> |Manually start|Incident;
     Incident --> SNS;
-	SNS --> ChatBot;
-	SNS --> Lambda["Notification Lambda"];
+	SNSStructured["SNS: Structured Message"] --> ChatBot;
+	SNSText["SNS: Text Message"] --> Lambda["Text Notification Lambda"];
 	ChatBot --> Chime/Slack/Teams;
 	Lambda --> Wechat/Wecom/Feishu/Dingding;
 	Incident --> EventBridge;
+	EventBridge --> |format text message|SNSText;
 	EventBridge --> StepFunction["AutoOps workflow"];
 ```
 
@@ -20,14 +23,17 @@ flowchart TD
 flowchart TD
     CloudWatch["CloudWatch Alarm"] --> Incident;
     Incident --> |Auto create|OpsItem;
-    Incident --> SNS;
-	SNS --> ChatBot;
-	SNS --> Lambda["Notification Lambda"];
+    Incident --> SNSStructured;
+	SNSStructured["SNS: Structured Message"] --> ChatBot;
+	SNSText["SNS: Text Message"] --> Lambda["Text Notification Lambda"];
 	ChatBot --> Chime/Slack/Teams;
 	Lambda --> Wechat/Wecom/Feishu/Dingding;
 	Incident --> EventBridge;
+	EventBridge --> |format text message|SNSText;
 	EventBridge --> StepFunction["AutoOps workflow"];
 ```
+
+2. Customer-built event management center.
 
 ## How to deploy
 

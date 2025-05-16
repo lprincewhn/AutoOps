@@ -94,6 +94,7 @@ Resources:
                   - "logs:GetQueryResults"
                   - "cloudwatch:ListMetrics"
                   - "cloudwatch:GetMetricData"
+                  - "cloudwatch:PutMetricData"
                 Resource: 
                   - "*"
         - PolicyName: "APS"
@@ -210,6 +211,37 @@ Resources:
         '--enable-job-insights': 'true'
         '--enable-observability-metrics': 'true'
         '--verbose': '0' 
+  
+  LoadPrometheusAPPMetricsJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !Ref CUREtlRole
+      GlueVersion: 5.0
+      WorkerType: G.1X
+      NumberOfWorkers: 2
+      Command:
+        Name: glueetl
+        ScriptLocation: './load_prometheus_appmetrics.py'
+      Connections:
+        Connections:
+          - !Ref VPCConnection
+      DefaultArguments:
+        '--year': '2024'
+        '--month': '10'
+        '--cur-database': !Ref CURDatabase
+        '--work-bucket': !Ref WorkBucketName
+        '--region': 'ap-northeast-1'
+        '--usage-account': !Ref AWS::AccountId
+        # '--prometheus-endpoint': 'http://k8s-promethe-promethe-e2fcf81d1b-468ba5a5bc316af4.elb.ap-northeast-1.amazonaws.com'
+        '--prometheus-endpoint': 'https://aps-workspaces.ap-northeast-1.amazonaws.com/workspaces/ws-4bc81632-87d7-47d8-8b02-1f4335804e37'
+        '--python-modules-installer-option': '-r'
+        '--additional-python-modules': !Join [ '', [ 's3://', !Ref WorkBucketName, '/requirement.txt' ] ]
+        '--enable-glue-datacatalog': 'true'
+        '--enable-metrics': 'true'
+        '--enable-continuous-cloudwatch-log': 'true'
+        '--enable-job-insights': 'true'
+        '--enable-observability-metrics': 'true'
+        '--verbose': '0'   
         
   AllocateEksJob:
     Type: AWS::Glue::Job
@@ -218,7 +250,7 @@ Resources:
       GlueVersion: 4.0
       Command:
         Name: glueetl
-        ScriptLocation: './allocate-eks-1.py'
+        ScriptLocation: './allocate-eks-2.py'
       DefaultArguments:
         '--year': '2024'
         '--month': '10'
@@ -295,6 +327,7 @@ Resources:
         StandardizeJobName: !Ref StandardizeJob
         LoadCloudWatchEKSMetricsJob: !Ref LoadCloudWatchEKSMetricsJob
         LoadPrometheusEKSMetricsJob: !Ref LoadPrometheusEKSMetricsJob
+        LoadPrometheusAPPMetricsJob: !Ref LoadPrometheusAPPMetricsJob
         AllocateEksJob: !Ref AllocateEksJob
         AllocateUntagJob: !Ref AllocateUntagJob
       Events:

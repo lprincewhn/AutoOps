@@ -124,7 +124,7 @@ if debug:
     (df_cost_eks_flag.coalesce(1).write
         .mode("overwrite")
         .partitionBy(["usage_account","year","month"])
-        .option("path", f"s3://{work_bucket}/data/enhanced_cur_allocate_eks_1/")
+        .option("path", f"s3://{work_bucket}/data/enhanced_cur_allocate_eks/1/")
         .saveAsTable(f"{cur_database}.enhanced_cur_allocate_eks_1")
     )
 
@@ -163,7 +163,7 @@ if debug:
     (df.coalesce(1).write
         .mode("overwrite")
         .partitionBy(["usage_account","year","month"])
-        .option("path", f"s3://{work_bucket}/data/enhanced_cur_allocate_eks_2/")
+        .option("path", f"s3://{work_bucket}/data/enhanced_cur_allocate_eks/2/")
         .saveAsTable(f"{cur_database}.enhanced_cur_allocate_eks_2")
     )
     
@@ -185,7 +185,7 @@ print(f"Writing data to s3://{work_bucket}/data/allocate-eks/res/")
 (df.coalesce(1).write
     .mode("overwrite")
     .partitionBy(["usage_account","year","month"])
-    .option("path", f"s3://{work_bucket}/data/allocate-eks/")
+    .option("path", f"s3://{work_bucket}/data/allocate-eks/res/")
     .saveAsTable(f"{cur_database}.enhanced_cur_allocate_eks")
 )
 print(f"Job finished.")

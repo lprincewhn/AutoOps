@@ -209,7 +209,7 @@ docker run -it --rm \
 
 This job load eks resource metrics (cpu and memory reserved and actual usage) from Prometheus. Please config your prometheus as: 
 
-1. Configure kube-state-metrics to fetch the pod labels by argument "--metric-labels-allowlist=pods=[xxx,xxx]"
+1. Configure kube-state-metrics to fetch pod labels by argument "--metric-labels-allowlist"
 ```
     spec:
       containers:
@@ -217,7 +217,7 @@ This job load eks resource metrics (cpu and memory reserved and actual usage) fr
           image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
           args:
             - '--port=8080'
-            - '--metric-labels-allowlist=pods=[app,app.kubernetes.io/name]' # Fetch pod labels app.
+            - '--metric-labels-allowlist=pods=[app,app.kubernetes.io/name]' # Fetch labels "app" and "app.kubernetes.io/name" of pods and ingresses.
 ```
 
 2. Configure prometheus server to keep the data for at least 2 month by argument "--storage.tsdb.retention.time=65d"
@@ -232,6 +232,8 @@ This job load eks resource metrics (cpu and memory reserved and actual usage) fr
             - '--web.console.templates=/etc/prometheus/consoles'
             - '--web.enable-lifecycle'
 ```
+
+3. Prometheus的配置文件中获取node的annotation作为pod的label，以获取EC2实例id
 
 This job load eks resource metrics by following PromQL:
 
@@ -319,6 +321,13 @@ docker run -it --rm \
     --cur-database $CURDatabase \
     --verbose 0
 ```
+
+### 4.6 LoadPrometheusBuziMetricsJob
+
+Ingress
+a) kube-state-metrics启动参数中设置收集ingress的label，如app
+b) ingress-nginx-controller的service中加入cluster_name和region标签
+c) 如果ingress名称在多个集群有重复，kube-state-metrics的service中加入cluster_name和region标签
 
 ## 5. Tunning jobs in loal Jupyter Notebook    
 
