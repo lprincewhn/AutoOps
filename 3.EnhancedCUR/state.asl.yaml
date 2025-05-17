@@ -1,40 +1,50 @@
-StartAt: StandardizeJob
+StartAt: LoadJobs
 States:
-  StandardizeJob:
-    Type: Task
-    Resource: arn:aws:states:::glue:startJobRun.sync
-    Parameters:
-      JobName: '${StandardizeJobName}'
-      Arguments:
-        --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
-        --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
-    InputPath: $
-    ResultPath: $.StandardizeResult
-    Next: LoadNRTEKSMetricsJob
-  LoadNRTEKSMetricsJob:
-    Type: Task
-    Resource: arn:aws:states:::glue:startJobRun.sync
-    Parameters:
-      JobName: '${LoadPrometheusEKSMetricsJob}'
-      Arguments:
-        --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
-        --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
-        --region: ap-northeast-1
-    InputPath: $
-    ResultPath: $.LoadNRTEKSMetricsResult
-    Next: LoadNRTAPPMetricsJob
-  LoadNRTAPPMetricsJob:
-    Type: Task
-    Resource: arn:aws:states:::glue:startJobRun.sync
-    Parameters:
-      JobName: '${LoadPrometheusAPPMetricsJob}'
-      Arguments:
-        --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
-        --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
-        --region: ap-northeast-1
-    InputPath: $
-    ResultPath: $.LoadNRTAPPMetricsResult
+  LoadJobs:
+    Type: Parallel
     Next: AllocateEksJob
+    Branches:
+    - StartAt: StandardizeJob
+      States:
+        StandardizeJob:
+          Type: Task
+          Resource: arn:aws:states:::glue:startJobRun.sync
+          Parameters:
+            JobName: '${StandardizeJobName}'
+            Arguments:
+              --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
+              --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
+          InputPath: $
+          ResultPath: $.StandardizeResult
+          End: True
+    - StartAt: LoadNRTEKSMetricsJob
+      States:
+        LoadNRTEKSMetricsJob:
+          Type: Task
+          Resource: arn:aws:states:::glue:startJobRun.sync
+          Parameters:
+            JobName: '${LoadPrometheusEKSMetricsJob}'
+            Arguments:
+              --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
+              --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
+              --region: ap-northeast-1
+          InputPath: $
+          ResultPath: $.LoadNRTEKSMetricsResult
+          End: True
+    - StartAt: LoadNRTAPPMetricsJob
+      States:
+        LoadNRTAPPMetricsJob:
+          Type: Task
+          Resource: arn:aws:states:::glue:startJobRun.sync
+          Parameters:
+            JobName: '${LoadPrometheusAPPMetricsJob}'
+            Arguments:
+              --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
+              --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
+              --region: ap-northeast-1
+          InputPath: $
+          ResultPath: $.LoadNRTAPPMetricsResult
+          End: True
   AllocateEksJob:
     Type: Task
     Resource: arn:aws:states:::glue:startJobRun.sync

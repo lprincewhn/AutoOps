@@ -62,8 +62,8 @@ while current_date <= end:
                 date = f'{datetime.datetime.fromtimestamp(v[0])-datetime.timedelta(days=1):%Y-%m-%dT%H:%M:%SZ}'
                 if not result_dict.get((year, month, date, usage_account, region, eks_cluster_name, eks_namespace, eks_app, resource_id)):
                     result_dict[(year, month, date, usage_account, region, eks_cluster_name, eks_namespace, eks_app, resource_id)] = {}
-                requests = result_dict[(year, month, date, usage_account, region, eks_cluster_name, eks_namespace, eks_app, resource_id)].get("requests", 0)
-                result_dict[(year, month, date, usage_account, region, eks_cluster_name, eks_namespace, eks_app, resource_id)]["requests"] = requests + float(v[1])
+                requests_val = result_dict[(year, month, date, usage_account, region, eks_cluster_name, eks_namespace, eks_app, resource_id)].get("requests", 0)
+                result_dict[(year, month, date, usage_account, region, eks_cluster_name, eks_namespace, eks_app, resource_id)]["requests"] = requests_val + float(v[1])
                 requests_sample = result_dict[(year, month, date, usage_account, region, eks_cluster_name, eks_namespace, eks_app, resource_id)].get("requests_sample", 0)
                 result_dict[(year, month, date, usage_account, region, eks_cluster_name, eks_namespace, eks_app, resource_id)]["requests_sample"] = requests_sample + 1
     else:
