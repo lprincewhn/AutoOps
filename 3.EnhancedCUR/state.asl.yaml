@@ -1,8 +1,15 @@
 StartAt: LoadJobs
 States:
+  # StoreInputs:
+  #   Type: Pass
+  #   Next: LoadJobs
+  #   Assign:
+  #     year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
+  #     month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
   LoadJobs:
     Type: Parallel
     Next: AllocateEksJob
+    ResultPath: $.LoadJobsResult
     Branches:
     - StartAt: StandardizeJob
       States:
@@ -27,7 +34,7 @@ States:
             Arguments:
               --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
               --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
-              --region: ap-northeast-1
+              # --region: ap-northeast-1
           InputPath: $
           ResultPath: $.LoadNRTEKSMetricsResult
           End: True
@@ -41,7 +48,7 @@ States:
             Arguments:
               --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
               --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
-              --region: ap-northeast-1
+              # --region: ap-northeast-1
           InputPath: $
           ResultPath: $.LoadNRTAPPMetricsResult
           End: True
