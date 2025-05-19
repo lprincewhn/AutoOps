@@ -1,11 +1,5 @@
 StartAt: LoadJobs
 States:
-  # StoreInputs:
-  #   Type: Pass
-  #   Next: LoadJobs
-  #   Assign:
-  #     year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
-  #     month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
   LoadJobs:
     Type: Parallel
     Next: AllocateEksJob
@@ -73,13 +67,31 @@ States:
         --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
     InputPath: $
     ResultPath: $.AllocateUntagResult
-    Next: CreateIngestion
-  CreateIngestion:
+    Next: CorrelateAPPCostJob
+  CorrelateAPPCostJob:
     Type: Task
+    Resource: arn:aws:states:::glue:startJobRun.sync
     Parameters:
-      AwsAccountId: '${AwsAccountId}'
-      DataSetId: '${QuicksightDataSetId}'
-      IngestionId.$: States.UUID()
-      IngestionType: INCREMENTAL_REFRESH
-    Resource: arn:aws:states:::aws-sdk:quicksight:createIngestion
+      JobName: '${CorrelateAPPCostJob}'
+      Arguments:
+        --year.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 0)
+        --month.$: States.ArrayGetItem(States.StringSplit($.time, '-,T'), 1)
+    InputPath: $
+    ResultPath: $.AllocateUntagResult
+    Next: QuickSightIngestionJobs
+  QuickSightIngestionJobs:
+    Type: Parallel
     End: true
+    ResultPath: $.ProcessJobsResult
+    Branches:
+    - StartAt: EhancedCURIngestionJob
+      States:
+        EhancedCURIngestionJob:
+          Type: Task
+          Parameters:
+            AwsAccountId: '${AwsAccountId}'
+            DataSetId: '${QuicksightDataSetId}'
+            IngestionId.$: States.UUID()
+            IngestionType: INCREMENTAL_REFRESH
+          Resource: arn:aws:states:::aws-sdk:quicksight:createIngestion
+          End: true  

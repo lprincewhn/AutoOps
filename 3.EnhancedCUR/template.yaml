@@ -287,6 +287,28 @@ Resources:
         '--enable-observability-metrics': 'true'
         '--verbose': '0' 
         
+  CorrelateAPPCostJob:
+    Type: AWS::Glue::Job
+    Properties:
+      Role: !Ref CUREtlRole
+      GlueVersion: 4.0
+      Command:
+        Name: glueetl
+        ScriptLocation: './correlate-appcost.py'
+      DefaultArguments:
+        '--year': '2024'
+        '--month': '10'
+        '--cur-database': !Ref CURDatabase
+        '--appmetrics-table': 'enhanced_cur_appmetrics_prometheus'
+        '--cost-table': 'enhanced_cur_allocate_eks'
+        '--work-bucket': !Ref WorkBucketName
+        '--enable-glue-datacatalog': 'true'
+        '--enable-metrics': 'true'
+        '--enable-continuous-cloudwatch-log': 'true'
+        '--enable-job-insights': 'true'
+        '--enable-observability-metrics': 'true'
+        '--verbose': '0'  
+        
   StepFunctionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -330,6 +352,7 @@ Resources:
         LoadPrometheusAPPMetricsJob: !Ref LoadPrometheusAPPMetricsJob
         AllocateEksJob: !Ref AllocateEksJob
         AllocateUntagJob: !Ref AllocateUntagJob
+        CorrelateAPPCostJob: !Ref CorrelateAPPCostJob
       Events:
         DailyEvent:
           Type: Schedule
@@ -378,4 +401,7 @@ Outputs:
   AllocateUntagJob:
     Description: "Glue Job name"
     Value: !Ref AllocateUntagJob 
+  CorrelateAPPCostJob:
+    Description: "Glue Job name"
+    Value: !Ref CorrelateAPPCostJob 
 
