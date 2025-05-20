@@ -11,10 +11,10 @@ cd ~/AutoOps/3.EnhancedCUR
 STACK_NAME="AutoOpsEnhancedCUR"
 sam build && sam deploy --stack-name $STACK_NAME --region $AWS_REGION --confirm-changeset --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
     --parameter-overrides CURBucketName=${CURBucketName} WorkBucketName=${WorkBucketName} CURDatabase=${CURDatabase} CURTable=${CURTable} \
-    QuicksightDataSetId=${QuicksightDataSetId} --s3-bucket ${WorkBucketName} --s3-prefix script
+    EnhancedCURDataSetId=${EnhancedCURDataSetId} AppCostDataSetId=${AppCostDataSetId} --s3-bucket ${WorkBucketName} --s3-prefix script
 aws s3 cp ./requirement.txt s3://${WorkBucketName}/
 ```
-```
+
 
 ## 2. Start
 
@@ -61,7 +61,7 @@ aws logs tail /aws-glue/jobs/output --region $AWS_REGION --follow
 aws cloudformation delete-stack --stack-name $STACK_NAME --region $AWS_REGION --no-cli-pager
 ```
 
-## 4. Introduction of Jobs
+## 4. Jobs
 
 ### 4.1 StandardizeJob
 
@@ -161,7 +161,7 @@ docker run -it --rm \
 
 ### 4.2 LoadCloudWatchEKSMetricsJob
 
-This job load eks resource metrics (cpu and memory reserved and actual usage) from CloudWatch ContainerInsights log group. 
+This job loads eks resource metrics (cpu and memory reserved and actual usage) from CloudWatch ContainerInsights log group. 
 
 ```CloudWatch LogInsights
 filter !isempty(kubernetes.pod_name) 
@@ -207,7 +207,7 @@ docker run -it --rm \
 
 ### 4.3 LoadPrometheusEKSMetricsJob
 
-This job load eks resource metrics (cpu and memory reserved and actual usage) from Prometheus. Please config your prometheus as: 
+This job loads eks resource metrics (cpu and memory reserved and actual usage) from Prometheus. Please config your prometheus as: 
 
 1. Configure kube-state-metrics to fetch pod labels by argument "--metric-labels-allowlist"
 ```
@@ -217,7 +217,7 @@ This job load eks resource metrics (cpu and memory reserved and actual usage) fr
           image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
           args:
             - '--port=8080'
-            - '--metric-labels-allowlist=pods=[app,app.kubernetes.io/name]' # Fetch labels "app" and "app.kubernetes.io/name" of pods and ingresses.
+            - '--metric-labels-allowlist=pods=[app,app.kubernetes.io/name]' # Fetch labels "app" and "app.kubernetes.io/name" of pods.
 ```
 
 2. Configure prometheus server to keep the data for at least 2 month by argument "--storage.tsdb.retention.time=65d"
@@ -233,22 +233,56 @@ This job load eks resource metrics (cpu and memory reserved and actual usage) fr
             - '--web.enable-lifecycle'
 ```
 
-3. Prometheus的配置文件中获取node的annotation作为pod的label，以获取EC2实例id
+3. Configure ConfigMap of prometheus server to put EC2 instance ID in metric lables. Following example is to get the EC2 instance ID from annotation added by Amazon EBS or EFS CSI driver.
+```
+    - job_name: kubernetes-nodes-cadvisor
+      bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+      kubernetes_sd_configs:
+      - role: node
+      relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - action: labelmap
+        regex: __meta_kubernetes_node_annotation_csi_volume_kubernetes_io_(.+) # Fectch node annotation as metric labels
+```
 
 This job load eks resource metrics by following PromQL:
 
 ```promsql
-CPU:
-sum(rate(container_cpu_usage_seconds_total{image!=""}[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*100*on(pod)group_left(label_app)kube_pod_labels
+Acutal CPU:
+	sum(sum_over_time(rate(container_cpu_usage_seconds_total{image!=""}[1h])[1d:1h]))
+	by(topology_kubernetes_io_region,alpha_eksctl_io_cluster_name,namespace,pod,nodeid)
+	*on(pod)group_left(label_app,label_app_kubernetes_io_name)avg(avg_over_time(kube_pod_labels[1d]))
+	by(label_app,label_app_kubernetes_io_name,pod)
 
-Memory: 
-sum(container_memory_working_set_bytes{image!=""})by(topology_kubernetes_io_region, csi_volume_kubernetes_io_nodeid, alpha_eksctl_io_cluster_name, namespace, pod)*on(pod)group_left(label_app)kube_pod_labels
+Acutal Memory: 
+	sum(sum_over_time(avg_over_time(container_memory_working_set_bytes{image!=""}[1h])[1d:1h]))
+	by(topology_kubernetes_io_region,alpha_eksctl_io_cluster_name,namespace,nodeid,pod)
+	*on(pod)group_left(label_app,label_app_kubernetes_io_name)avg(avg_over_time(kube_pod_labels[1d]))
+	by(label_app,label_app_kubernetes_io_name,pod)
 
-NetworkIn: 
-avg(kube_pod_info{host_network="false"})by(pod)*on(pod)group_right()sum(increase(container_network_receive_bytes_total[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)
+Actual NetworkIn: 
+	avg(avg_over_time(kube_pod_info{host_network="false"}[1d]))by(pod)
+	*on(pod)group_right()sum(sum_over_time(increase(container_network_receive_bytes_total[1h])[1d:1h]))
+	by(topology_kubernetes_io_region,alpha_eksctl_io_cluster_name,namespace,nodeid,pod)
+	*on(pod)group_left(label_app,label_app_kubernetes_io_name)avg(avg_over_time(kube_pod_labels[1d]))
+	by(label_app,label_app_kubernetes_io_name,pod)
+	
+Actual NetworkOut: 
+	avg(avg_over_time(kube_pod_info{host_network="false"}[1d]))by(pod)
+	*on(pod)group_right()sum(sum_over_time(increase(container_network_transmit_bytes_total[1h])[1d:1h]))
+	by(topology_kubernetes_io_region,alpha_eksctl_io_cluster_name,namespace,nodeid,pod)
+	*on(pod)group_left(label_app,label_app_kubernetes_io_name)avg(avg_over_time(kube_pod_labels[1d]))
+	by(label_app,label_app_kubernetes_io_name,pod)
+	
+Reserved CPU: 
+	sum(sum_over_time(avg_over_time(kube_pod_container_resource_requests{resource="cpu"}[1m])[1d:1m]))
+	by(namespace,pod)/60
 
-NetworkOut: 
-avg(kube_pod_info{host_network="false"})by(pod)*on(pod)group_right()sum(increase(container_network_transmit_bytes_total[1h]))by(topology_kubernetes_io_region,csi_volume_kubernetes_io_nodeid,alpha_eksctl_io_cluster_name,namespace,pod)*on(pod)group_left(label_app)avg(kube_pod_labels)by(pod, label_app)
+Reserved Memory: 
+	sum(sum_over_time(avg_over_time(kube_pod_container_resource_requests{resource="memory"}[1m])[1d:1m]))
+	by(namespace,pod)/60
+
 ```
 
 **Run in local docker with following command**
@@ -276,6 +310,11 @@ docker run -it --rm \
 ### 4.4 AllocateEksJob
 
 This Job allocates the EC2 instance cost of EKS cluster to pod according its cpu and memory reserved and actual usage.
+There are 3 allocation algorithms. You can also customize your algorithm.
+
+1. Only allocate EKS EC2 cost (allocate-eks-0.py)
+2. Allocate EKS EC2 and DataTransfer cost (allocate-eks-1.py)
+3. Allocate EKS EC2 and DataTransfer cost with non-allcated usage (allocate-eks-2.py)
 
 **Run in local docker with following command**
 ``` bash
@@ -287,7 +326,7 @@ docker run -it --rm \
     -p 18080:18080 \
     -p 4040:4040 \
     --name glue_spark_submit \
-    amazon/aws-glue-libs:glue_libs_4.0.0_image_01 spark-submit /home/glue_user/workspace/allocate-eks.py \
+    amazon/aws-glue-libs:glue_libs_4.0.0_image_01 spark-submit /home/glue_user/workspace/allocate-eks-0.py \
     --work-bucket cur-597377428377 \
     --year 2024 \
     --month 12 \
@@ -322,12 +361,82 @@ docker run -it --rm \
     --verbose 0
 ```
 
-### 4.6 LoadPrometheusBuziMetricsJob
+### 4.6 LoadPrometheusAPPMetricsJob
 
-Ingress
-a) kube-state-metrics启动参数中设置收集ingress的label，如app
-b) ingress-nginx-controller的service中加入cluster_name和region标签
-c) 如果ingress名称在多个集群有重复，kube-state-metrics的service中加入cluster_name和region标签
+This job loads application or business metrics, such as request of ingress (managed by ingress-nginx-controller), which can be correlated to cost, and help caculate the unit cost for business.
+
+1. Configure kube-state-metrics to fetch ingress labels by argument "--metric-labels-allowlist"
+``` bash
+    spec:
+      containers:
+        - name: kube-state-metrics
+          image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.13.0
+          args:
+            - '--port=8080'
+            - '--metric-labels-allowlist=pods=[app,app.kubernetes.io/name],ingresses=[app,app.kubernetes.io/name]' # Fetch labels "app" and "app.kubernetes.io/name" of pods and ingresses.
+```
+
+2. Add labels of "cluster-name" and "region" on service "ingress-nginx-controller"
+``` bash
+kubectl label service ingress-nginx-controller cluster-name=<your-cluster-name> region=<your-region>
+```
+
+3. Add labels of "cluster-name" and "region" on service "kube-state-metrics"
+``` bash
+kubectl label service kube-state-metrics cluster-name=<your-cluster-name> region=<your-region>
+```
+
+```
+Ingress Requests:
+	sum(sum_over_time(increase(nginx_ingress_controller_requests[1h])[1d:1h]))
+	by(ingress,region,cluster_name,namespace)
+	*on(ingress)group_left(label_app,label_app_kubernetes_io_name)avg(avg_over_time(kube_ingress_labels[1d]))
+	by(label_app,label_app_kubernetes_io_name,ingress)
+```
+
+**Run in local docker with following command**
+``` bash
+docker run -it --rm \
+    -v ~/.aws:/home/glue_user/.aws \
+    -v $(pwd)/:/home/glue_user/workspace/ \
+    -e DISABLE_SSL=true \
+    -e AWS_REGION=us-east-1 \
+    -p 18080:18080 \
+    -p 4040:4040 \
+    --name glue_spark_submit \
+    amazon/aws-glue-libs:glue_libs_4.0.0_image_01 spark-submit /home/glue_user/workspace/load_prometheus_appmetrics.py \
+    --work-bucket cur-597377428377 \
+    --year 2024 \
+    --month 12 \
+    --tags-fields name
+    --enable-glue-datacatalog true \
+    --cur-database $CURDatabase \
+    --verbose 0
+```
+
+### 4.7 CorrelateAPPCostJob
+
+This Job correlates app metrics and cost by joining 2 tables on "eks_app", and then unit cost of the app can be caculated.
+
+**Run in local docker with following command**
+``` bash
+docker run -it --rm \
+    -v ~/.aws:/home/glue_user/.aws \
+    -v $(pwd)/:/home/glue_user/workspace/ \
+    -e DISABLE_SSL=true \
+    -e AWS_REGION=us-east-1 \
+    -p 18080:18080 \
+    -p 4040:4040 \
+    --name glue_spark_submit \
+    amazon/aws-glue-libs:glue_libs_4.0.0_image_01 spark-submit /home/glue_user/workspace/correlate_appcost.py \
+    --work-bucket cur-597377428377 \
+    --year 2024 \
+    --month 12 \
+    --tags-fields name
+    --enable-glue-datacatalog true \
+    --cur-database $CURDatabase \
+    --verbose 0
+```
 
 ## 5. Tunning jobs in loal Jupyter Notebook    
 

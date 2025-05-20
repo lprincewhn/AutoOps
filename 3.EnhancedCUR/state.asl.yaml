@@ -90,8 +90,19 @@ States:
           Type: Task
           Parameters:
             AwsAccountId: '${AwsAccountId}'
-            DataSetId: '${QuicksightDataSetId}'
+            DataSetId: '${EnhancedCURDataSetId}'
             IngestionId.$: States.UUID()
             IngestionType: INCREMENTAL_REFRESH
           Resource: arn:aws:states:::aws-sdk:quicksight:createIngestion
-          End: true  
+          End: true
+    - StartAt: AppCostIngestionJob
+      States:
+        AppCostIngestionJob:
+          Type: Task
+          Parameters:
+            AwsAccountId: '${AwsAccountId}'
+            DataSetId: '${AppCostDataSetId}'
+            IngestionId.$: States.UUID()
+            IngestionType: INCREMENTAL_REFRESH
+          Resource: arn:aws:states:::aws-sdk:quicksight:createIngestion
+          End: true

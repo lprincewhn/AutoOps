@@ -27,7 +27,9 @@ Parameters:
     Type: String
   SecurityGroupIdList:
     Type: CommaDelimitedList
-  QuicksightDataSetId:
+  EnhancedCURDataSetId:
+    Type: String
+  AppCostDataSetId:
     Type: String
   
 Resources:
@@ -294,7 +296,7 @@ Resources:
       GlueVersion: 4.0
       Command:
         Name: glueetl
-        ScriptLocation: './correlate-appcost.py'
+        ScriptLocation: './correlate_appcost.py'
       DefaultArguments:
         '--year': '2024'
         '--month': '10'
@@ -345,7 +347,8 @@ Resources:
       DefinitionUri: state.asl.yaml
       DefinitionSubstitutions:
         AwsAccountId: !Ref AWS::AccountId
-        QuicksightDataSetId: !Ref QuicksightDataSetId
+        EnhancedCURDataSetId: !Ref EnhancedCURDataSetId
+        AppCostDataSetId: !Ref AppCostDataSetId
         StandardizeJobName: !Ref StandardizeJob
         LoadCloudWatchEKSMetricsJob: !Ref LoadCloudWatchEKSMetricsJob
         LoadPrometheusEKSMetricsJob: !Ref LoadPrometheusEKSMetricsJob
