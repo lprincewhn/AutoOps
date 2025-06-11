@@ -10,6 +10,8 @@ This is a QuickSight Dashboard to provide cost insights by drilling down on AWS 
 export AwsAccountId=<AWS Account Id>
 export AWS_REGION=us-east-1
 export QuickSightUser=<QuickSignt User> # IAM User or IAM role + session name
+export CURDatabase=<CUR database name in Athena>
+export CURTable=<CUR table name in Athena>
 ```
 
 2. Create Datasource
@@ -23,7 +25,7 @@ envsubst < ./create-data-source.json \
 aws quicksight  describe-data-source --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --data-source-id ${DataSourceId} --no-cli-pager
 
 # If datasource exist already, get its id and save it to environment variable DataSourceId.
-DataSourceId=$(aws quicksight list-data-sources --region ${AWS_REGION} --no-cli-pager --aws-account-id ${AwsAccountId} --output text --query 'DataSources[?Name==`Athena`].[DataSourceId]')
+export DataSourceId=$(aws quicksight list-data-sources --region ${AWS_REGION} --no-cli-pager --aws-account-id ${AwsAccountId} --output text --query 'DataSources[?Name==`Athena`].[DataSourceId]')
 ```
 
 3. Create DataSet
