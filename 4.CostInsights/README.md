@@ -131,6 +131,7 @@ aws quicksight describe-template --region ${AWS_REGION} --aws-account-id ${AwsAc
 2. Authorize the template to another AWS account
 
 ``` bash
+export TargetAccountId=<The other AWS account ID>
 envsubst < ./update-template-permissions.json  > /tmp/update-template-permissions.json
 aws quicksight update-template-permissions --aws-account-id ${AwsAccountId} --region ${AWS_REGION} --template-id ${TemplateId} --no-cli-pager --cli-input-json file:///tmp/update-template-permissions.json
 ```
@@ -138,9 +139,11 @@ aws quicksight update-template-permissions --aws-account-id ${AwsAccountId} --re
 3. Create dashboard in the other account from template 
 
 ``` bash
+export SourceRegion=<The region where the template locates>
+export SourceAwsAccountId=<The AWS account where the template locates>
 export DashboardId=$(uuidgen)
 envsubst < ./create-dashboard-by-template.json  > /tmp/create-dashboard-by-template.json
-aws quicksight create-dashboard --region ${AWS_REGION} --no-cli-pager --output text --query 'DashboardId' --name 'Cost Insights' --cli-input-json file:///tmp/create-dashboard-by-template
+aws quicksight create-dashboard --region ${AWS_REGION} --no-cli-pager --output text --query 'DashboardId' --name 'Cost Insights' --cli-input-json file:///tmp/create-dashboard-by-template.json
 aws quicksight describe-dashboard --region ${AWS_REGION} --aws-account-id ${AwsAccountId} --dashboard-id ${DashboardId} --no-cli-pager
 ```
 
